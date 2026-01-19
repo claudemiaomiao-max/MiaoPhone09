@@ -9258,9 +9258,10 @@ type可以是"text"(文字)或"voice_message"(语音)，你自由选择。
             await initWechatData();
             loadDiaryData();
 
-            // 获取可用于日记的助手（已导入微信模式或已有日记的）
+            // 获取可用于日记的助手（在微信模式有聊天记录或已有日记的）
             const diaryAssistants = appData.assistants?.filter(a =>
                 wechatData.importedAssistants?.includes(a.id) ||
+                wechatData.conversations?.[a.id]?.messages?.length > 0 ||  // 有聊天记录
                 (diaryData.diaries[a.id] && diaryData.diaries[a.id].entries?.length > 0)
             ) || [];
 
@@ -9308,9 +9309,10 @@ type可以是"text"(文字)或"voice_message"(语音)，你自由选择。
                 return;
             }
 
-            // 只显示已导入微信模式的助手（或已有日记的助手）
+            // 只显示在微信模式有聊天记录的助手（或已有日记的助手）
             const diaryAssistants = appData.assistants.filter(a =>
                 wechatData.importedAssistants?.includes(a.id) ||
+                wechatData.conversations?.[a.id]?.messages?.length > 0 ||  // 有聊天记录
                 (diaryData.diaries[a.id] && diaryData.diaries[a.id].entries?.length > 0)
             );
 
@@ -10477,6 +10479,14 @@ ${chatContext}
             console.log('appData.assistants 数量:', appData.assistants?.length || 0);
             console.log('appData.assistants:', appData.assistants?.map(a => ({id: a.id, name: a.name})));
             console.log('wechatData.importedAssistants:', wechatData.importedAssistants);
+
+            // 显示conversations中有聊天记录的助手
+            const conversationIds = Object.keys(wechatData.conversations || {});
+            const withMessages = conversationIds.filter(id =>
+                wechatData.conversations[id]?.messages?.length > 0
+            );
+            console.log('wechatData.conversations 有聊天记录的助手ID:', withMessages);
+
             console.log('diaryData.currentAssistantId:', diaryData?.currentAssistantId);
 
             // 检查哪些已导入的助手在appData中找不到
@@ -10487,9 +10497,10 @@ ${chatContext}
                 console.warn('⚠️ 以下已导入的助手ID在appData中找不到:', missing);
             }
 
-            // 计算日记模式可用的助手
+            // 计算日记模式可用的助手（新逻辑）
             const diaryAssistants = appData.assistants?.filter(a =>
                 wechatData.importedAssistants?.includes(a.id) ||
+                wechatData.conversations?.[a.id]?.messages?.length > 0 ||
                 (diaryData?.diaries?.[a.id]?.entries?.length > 0)
             );
             console.log('日记模式可用助手:', diaryAssistants?.map(a => ({id: a.id, name: a.name})));
@@ -10497,6 +10508,7 @@ ${chatContext}
             return {
                 assistants: appData.assistants,
                 importedAssistants: wechatData.importedAssistants,
+                conversationsWithMessages: withMessages,
                 diaryAssistants: diaryAssistants
             };
         };
