@@ -7,7 +7,20 @@
     <!-- 移动端调试工具 eruda，点击右下角齿轮图标可打开控制台 -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
     <style>
+        @font-face { font-family: "NaikaiFont"; src: url("fonts/NaikaiFont-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: "MoonStarsKai"; src: url("fonts/MoonStarsKai-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: "JasonHandwriting"; src: url("fonts/JasonHandwriting1-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: "PingfangShiguang"; src: url("fonts/pingfangshiguang.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: "cococheese"; src: url("fonts/cococheese.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: "ZLabsBitmap"; src: url("fonts/ZLabsBitmap.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: "ZZJmarkpen"; src: url("fonts/ZZJmarkpen.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: "KURIYAMAKOUCHI"; src: url("fonts/KURIYAMAKOUCHIFONT_N.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+
         * {
             margin: 0;
             padding: 0;
@@ -31,6 +44,7 @@
             --shadow: rgba(0,0,0,0.08);
             --shadow-lg: rgba(0,0,0,0.12);
             --thinking-bg: #f9f5f7;
+            --chat-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         }
 
         body {
@@ -407,6 +421,45 @@
             height: 3px;
             background: #fff;
             border-radius: 1px;
+        }
+
+        /* 显示设置页面 - 字体选择器 */
+        .display-settings-section {
+            padding: 12px 16px;
+            background: #fff;
+            margin-bottom: 12px;
+        }
+        .display-settings-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .font-selector {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            background: #fff;
+            color: var(--text-primary);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        .font-selector:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .font-preview {
+            margin-top: 12px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-size: 15px;
+            line-height: 1.6;
         }
 
         /* ==================== 页面层（设置、聊天等） ==================== */
@@ -1068,12 +1121,14 @@
             border-radius: 18px 18px 6px 18px;
             font-size: 15px;
             line-height: 1.6;
+            font-family: var(--chat-font);
         }
 
         /* 助手消息无气泡 */
         .message.assistant .message-content {
             font-size: 15px;
             line-height: 1.8;
+            font-family: var(--chat-font);
         }
 
         /* 思考链 */
@@ -2337,6 +2392,7 @@
             line-height: 1.5;
             word-break: break-word;
             position: relative;
+            font-family: var(--chat-font);
         }
 
         .wechat-msg.assistant .wechat-msg-bubble {
@@ -3607,6 +3663,7 @@
             line-height: 1.8;
             color: #333;
             white-space: pre-wrap;
+            font-family: var(--chat-font);
         }
         .diary-no-entry {
             text-align: center;
@@ -3804,7 +3861,7 @@
             <div class="dock-icon settings" onclick="openSettings()">
                 <div class="gear-icon"></div>
             </div>
-            <div class="dock-icon display" onclick="showComingSoon()">
+            <div class="dock-icon display" onclick="openDisplaySettings()">
                 <div class="display-icon"></div>
             </div>
             <div class="dock-icon placeholder" onclick="showComingSoon()">
@@ -3926,6 +3983,43 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 显示设置页面 -->
+        <div class="page" id="displaySettingsPage">
+            <div class="page-header">
+                <button class="page-back" onclick="closePage('displaySettingsPage')">
+                    <span class="icon-back"></span>
+                </button>
+                <span class="page-title">显示设置</span>
+                <button class="page-action" onclick="saveDisplaySettings()" style="color: var(--accent-dark); font-size: 14px; width: auto; padding: 0 12px;">
+                    保存
+                </button>
+            </div>
+            <div class="page-content" style="padding: 12px 0; background: var(--bg-tertiary);">
+                <div class="display-settings-section">
+                    <label class="display-settings-label">聊天字体</label>
+                    <select class="font-selector" id="displayFontSelector" onchange="previewFont(this.value)">
+                        <option value="system">系统默认</option>
+                        <option value="naikai">内海简体</option>
+                        <option value="moonstars">月星楷</option>
+                        <option value="jason">清松手写体</option>
+                        <option value="pingfang">平方时光体</option>
+                        <option value="cococheese">小可奶酪体</option>
+                        <option value="zcool">站酷快乐体</option>
+                        <option value="ZZJmarkpen">宅在家麦克笔</option>
+                        <option value="ZLabsBitmap">ZLabsBitmap像素</option>
+                        <option value="KURIYAMAKOUCHI">栗山巧緻フォント</option>
+                    </select>
+                    <div class="font-preview" id="fontPreview">
+                        字体预览：妙妙是最可爱的小猫咪～<br>
+                        Font Preview: Hello Miaomiao!
+                    </div>
+                </div>
+                <div class="display-settings-section" style="background: transparent; padding: 16px; font-size: 12px; color: #999; text-align: center;">
+                    字体将应用到：微信模式聊天气泡、API模式消息、日记本正文
                 </div>
             </div>
         </div>
@@ -4357,6 +4451,21 @@
                     </div>
                 </div>
                 <div class="wechat-settings-section">
+                    <div class="wechat-settings-item" onclick="selectWechatBackground()">
+                        <span class="wechat-settings-label">聊天背景</span>
+                        <span class="wechat-settings-value">
+                            <span id="wechatBgStatus">默认</span>
+                            <span class="icon-arrow"></span>
+                        </span>
+                    </div>
+                    <div class="wechat-settings-item" id="wechatBgPreviewItem" style="display: none; justify-content: center; padding: 12px;">
+                        <div id="wechatBgPreview" style="width: 80px; height: 120px; border-radius: 8px; background-size: cover; background-position: center; border: 1px solid #ddd; position: relative;">
+                            <button onclick="event.stopPropagation(); clearWechatBackground()" style="position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; border-radius: 50%; background: #fa5151; color: #fff; border: none; font-size: 12px; cursor: pointer;">×</button>
+                        </div>
+                    </div>
+                    <input type="file" id="wechatBgInput" style="display: none;" accept="image/*" onchange="handleWechatBgUpload(event)">
+                </div>
+                <div class="wechat-settings-section">
                     <div class="wechat-settings-item">
                         <span class="wechat-settings-label">启用语音合成 (TTS)</span>
                         <div class="switch" id="wechatTtsEnabled" onclick="this.classList.toggle('on')"></div>
@@ -4710,6 +4819,7 @@
             setupTextareaAutoResize();
             updateThinkingDisplay();
             updateTtsStatus();
+            initDisplaySettings();
         }
 
         function setupTextareaAutoResize() {
@@ -4979,6 +5089,51 @@
 
         function showComingSoon() {
             alert('功能开发中，敬请期待~');
+        }
+
+        // ==================== 显示设置 ====================
+        const fontMap = {
+            'system': '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+            'naikai': '"NaikaiFont", -apple-system, BlinkMacSystemFont, sans-serif',
+            'moonstars': '"MoonStarsKai", -apple-system, BlinkMacSystemFont, sans-serif',
+            'jason': '"JasonHandwriting", -apple-system, BlinkMacSystemFont, sans-serif',
+            'pingfang': '"PingfangShiguang", -apple-system, BlinkMacSystemFont, sans-serif',
+            'cococheese': '"cococheese", -apple-system, BlinkMacSystemFont, sans-serif',
+            'zcool': '"ZCOOL KuaiLe", -apple-system, BlinkMacSystemFont, sans-serif',
+            'ZLabsBitmap': '"ZLabsBitmap", -apple-system, BlinkMacSystemFont, sans-serif',
+            'ZZJmarkpen': '"ZZJmarkpen", -apple-system, BlinkMacSystemFont, sans-serif',
+            'KURIYAMAKOUCHI': '"KURIYAMAKOUCHI", -apple-system, BlinkMacSystemFont, sans-serif'
+        };
+
+        function openDisplaySettings() {
+            const currentFont = appData.settings.chatFont || 'system';
+            document.getElementById('displayFontSelector').value = currentFont;
+            previewFont(currentFont);
+            openPage('displaySettingsPage');
+        }
+
+        function previewFont(fontKey) {
+            const fontFamily = fontMap[fontKey] || fontMap['system'];
+            document.getElementById('fontPreview').style.fontFamily = fontFamily;
+        }
+
+        function saveDisplaySettings() {
+            const fontKey = document.getElementById('displayFontSelector').value;
+            appData.settings.chatFont = fontKey;
+            applyFont(fontKey);
+            saveData();
+            closePage('displaySettingsPage');
+        }
+
+        function applyFont(fontKey) {
+            const fontFamily = fontMap[fontKey] || fontMap['system'];
+            document.documentElement.style.setProperty('--chat-font', fontFamily);
+        }
+
+        // 初始化时应用字体
+        function initDisplaySettings() {
+            const fontKey = appData.settings.chatFont || 'system';
+            applyFont(fontKey);
         }
 
         function updateSettingsCounts() {
@@ -6838,6 +6993,7 @@
             openPage('wechatChatPage');
             setupWechatInput();
             initWechatLongPress();
+            applyWechatBackground();
         }
 
         function backToWechatList() {
@@ -10369,6 +10525,9 @@ ${chatContext}
             document.getElementById('wechatTtsEnabled').classList.toggle('on', settings.ttsEnabled || false);
             document.getElementById('wechatVoiceId').value = settings.voiceId || '';
 
+            // 背景图片预览
+            updateWechatBgPreview();
+
             openPage('wechatSettingsPage');
         }
 
@@ -10376,6 +10535,7 @@ ${chatContext}
             const conv = wechatData.conversations[wechatData.currentAssistantId];
             if (conv) {
                 conv.settings = {
+                    ...conv.settings,
                     memoryCount: parseInt(document.getElementById('wechatMemoryCount').value) || 20,
                     timeAware: document.getElementById('wechatTimeAware').classList.contains('on'),
                     timeAwareIntensity: document.getElementById('wechatTimeAwareIntensity').value,
@@ -10386,6 +10546,96 @@ ${chatContext}
                 saveWechatData();
             }
             closePage('wechatSettingsPage');
+        }
+
+        // ==================== 微信背景图片设置 ====================
+        function selectWechatBackground() {
+            document.getElementById('wechatBgInput').click();
+        }
+
+        function handleWechatBgUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxSize = 1920;
+                    let width = img.width, height = img.height;
+                    if (width > maxSize || height > maxSize) {
+                        if (width > height) { height *= maxSize / width; width = maxSize; }
+                        else { width *= maxSize / height; height = maxSize; }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const base64 = canvas.toDataURL('image/jpeg', 0.85);
+
+                    // 保存到当前会话设置
+                    const conv = wechatData.conversations[wechatData.currentAssistantId];
+                    if (conv) {
+                        conv.settings = conv.settings || {};
+                        conv.settings.chatBackground = base64;
+                        saveWechatData();
+                        updateWechatBgPreview();
+                        applyWechatBackground();
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+
+        function updateWechatBgPreview() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const bg = conv?.settings?.chatBackground;
+            const previewItem = document.getElementById('wechatBgPreviewItem');
+            const preview = document.getElementById('wechatBgPreview');
+            const status = document.getElementById('wechatBgStatus');
+
+            if (bg) {
+                previewItem.style.display = 'flex';
+                preview.style.backgroundImage = `url(${bg})`;
+                status.textContent = '已设置';
+            } else {
+                previewItem.style.display = 'none';
+                status.textContent = '默认';
+            }
+        }
+
+        function clearWechatBackground() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (conv && conv.settings) {
+                delete conv.settings.chatBackground;
+                saveWechatData();
+                updateWechatBgPreview();
+                applyWechatBackground();
+            }
+        }
+
+        function applyWechatBackground() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const bg = conv?.settings?.chatBackground;
+            const messagesEl = document.getElementById('wechatMessages');
+            if (messagesEl) {
+                if (bg) {
+                    messagesEl.style.backgroundImage = `url(${bg})`;
+                    messagesEl.style.backgroundSize = 'cover';
+                    messagesEl.style.backgroundPosition = 'center';
+                } else {
+                    messagesEl.style.backgroundImage = '';
+                    messagesEl.style.backgroundSize = '';
+                    messagesEl.style.backgroundPosition = '';
+                }
+            }
         }
 
         // 根据时间感知总开关状态，控制时间感知增强选项的显示
