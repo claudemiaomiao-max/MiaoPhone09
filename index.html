@@ -7,6 +7,8 @@
     <!-- 移动端调试工具 eruda，点击右下角齿轮图标可打开控制台 -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
+    <!-- Markdown 渲染库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
@@ -460,6 +462,101 @@
             border-radius: 8px;
             font-size: 15px;
             line-height: 1.6;
+        }
+        /* 用户头像上传区域 */
+        .avatar-upload-area {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .avatar-upload-area:hover {
+            background: #ece7e2;
+        }
+        .avatar-preview {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px dashed #ccc;
+        }
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .avatar-preview.has-image {
+            border: none;
+        }
+        .avatar-upload-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        /* 壁纸选项 */
+        .wallpaper-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .wallpaper-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .wallpaper-preview {
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+            background-size: cover;
+            background-position: center;
+        }
+        .wallpaper-option.active .wallpaper-preview {
+            border-color: var(--accent-dark);
+        }
+        .wallpaper-option span {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        /* 助手头像上传 */
+        .assistant-avatar-upload {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .assistant-avatar-preview {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px dashed #ccc;
+        }
+        .assistant-avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .assistant-avatar-preview.has-image {
+            border: none;
         }
 
         /* ==================== 页面层（设置、聊天等） ==================== */
@@ -1129,6 +1226,98 @@
             font-size: 15px;
             line-height: 1.8;
             font-family: var(--chat-font);
+        }
+
+        /* Markdown 样式 */
+        .message-content p {
+            margin: 0 0 0.8em 0;
+        }
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+        .message-content h1, .message-content h2, .message-content h3 {
+            margin: 1em 0 0.5em 0;
+            font-weight: 600;
+        }
+        .message-content h1 { font-size: 1.4em; }
+        .message-content h2 { font-size: 1.2em; }
+        .message-content h3 { font-size: 1.1em; }
+        .message-content ul, .message-content ol {
+            margin: 0.5em 0;
+            padding-left: 1.5em;
+        }
+        .message-content li {
+            margin: 0.3em 0;
+        }
+        .message-content code {
+            background: rgba(0,0,0,0.06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, Consolas, monospace;
+            font-size: 0.9em;
+        }
+        .message-content pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0.5em 0;
+        }
+        .message-content pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .code-block-wrapper {
+            position: relative;
+        }
+        .code-block-wrapper .code-copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #aaa;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .code-block-wrapper .code-copy-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        .message-content blockquote {
+            border-left: 3px solid var(--accent);
+            margin: 0.5em 0;
+            padding-left: 12px;
+            color: var(--text-secondary);
+        }
+        .message-content table {
+            border-collapse: collapse;
+            margin: 0.5em 0;
+            width: 100%;
+        }
+        .message-content th, .message-content td {
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .message-content th {
+            background: var(--bg-tertiary);
+        }
+        .message-content a {
+            color: var(--accent-dark);
+            text-decoration: underline;
+        }
+        .message-content hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 1em 0;
         }
 
         /* 思考链 */
@@ -3694,6 +3883,9 @@
             padding: 16px;
             background: #fff;
             box-sizing: border-box;
+            font-family: var(--chat-font);
+            font-size: 15px;
+            line-height: 1.8;
         }
         .diary-page-indicator {
             position: absolute;
@@ -3999,6 +4191,50 @@
                 </button>
             </div>
             <div class="page-content" style="padding: 12px 0; background: var(--bg-tertiary);">
+                <!-- 用户头像设置 -->
+                <div class="display-settings-section">
+                    <label class="display-settings-label">用户头像</label>
+                    <div class="avatar-upload-area" onclick="document.getElementById('userAvatarInput').click()">
+                        <div class="avatar-preview" id="userAvatarPreview">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <div class="avatar-upload-text">点击上传头像</div>
+                    </div>
+                    <input type="file" id="userAvatarInput" accept="image/*" style="display:none" onchange="handleUserAvatarUpload(this)">
+                    <button class="btn btn-secondary" style="margin-top: 8px; width: 100%;" onclick="clearUserAvatar()">清除头像</button>
+                </div>
+
+                <!-- 桌面壁纸设置 -->
+                <div class="display-settings-section">
+                    <label class="display-settings-label">桌面壁纸</label>
+                    <div class="wallpaper-options">
+                        <div class="wallpaper-option active" data-wallpaper="default" onclick="selectWallpaper('default')">
+                            <div class="wallpaper-preview" style="background: linear-gradient(135deg, #fdf6f9 0%, #f5ede8 50%, #faf5f0 100%);"></div>
+                            <span>默认</span>
+                        </div>
+                        <div class="wallpaper-option" data-wallpaper="pink" onclick="selectWallpaper('pink')">
+                            <div class="wallpaper-preview" style="background: linear-gradient(135deg, #ffe4ec 0%, #ffb6c1 100%);"></div>
+                            <span>粉色</span>
+                        </div>
+                        <div class="wallpaper-option" data-wallpaper="blue" onclick="selectWallpaper('blue')">
+                            <div class="wallpaper-preview" style="background: linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%);"></div>
+                            <span>蓝色</span>
+                        </div>
+                        <div class="wallpaper-option" data-wallpaper="green" onclick="selectWallpaper('green')">
+                            <div class="wallpaper-preview" style="background: linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 100%);"></div>
+                            <span>绿色</span>
+                        </div>
+                        <div class="wallpaper-option" data-wallpaper="custom" onclick="document.getElementById('wallpaperInput').click()">
+                            <div class="wallpaper-preview" id="customWallpaperPreview" style="background: #eee; display: flex; align-items: center; justify-content: center;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </div>
+                            <span>自定义</span>
+                        </div>
+                    </div>
+                    <input type="file" id="wallpaperInput" accept="image/*" style="display:none" onchange="handleWallpaperUpload(this)">
+                </div>
+
+                <!-- 聊天字体设置 -->
                 <div class="display-settings-section">
                     <label class="display-settings-label">聊天字体</label>
                     <select class="font-selector" id="displayFontSelector" onchange="previewFont(this.value)">
@@ -4019,6 +4255,7 @@
                     </div>
                 </div>
                 <div class="display-settings-section" style="background: transparent; padding: 16px; font-size: 12px; color: #999; text-align: center;">
+                    头像将应用到：微信模式、API模式的全局头像<br>
                     字体将应用到：微信模式聊天气泡、API模式消息、日记本正文
                 </div>
             </div>
@@ -5106,9 +5343,31 @@
         };
 
         function openDisplaySettings() {
+            // 加载字体设置
             const currentFont = appData.settings.chatFont || 'system';
             document.getElementById('displayFontSelector').value = currentFont;
             previewFont(currentFont);
+
+            // 加载用户头像
+            const userAvatar = appData.settings.userAvatar || '';
+            const previewEl = document.getElementById('userAvatarPreview');
+            if (userAvatar) {
+                previewEl.innerHTML = `<img src="${userAvatar}" alt="">`;
+                previewEl.classList.add('has-image');
+            } else {
+                previewEl.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+                previewEl.classList.remove('has-image');
+            }
+
+            // 加载壁纸设置
+            const wallpaper = appData.settings.wallpaper || 'default';
+            document.querySelectorAll('.wallpaper-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.wallpaper === wallpaper);
+            });
+            if (appData.settings.customWallpaper) {
+                document.getElementById('customWallpaperPreview').style.backgroundImage = `url(${appData.settings.customWallpaper})`;
+            }
+
             openPage('displaySettingsPage');
         }
 
@@ -5121,6 +5380,8 @@
             const fontKey = document.getElementById('displayFontSelector').value;
             appData.settings.chatFont = fontKey;
             applyFont(fontKey);
+            applyWallpaper();
+            applyUserAvatar();
             saveData();
             closePage('displaySettingsPage');
         }
@@ -5130,10 +5391,119 @@
             document.documentElement.style.setProperty('--chat-font', fontFamily);
         }
 
-        // 初始化时应用字体
+        // 用户头像上传处理
+        function handleUserAvatarUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.size > 500 * 1024) {
+                alert('头像文件过大，请选择500KB以下的图片');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result;
+                appData.settings.userAvatar = base64;
+                const previewEl = document.getElementById('userAvatarPreview');
+                previewEl.innerHTML = `<img src="${base64}" alt="">`;
+                previewEl.classList.add('has-image');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearUserAvatar() {
+            appData.settings.userAvatar = '';
+            const previewEl = document.getElementById('userAvatarPreview');
+            previewEl.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+            previewEl.classList.remove('has-image');
+        }
+
+        function applyUserAvatar() {
+            // 用户头像会在renderMessage时动态应用
+        }
+
+        // 壁纸选择
+        const wallpaperStyles = {
+            'default': 'linear-gradient(135deg, #fdf6f9 0%, #f5ede8 50%, #faf5f0 100%)',
+            'pink': 'linear-gradient(135deg, #ffe4ec 0%, #ffb6c1 100%)',
+            'blue': 'linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%)',
+            'green': 'linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 100%)'
+        };
+
+        function selectWallpaper(wallpaperKey) {
+            appData.settings.wallpaper = wallpaperKey;
+            document.querySelectorAll('.wallpaper-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.wallpaper === wallpaperKey);
+            });
+        }
+
+        function handleWallpaperUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.size > 2 * 1024 * 1024) {
+                alert('壁纸文件过大，请选择2MB以下的图片');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result;
+                appData.settings.customWallpaper = base64;
+                appData.settings.wallpaper = 'custom';
+                document.getElementById('customWallpaperPreview').style.backgroundImage = `url(${base64})`;
+                document.querySelectorAll('.wallpaper-option').forEach(opt => {
+                    opt.classList.toggle('active', opt.dataset.wallpaper === 'custom');
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function applyWallpaper() {
+            const wallpaper = appData.settings.wallpaper || 'default';
+            const container = document.querySelector('.phone-container');
+            if (!container) return;
+            if (wallpaper === 'custom' && appData.settings.customWallpaper) {
+                container.style.background = `url(${appData.settings.customWallpaper}) center/cover no-repeat`;
+            } else {
+                container.style.background = wallpaperStyles[wallpaper] || wallpaperStyles['default'];
+            }
+        }
+
+        // 助手头像上传处理
+        function handleAssistantAvatarUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            if (file.size > 500 * 1024) {
+                alert('头像文件过大，请选择500KB以下的图片');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target.result;
+                document.getElementById('editAssistantAvatar').value = base64;
+                const previewEl = document.getElementById('assistantAvatarPreview');
+                previewEl.innerHTML = `<img src="${base64}" alt="">`;
+                previewEl.classList.add('has-image');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearAssistantAvatar() {
+            document.getElementById('editAssistantAvatar').value = '';
+            const previewEl = document.getElementById('assistantAvatarPreview');
+            previewEl.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+            previewEl.classList.remove('has-image');
+        }
+
+        // 初始化时应用显示设置
         function initDisplaySettings() {
             const fontKey = appData.settings.chatFont || 'system';
             applyFont(fontKey);
+            applyWallpaper();
         }
 
         function updateSettingsCounts() {
@@ -5431,6 +5801,18 @@
                 <div id="assistantTabBasic">
                     <div class="form-section">
                         <div class="form-group">
+                            <label class="form-label">助手头像</label>
+                            <div class="assistant-avatar-upload" onclick="document.getElementById('assistantAvatarInput').click()">
+                                <div class="assistant-avatar-preview ${data.avatar ? 'has-image' : ''}" id="assistantAvatarPreview">
+                                    ${data.avatar ? `<img src="${data.avatar}" alt="">` : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
+                                </div>
+                                <div class="avatar-upload-text">点击上传头像</div>
+                            </div>
+                            <input type="file" id="assistantAvatarInput" accept="image/*" style="display:none" onchange="handleAssistantAvatarUpload(this)">
+                            <input type="hidden" id="editAssistantAvatar" value="${data.avatar || ''}">
+                            <button class="btn btn-secondary" style="margin-top: 8px; width: 100%;" onclick="clearAssistantAvatar()">清除头像</button>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">助手名称</label>
                             <input type="text" class="form-input" id="editAssistantName" value="${data.name || ''}" placeholder="给助手起个名字">
                         </div>
@@ -5538,6 +5920,7 @@
 
         function saveAssistant() {
             const name = document.getElementById('editAssistantName').value.trim();
+            const avatar = document.getElementById('editAssistantAvatar').value;
             const prompt = document.getElementById('editAssistantPrompt').value;
             const temp = parseFloat(document.getElementById('editAssistantTemp').value);
             const topP = parseFloat(document.getElementById('editAssistantTopP').value);
@@ -5558,6 +5941,7 @@
             const assistantData = {
                 id: editingAssistantId || 'assistant_' + Date.now(),
                 name,
+                avatar,
                 providerId: existingAssistant?.providerId || '',
                 modelId: existingAssistant?.modelId || '',
                 systemPrompt: prompt,
@@ -5828,10 +6212,16 @@
                     `</div>`;
                 }
 
+                // 获取用户头像
+                const userAvatar = appData.settings.userAvatar;
+                const userAvatarHtml = userAvatar
+                    ? `<img src="${userAvatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
                 return `
                     <div class="message user">
                         <div class="message-avatar">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            ${userAvatarHtml}
                         </div>
                         <div class="message-body">
                             <div class="message-header">
@@ -5839,7 +6229,7 @@
                                 <span class="message-name">妙妙</span>
                             </div>
                             ${attachmentsHtml}
-                            <div class="message-bubble">${formatMessageContent(currentContent)}</div>
+                            <div class="message-bubble">${formatMessageContent(currentContent, false)}</div>
                             <div class="message-actions">
                                 <button class="message-action-btn" onclick="copyMessage('${msg.id}')" title="复制">
                                     <span class="icon-copy"></span>
@@ -6844,12 +7234,50 @@
             return div.innerHTML;
         }
 
-        function formatMessageContent(content) {
+        function formatMessageContent(content, useMarkdown = true) {
             if (!content) return '';
+
+            // 使用 marked.js 进行 Markdown 渲染
+            if (useMarkdown && typeof marked !== 'undefined') {
+                try {
+                    // 配置 marked
+                    marked.setOptions({
+                        breaks: true,      // 自动换行
+                        gfm: true,         // 支持 GitHub Flavored Markdown
+                        sanitize: false,   // 不过滤 HTML（已通过其他方式处理安全问题）
+                        smartLists: true,  // 智能列表
+                        smartypants: false // 不自动替换引号等
+                    });
+
+                    let html = marked.parse(content);
+
+                    // 处理代码块，添加复制按钮
+                    html = html.replace(/<pre><code(.*?)>([\s\S]*?)<\/code><\/pre>/g,
+                        '<div class="code-block-wrapper"><pre><code$1>$2</code></pre><button class="code-copy-btn" onclick="copyCodeBlock(this)">复制</button></div>');
+
+                    return html;
+                } catch (e) {
+                    console.error('Markdown 渲染失败:', e);
+                }
+            }
+
+            // 降级：基本格式化
             let html = escapeHtml(content);
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             html = html.replace(/\n/g, '<br>');
             return html;
+        }
+
+        // 复制代码块
+        function copyCodeBlock(btn) {
+            const codeEl = btn.previousElementSibling.querySelector('code');
+            if (codeEl) {
+                navigator.clipboard.writeText(codeEl.textContent).then(() => {
+                    const originalText = btn.textContent;
+                    btn.textContent = '已复制';
+                    setTimeout(() => btn.textContent = originalText, 1500);
+                });
+            }
         }
 
         function formatDate(isoString) {
@@ -7085,6 +7513,16 @@
             const isSelected = wechatMultiSelectMode && wechatSelectedMessages.has(msg.id);
             const selectedClass = isSelected ? ' selected' : '';
 
+            // 用户头像（使用全局设置或默认）
+            const userAvatar = appData.settings.userAvatar;
+            const userAvatarHtml = userAvatar
+                ? `<img src="${userAvatar}" alt="">`
+                : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+            // 助手头像
+            const assistantAvatarHtml = assistant?.avatar
+                ? `<img src="${assistant.avatar}" alt="">`
+                : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
             // 多选复选框
             const selectCheckbox = '<div class="select-checkbox"></div>';
 
@@ -7110,10 +7548,7 @@
                     <div class="wechat-msg ${isSentByUser ? 'user' : 'assistant'}${selectedClass}" ${bubbleClass} data-msg-id="${msg.id}">
                         ${selectCheckbox}
                         <div class="wechat-msg-avatar">
-                            ${isSentByUser
-                                ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-                                : (assistant?.avatar ? `<img src="${assistant.avatar}" alt="">` : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>')
-                            }
+                            ${isSentByUser ? userAvatarHtml : assistantAvatarHtml}
                         </div>
                         <div class="wechat-msg-body">
                             <div class="wechat-transfer-card${clickableClass}${statusClass}" ${clickHandler}>
@@ -7143,10 +7578,7 @@
                     <div class="wechat-msg ${isFromUser ? 'user' : 'assistant'}${selectedClass}" ${bubbleClass} data-msg-id="${msg.id}">
                         ${selectCheckbox}
                         <div class="wechat-msg-avatar">
-                            ${isFromUser
-                                ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-                                : (assistant?.avatar ? `<img src="${assistant.avatar}" alt="">` : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>')
-                            }
+                            ${isFromUser ? userAvatarHtml : assistantAvatarHtml}
                         </div>
                         <div class="wechat-msg-body">
                             <div class="wechat-transfer-card ${statusClass}">
@@ -7173,7 +7605,7 @@
                         <div class="wechat-msg user${selectedClass}" ${bubbleClass} data-msg-id="${msg.id}">
                             ${selectCheckbox}
                             <div class="wechat-msg-avatar">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                ${userAvatarHtml}
                             </div>
                             <div class="wechat-msg-body" style="max-width: none;">
                                 <div style="display: flex; align-items: center; flex-direction: row-reverse;">
@@ -7194,7 +7626,7 @@
                     <div class="wechat-msg assistant${selectedClass}" ${bubbleClass} data-msg-id="${msg.id}">
                         ${selectCheckbox}
                         <div class="wechat-msg-avatar">
-                            ${assistant?.avatar ? `<img src="${assistant.avatar}" alt="">` : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
+                            ${assistantAvatarHtml}
                         </div>
                         <div class="wechat-msg-body" style="max-width: none;">
                             <div style="display: flex; align-items: center;">
@@ -7218,10 +7650,7 @@
                     <div class="wechat-msg ${isUser ? 'user' : 'assistant'}${selectedClass}" ${bubbleClass} data-msg-id="${msg.id}">
                         ${selectCheckbox}
                         <div class="wechat-msg-avatar">
-                            ${isUser
-                                ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-                                : (assistant?.avatar ? `<img src="${assistant.avatar}" alt="">` : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>')
-                            }
+                            ${isUser ? userAvatarHtml : assistantAvatarHtml}
                         </div>
                         <div class="wechat-msg-body">
                             <div class="wechat-msg-image" onclick="showWechatImagePreview('${msg.id}')">
@@ -7245,15 +7674,12 @@
                 <div class="wechat-msg ${isUser ? 'user' : 'assistant'}${selectedClass}" ${bubbleClass} data-msg-id="${msg.id}">
                     ${selectCheckbox}
                     <div class="wechat-msg-avatar">
-                        ${isUser
-                            ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
-                            : (assistant?.avatar ? `<img src="${assistant.avatar}" alt="">` : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>')
-                        }
+                        ${isUser ? userAvatarHtml : assistantAvatarHtml}
                     </div>
                     <div class="wechat-msg-body">
                         <div class="wechat-msg-bubble">
                             ${quoteHtml}
-                            ${formatMessageContent(msg.content)}
+                            ${formatMessageContent(msg.content, false)}
                         </div>
                         <div class="wechat-msg-time">${formatTime(msg.timestamp)}</div>
                     </div>
