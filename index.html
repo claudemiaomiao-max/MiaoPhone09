@@ -529,14 +529,77 @@
             font-size: 12px;
             color: var(--text-secondary);
         }
-        /* 助手头像上传 */
-        .assistant-avatar-upload {
+        /* 头像紧凑样式（带X删除按钮） */
+        .avatar-name-row {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px;
-            background: var(--bg-tertiary);
-            border-radius: 12px;
+        }
+        .avatar-upload-compact {
+            position: relative;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .avatar-preview-compact {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 2px dashed #ccc;
+        }
+        .avatar-preview-compact img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .avatar-preview-compact.has-image {
+            border: 2px solid var(--accent);
+        }
+        .avatar-delete-btn {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: var(--danger, #d47f8a);
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .avatar-upload-compact:hover .avatar-delete-btn,
+        .avatar-preview-compact.has-image + .avatar-delete-btn {
+            display: flex;
+        }
+        .avatar-preview-compact:not(.has-image) + .avatar-delete-btn {
+            display: none !important;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .slider-row .slider {
+            flex: 1;
+        }
+        .slider-row .slider-value {
+            min-width: 40px;
+            text-align: right;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        /* 助手头像上传 */
+        .assistant-avatar-upload {
+            position: relative;
+            display: inline-block;
             cursor: pointer;
         }
         .assistant-avatar-preview {
@@ -556,7 +619,95 @@
             object-fit: cover;
         }
         .assistant-avatar-preview.has-image {
-            border: none;
+            border: 2px solid var(--accent);
+        }
+        .assistant-avatar-delete {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: var(--danger, #d47f8a);
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .assistant-avatar-upload:hover .assistant-avatar-delete {
+            display: flex;
+        }
+        .assistant-avatar-preview:not(.has-image) + .assistant-avatar-delete {
+            display: none !important;
+        }
+
+        /* ==================== 微信主题 ==================== */
+        :root {
+            --wechat-bg: #ededed;
+            --wechat-header-bg: #ededed;
+            --wechat-header-text: #000;
+            --wechat-user-bubble: #95ec69;
+            --wechat-user-text: #000;
+            --wechat-ai-bubble: #fff;
+            --wechat-ai-text: #000;
+            --wechat-pattern-color: rgba(0, 0, 0, 0.05);
+            --wechat-bubble-opacity: 1;
+        }
+        [data-wechat-theme="pink"] {
+            --wechat-bg: #fdf5f6;
+            --wechat-header-bg: linear-gradient(135deg, #e8b4b8 0%, #d4a5a5 100%);
+            --wechat-header-text: #fff;
+            --wechat-user-bubble: #e8b4b8;
+            --wechat-user-text: #fff;
+            --wechat-ai-bubble: #fff;
+            --wechat-ai-text: #5a4a4e;
+            --wechat-pattern-color: rgba(232, 180, 184, 0.15);
+        }
+        [data-wechat-theme="blue"] {
+            --wechat-bg: #f5f6fa;
+            --wechat-header-bg: linear-gradient(135deg, #94A0D3 0%, #7b89c4 100%);
+            --wechat-header-text: #fff;
+            --wechat-user-bubble: #94A0D3;
+            --wechat-user-text: #fff;
+            --wechat-ai-bubble: #eef0f8;
+            --wechat-ai-text: #4a4e69;
+            --wechat-pattern-color: rgba(148, 160, 211, 0.15);
+        }
+        [data-wechat-theme="purple"] {
+            --wechat-bg: #f9f7fb;
+            --wechat-header-bg: linear-gradient(135deg, #c4b5d4 0%, #a594b8 100%);
+            --wechat-header-text: #fff;
+            --wechat-user-bubble: #c4b5d4;
+            --wechat-user-text: #fff;
+            --wechat-ai-bubble: #f3f0f8;
+            --wechat-ai-text: #5a5060;
+            --wechat-pattern-color: rgba(196, 181, 212, 0.15);
+        }
+        [data-wechat-theme="brown"] {
+            --wechat-bg: #f7f4f1;
+            --wechat-header-bg: linear-gradient(135deg, #b5a191 0%, #968272 100%);
+            --wechat-header-text: #fff;
+            --wechat-user-bubble: #b5a191;
+            --wechat-user-text: #fff;
+            --wechat-ai-bubble: #f3eeea;
+            --wechat-ai-text: #5a524a;
+            --wechat-pattern-color: rgba(181, 161, 145, 0.15);
+        }
+        [data-wechat-theme="dark"] {
+            --wechat-bg: #1a1d21;
+            --wechat-header-bg: linear-gradient(135deg, #2d3339 0%, #1a1d21 100%);
+            --wechat-header-text: #e0e0e0;
+            --wechat-user-bubble: #5a7a94;
+            --wechat-user-text: #fff;
+            --wechat-ai-bubble: #2d3339;
+            --wechat-ai-text: #e0e0e0;
+            --wechat-pattern-color: rgba(124, 157, 184, 0.12);
+            --wechat-input-bg: #2d3339;
+            --wechat-input-text: #e0e0e0;
+            --wechat-input-border: #4a5568;
         }
 
         /* ==================== 页面层（设置、聊天等） ==================== */
@@ -862,6 +1013,13 @@
             background: var(--bg-tertiary);
             transition: all 0.2s;
             font-family: inherit;
+        }
+        /* 全局模型选择器 - 限制下拉高度 */
+        .form-select {
+            max-height: 200px;
+        }
+        #globalDefaultModel {
+            overflow-y: auto;
         }
 
         .form-input:focus, .form-select:focus, .form-textarea:focus {
@@ -2470,8 +2628,8 @@
         /* 微信聊天界面 */
         .wechat-chat-header {
             padding: 10px 12px;
-            background: #ededed;
-            border-bottom: 1px solid #d9d9d9;
+            background: var(--wechat-header-bg, #ededed);
+            border-bottom: 1px solid rgba(0,0,0,0.1);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -2488,7 +2646,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #000;
+            color: var(--wechat-header-text, #000);
             z-index: 1;
         }
 
@@ -2503,11 +2661,13 @@
         .wechat-chat-title {
             font-size: 17px;
             font-weight: 500;
+            color: var(--wechat-header-text, #000);
         }
 
         .wechat-chat-typing {
             font-size: 11px;
-            color: #999;
+            color: var(--wechat-header-text, #999);
+            opacity: 0.7;
             margin-top: 2px;
             display: none;
         }
@@ -2525,7 +2685,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #000;
+            color: var(--wechat-header-text, #000);
             z-index: 1;
         }
 
@@ -2534,7 +2694,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 12px 12px;
-            background: #ededed;
+            background: var(--wechat-bg, #ededed);
         }
 
         .wechat-msg {
@@ -2585,11 +2745,13 @@
         }
 
         .wechat-msg.assistant .wechat-msg-bubble {
-            background: #fff;
+            background: var(--wechat-ai-bubble, #fff);
+            color: var(--wechat-ai-text, #000);
         }
 
         .wechat-msg.user .wechat-msg-bubble {
-            background: #95ec69;
+            background: var(--wechat-user-bubble, #95ec69);
+            color: var(--wechat-user-text, #000);
         }
 
         .wechat-msg-time {
@@ -2712,8 +2874,8 @@
         /* 微信输入区 */
         .wechat-input-area {
             padding: 8px 12px;
-            background: #f7f7f7;
-            border-top: 1px solid #e0e0e0;
+            background: var(--wechat-bg, #f7f7f7);
+            border-top: 1px solid rgba(0,0,0,0.1);
             flex-shrink: 0;
         }
 
@@ -2725,9 +2887,9 @@
 
         .wechat-input-box {
             flex: 1;
-            background: #fff;
+            background: var(--wechat-input-bg, #fff);
             border-radius: 6px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--wechat-input-border, #e0e0e0);
             padding: 8px 12px;
             min-height: 36px;
             max-height: 100px;
@@ -2748,6 +2910,11 @@
             font-family: inherit;
             min-height: 20px;
             max-height: 80px;
+            color: var(--wechat-input-text, #000);
+        }
+        .wechat-input-box textarea::placeholder {
+            color: var(--wechat-input-text, #999);
+            opacity: 0.6;
         }
 
         .wechat-upload-btn {
@@ -3441,6 +3608,117 @@
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
         }
+
+        /* 微信主题选择器 */
+        .wechat-theme-selector {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .wechat-theme-dot {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            padding: 2px;
+            transition: all 0.2s;
+        }
+        .wechat-theme-dot > div {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+        .wechat-theme-dot.active {
+            border-color: #07c160;
+        }
+        .wechat-theme-dot:hover {
+            transform: scale(1.1);
+        }
+
+        /* 微信背景图案选择器 */
+        .wechat-pattern-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .wechat-pattern-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .wechat-pattern-preview {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            transition: all 0.2s;
+        }
+        .wechat-pattern-option.active .wechat-pattern-preview {
+            border-color: #07c160;
+        }
+        .wechat-pattern-option span {
+            font-size: 11px;
+            color: #666;
+        }
+        .wechat-pattern-grid {
+            background-image:
+                linear-gradient(var(--wechat-pattern-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--wechat-pattern-color) 1px, transparent 1px);
+            background-size: 8px 8px;
+            background-color: var(--wechat-bg);
+        }
+        .wechat-pattern-dots {
+            background-image: radial-gradient(var(--wechat-pattern-color) 2px, transparent 2px);
+            background-size: 8px 8px;
+            background-color: var(--wechat-bg);
+        }
+        .wechat-pattern-stripes {
+            background-image: repeating-linear-gradient(
+                90deg,
+                var(--wechat-pattern-color) 0px,
+                var(--wechat-pattern-color) 4px,
+                transparent 4px,
+                transparent 8px
+            );
+            background-color: var(--wechat-bg);
+        }
+
+        /* 微信消息区域背景图案 */
+        .wechat-messages[data-pattern="grid"] {
+            background-image:
+                linear-gradient(var(--wechat-pattern-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--wechat-pattern-color) 1px, transparent 1px) !important;
+            background-size: 20px 20px !important;
+            background-color: var(--wechat-bg) !important;
+        }
+        .wechat-messages[data-pattern="dots"] {
+            background-image:
+                radial-gradient(var(--wechat-pattern-color) 4px, transparent 4px),
+                radial-gradient(var(--wechat-pattern-color) 4px, transparent 4px) !important;
+            background-size: 28px 28px !important;
+            background-position: 0 0, 14px 14px !important;
+            background-color: var(--wechat-bg) !important;
+        }
+        .wechat-messages[data-pattern="stripes"] {
+            background-image: repeating-linear-gradient(
+                90deg,
+                var(--wechat-pattern-color) 0px,
+                var(--wechat-pattern-color) 10px,
+                transparent 10px,
+                transparent 20px
+            ) !important;
+            background-color: var(--wechat-bg) !important;
+        }
+        .wechat-messages[data-pattern="custom"] {
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+
+        /* 微信气泡透明度 - 通过JS动态设置背景色alpha值实现，不影响文字 */
 
         /* 日记模式样式 - 妙妙风格（粉棕米色） */
         .diary-page {
@@ -4191,17 +4469,19 @@
                 </button>
             </div>
             <div class="page-content" style="padding: 12px 0; background: var(--bg-tertiary);">
-                <!-- 用户头像设置 -->
+                <!-- 用户设置 -->
                 <div class="display-settings-section">
-                    <label class="display-settings-label">用户头像</label>
-                    <div class="avatar-upload-area" onclick="document.getElementById('userAvatarInput').click()">
-                        <div class="avatar-preview" id="userAvatarPreview">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <label class="display-settings-label">用户头像与名称</label>
+                    <div class="avatar-name-row">
+                        <div class="avatar-upload-compact" onclick="document.getElementById('userAvatarInput').click()">
+                            <div class="avatar-preview-compact" id="userAvatarPreview">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            </div>
+                            <span class="avatar-delete-btn" onclick="event.stopPropagation(); clearUserAvatar()">×</span>
                         </div>
-                        <div class="avatar-upload-text">点击上传头像</div>
+                        <input type="text" class="form-input" id="displayUserName" placeholder="用户名称（留空则隐藏）" style="flex: 1;">
                     </div>
                     <input type="file" id="userAvatarInput" accept="image/*" style="display:none" onchange="handleUserAvatarUpload(this)">
-                    <button class="btn btn-secondary" style="margin-top: 8px; width: 100%;" onclick="clearUserAvatar()">清除头像</button>
                 </div>
 
                 <!-- 桌面壁纸设置 -->
@@ -4234,6 +4514,40 @@
                     <input type="file" id="wallpaperInput" accept="image/*" style="display:none" onchange="handleWallpaperUpload(this)">
                 </div>
 
+                <!-- 微信主题颜色（全局） -->
+                <div class="display-settings-section">
+                    <label class="display-settings-label">微信主题颜色</label>
+                    <div class="wechat-theme-selector" id="displayThemeSelector">
+                        <div class="wechat-theme-dot" data-theme="default" onclick="selectDisplayTheme('default')" title="微信绿">
+                            <div style="background: linear-gradient(135deg, #95ec69, #07c160);"></div>
+                        </div>
+                        <div class="wechat-theme-dot" data-theme="pink" onclick="selectDisplayTheme('pink')" title="粉色">
+                            <div style="background: linear-gradient(135deg, #e8b4b8 0%, #d4a5a5 100%);"></div>
+                        </div>
+                        <div class="wechat-theme-dot" data-theme="blue" onclick="selectDisplayTheme('blue')" title="蓝色">
+                            <div style="background: linear-gradient(135deg, #94A0D3 0%, #7b89c4 100%);"></div>
+                        </div>
+                        <div class="wechat-theme-dot" data-theme="purple" onclick="selectDisplayTheme('purple')" title="紫色">
+                            <div style="background: linear-gradient(135deg, #c4b5d4 0%, #a594b8 100%);"></div>
+                        </div>
+                        <div class="wechat-theme-dot" data-theme="brown" onclick="selectDisplayTheme('brown')" title="咖色">
+                            <div style="background: linear-gradient(135deg, #c5a88e 0%, #a8927a 100%);"></div>
+                        </div>
+                        <div class="wechat-theme-dot" data-theme="dark" onclick="selectDisplayTheme('dark')" title="深色">
+                            <div style="background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 聊天气泡透明度 -->
+                <div class="display-settings-section">
+                    <label class="display-settings-label">微信气泡透明度</label>
+                    <div class="slider-row">
+                        <input type="range" class="slider" id="bubbleOpacitySlider" min="0" max="100" value="100" oninput="previewBubbleOpacity(this.value)">
+                        <span class="slider-value" id="bubbleOpacityValue">100%</span>
+                    </div>
+                </div>
+
                 <!-- 聊天字体设置 -->
                 <div class="display-settings-section">
                     <label class="display-settings-label">聊天字体</label>
@@ -4255,8 +4569,9 @@
                     </div>
                 </div>
                 <div class="display-settings-section" style="background: transparent; padding: 16px; font-size: 12px; color: #999; text-align: center;">
-                    头像将应用到：微信模式、API模式的全局头像<br>
-                    字体将应用到：微信模式聊天气泡、API模式消息、日记本正文
+                    头像/名称：微信模式、API模式<br>
+                    主题色/透明度：微信模式全局应用<br>
+                    字体：微信聊天气泡、API消息、日记本正文
                 </div>
             </div>
         </div>
@@ -4687,17 +5002,33 @@
                         <div class="switch" id="wechatVoiceMode" onclick="this.classList.toggle('on')"></div>
                     </div>
                 </div>
+                <!-- 聊天背景图案 -->
                 <div class="wechat-settings-section">
-                    <div class="wechat-settings-item" onclick="selectWechatBackground()">
+                    <div class="wechat-settings-item" style="flex-direction: column; align-items: flex-start; gap: 12px;">
                         <span class="wechat-settings-label">聊天背景</span>
-                        <span class="wechat-settings-value">
-                            <span id="wechatBgStatus">默认</span>
-                            <span class="icon-arrow"></span>
-                        </span>
-                    </div>
-                    <div class="wechat-settings-item" id="wechatBgPreviewItem" style="display: none; justify-content: center; padding: 12px;">
-                        <div id="wechatBgPreview" style="width: 80px; height: 120px; border-radius: 8px; background-size: cover; background-position: center; border: 1px solid #ddd; position: relative;">
-                            <button onclick="event.stopPropagation(); clearWechatBackground()" style="position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; border-radius: 50%; background: #fa5151; color: #fff; border: none; font-size: 12px; cursor: pointer;">×</button>
+                        <div class="wechat-pattern-selector" id="wechatPatternSelector">
+                            <div class="wechat-pattern-option" data-pattern="none" onclick="selectWechatPattern('none')">
+                                <div class="wechat-pattern-preview" style="background: var(--wechat-bg);"></div>
+                                <span>默认</span>
+                            </div>
+                            <div class="wechat-pattern-option" data-pattern="grid" onclick="selectWechatPattern('grid')">
+                                <div class="wechat-pattern-preview wechat-pattern-grid"></div>
+                                <span>格纹</span>
+                            </div>
+                            <div class="wechat-pattern-option" data-pattern="dots" onclick="selectWechatPattern('dots')">
+                                <div class="wechat-pattern-preview wechat-pattern-dots"></div>
+                                <span>波点</span>
+                            </div>
+                            <div class="wechat-pattern-option" data-pattern="stripes" onclick="selectWechatPattern('stripes')">
+                                <div class="wechat-pattern-preview wechat-pattern-stripes"></div>
+                                <span>竖条</span>
+                            </div>
+                            <div class="wechat-pattern-option" data-pattern="custom" onclick="document.getElementById('wechatBgInput').click()">
+                                <div class="wechat-pattern-preview" id="wechatCustomPatternPreview" style="background: #eee; display: flex; align-items: center; justify-content: center;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                </div>
+                                <span>自定义</span>
+                            </div>
                         </div>
                     </div>
                     <input type="file" id="wechatBgInput" style="display: none;" accept="image/*" onchange="handleWechatBgUpload(event)">
@@ -5355,9 +5686,12 @@
                 previewEl.innerHTML = `<img src="${userAvatar}" alt="">`;
                 previewEl.classList.add('has-image');
             } else {
-                previewEl.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+                previewEl.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
                 previewEl.classList.remove('has-image');
             }
+
+            // 加载用户名
+            document.getElementById('displayUserName').value = appData.settings.userName || '';
 
             // 加载壁纸设置
             const wallpaper = appData.settings.wallpaper || 'default';
@@ -5368,7 +5702,29 @@
                 document.getElementById('customWallpaperPreview').style.backgroundImage = `url(${appData.settings.customWallpaper})`;
             }
 
+            // 加载微信主题
+            const theme = appData.settings.wechatTheme || 'default';
+            document.querySelectorAll('#displayThemeSelector .wechat-theme-dot').forEach(dot => {
+                dot.classList.toggle('active', dot.dataset.theme === theme);
+            });
+
+            // 加载气泡透明度
+            const opacity = appData.settings.bubbleOpacity ?? 100;
+            document.getElementById('bubbleOpacitySlider').value = opacity;
+            document.getElementById('bubbleOpacityValue').textContent = opacity + '%';
+
             openPage('displaySettingsPage');
+        }
+
+        // 选择微信主题（显示设置中）
+        function selectDisplayTheme(theme) {
+            document.querySelectorAll('#displayThemeSelector .wechat-theme-dot').forEach(dot => {
+                dot.classList.toggle('active', dot.dataset.theme === theme);
+            });
+            appData.settings.wechatTheme = theme;
+            // 实时预览
+            applyWechatTheme();
+            applyBubbleOpacity();
         }
 
         function previewFont(fontKey) {
@@ -5378,10 +5734,22 @@
 
         function saveDisplaySettings() {
             const fontKey = document.getElementById('displayFontSelector').value;
+            const userName = document.getElementById('displayUserName').value.trim();
+            const bubbleOpacity = parseInt(document.getElementById('bubbleOpacitySlider').value);
+            // 获取选中的主题
+            const activeTheme = document.querySelector('#displayThemeSelector .wechat-theme-dot.active');
+            const wechatTheme = activeTheme ? activeTheme.dataset.theme : 'default';
+
             appData.settings.chatFont = fontKey;
+            appData.settings.userName = userName;
+            appData.settings.bubbleOpacity = bubbleOpacity;
+            appData.settings.wechatTheme = wechatTheme;
+
             applyFont(fontKey);
             applyWallpaper();
             applyUserAvatar();
+            applyWechatTheme();
+            applyBubbleOpacity();
             saveData();
             closePage('displaySettingsPage');
         }
@@ -5391,36 +5759,97 @@
             document.documentElement.style.setProperty('--chat-font', fontFamily);
         }
 
-        // 用户头像上传处理
-        function handleUserAvatarUpload(input) {
+        // 图片压缩函数
+        function compressImage(file, maxSize = 200, maxWidth = 400) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        // 缩放
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // 压缩质量
+                        let quality = 0.9;
+                        let result = canvas.toDataURL('image/jpeg', quality);
+
+                        // 如果还是太大，继续降低质量
+                        while (result.length > maxSize * 1024 && quality > 0.1) {
+                            quality -= 0.1;
+                            result = canvas.toDataURL('image/jpeg', quality);
+                        }
+
+                        resolve(result);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 用户头像上传处理（自动压缩）
+        async function handleUserAvatarUpload(input) {
             const file = input.files[0];
             if (!file) return;
 
-            if (file.size > 500 * 1024) {
-                alert('头像文件过大，请选择500KB以下的图片');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64 = e.target.result;
-                appData.settings.userAvatar = base64;
-                const previewEl = document.getElementById('userAvatarPreview');
-                previewEl.innerHTML = `<img src="${base64}" alt="">`;
-                previewEl.classList.add('has-image');
-            };
-            reader.readAsDataURL(file);
+            const base64 = await compressImage(file, 200, 200);
+            appData.settings.userAvatar = base64;
+            const previewEl = document.getElementById('userAvatarPreview');
+            previewEl.innerHTML = `<img src="${base64}" alt="">`;
+            previewEl.classList.add('has-image');
         }
 
         function clearUserAvatar() {
             appData.settings.userAvatar = '';
             const previewEl = document.getElementById('userAvatarPreview');
-            previewEl.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+            previewEl.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
             previewEl.classList.remove('has-image');
         }
 
         function applyUserAvatar() {
             // 用户头像会在renderMessage时动态应用
+        }
+
+        // 气泡透明度
+        function previewBubbleOpacity(value) {
+            document.getElementById('bubbleOpacityValue').textContent = value + '%';
+            appData.settings.bubbleOpacity = parseInt(value);
+            // 实时预览
+            applyBubbleOpacity();
+        }
+
+        // 气泡颜色配置（用于透明度计算）
+        const themeColors = {
+            'default': { userBubble: [149, 236, 105], aiBubble: [255, 255, 255] },
+            'pink': { userBubble: [232, 180, 184], aiBubble: [255, 255, 255] },
+            'blue': { userBubble: [148, 160, 211], aiBubble: [238, 240, 248] },
+            'purple': { userBubble: [196, 181, 212], aiBubble: [243, 240, 248] },
+            'brown': { userBubble: [181, 161, 145], aiBubble: [243, 238, 234] },
+            'dark': { userBubble: [90, 122, 148], aiBubble: [45, 51, 57] }
+        };
+
+        function applyBubbleOpacity() {
+            const opacity = (appData.settings.bubbleOpacity ?? 100) / 100;
+            const theme = appData.settings.wechatTheme || 'default';
+            const colors = themeColors[theme] || themeColors['default'];
+
+            const userBubbleRgba = `rgba(${colors.userBubble.join(',')}, ${opacity})`;
+            const aiBubbleRgba = `rgba(${colors.aiBubble.join(',')}, ${opacity})`;
+
+            document.documentElement.style.setProperty('--wechat-user-bubble', userBubbleRgba);
+            document.documentElement.style.setProperty('--wechat-ai-bubble', aiBubbleRgba);
         }
 
         // 壁纸选择
@@ -5438,26 +5867,18 @@
             });
         }
 
-        function handleWallpaperUpload(input) {
+        // 壁纸上传（自动压缩）
+        async function handleWallpaperUpload(input) {
             const file = input.files[0];
             if (!file) return;
 
-            if (file.size > 2 * 1024 * 1024) {
-                alert('壁纸文件过大，请选择2MB以下的图片');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64 = e.target.result;
-                appData.settings.customWallpaper = base64;
-                appData.settings.wallpaper = 'custom';
-                document.getElementById('customWallpaperPreview').style.backgroundImage = `url(${base64})`;
-                document.querySelectorAll('.wallpaper-option').forEach(opt => {
-                    opt.classList.toggle('active', opt.dataset.wallpaper === 'custom');
-                });
-            };
-            reader.readAsDataURL(file);
+            const base64 = await compressImage(file, 500, 800);
+            appData.settings.customWallpaper = base64;
+            appData.settings.wallpaper = 'custom';
+            document.getElementById('customWallpaperPreview').style.backgroundImage = `url(${base64})`;
+            document.querySelectorAll('.wallpaper-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.wallpaper === 'custom');
+            });
         }
 
         function applyWallpaper() {
@@ -5471,25 +5892,16 @@
             }
         }
 
-        // 助手头像上传处理
-        function handleAssistantAvatarUpload(input) {
+        // 助手头像上传处理（自动压缩）
+        async function handleAssistantAvatarUpload(input) {
             const file = input.files[0];
             if (!file) return;
 
-            if (file.size > 500 * 1024) {
-                alert('头像文件过大，请选择500KB以下的图片');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64 = e.target.result;
-                document.getElementById('editAssistantAvatar').value = base64;
-                const previewEl = document.getElementById('assistantAvatarPreview');
-                previewEl.innerHTML = `<img src="${base64}" alt="">`;
-                previewEl.classList.add('has-image');
-            };
-            reader.readAsDataURL(file);
+            const base64 = await compressImage(file, 200, 200);
+            document.getElementById('editAssistantAvatar').value = base64;
+            const previewEl = document.getElementById('assistantAvatarPreview');
+            previewEl.innerHTML = `<img src="${base64}" alt="">`;
+            previewEl.classList.add('has-image');
         }
 
         function clearAssistantAvatar() {
@@ -5504,6 +5916,8 @@
             const fontKey = appData.settings.chatFont || 'system';
             applyFont(fontKey);
             applyWallpaper();
+            applyWechatTheme();
+            applyBubbleOpacity();
         }
 
         function updateSettingsCounts() {
@@ -5801,20 +6215,20 @@
                 <div id="assistantTabBasic">
                     <div class="form-section">
                         <div class="form-group">
-                            <label class="form-label">助手头像</label>
-                            <div class="assistant-avatar-upload" onclick="document.getElementById('assistantAvatarInput').click()">
-                                <div class="assistant-avatar-preview ${data.avatar ? 'has-image' : ''}" id="assistantAvatarPreview">
-                                    ${data.avatar ? `<img src="${data.avatar}" alt="">` : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
+                            <div class="avatar-name-row">
+                                <div class="assistant-avatar-upload" onclick="document.getElementById('assistantAvatarInput').click()">
+                                    <div class="assistant-avatar-preview ${data.avatar ? 'has-image' : ''}" id="assistantAvatarPreview">
+                                        ${data.avatar ? `<img src="${data.avatar}" alt="">` : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
+                                    </div>
+                                    <span class="assistant-avatar-delete" onclick="event.stopPropagation(); clearAssistantAvatar()">×</span>
                                 </div>
-                                <div class="avatar-upload-text">点击上传头像</div>
+                                <div style="flex: 1;">
+                                    <label class="form-label">助手名称</label>
+                                    <input type="text" class="form-input" id="editAssistantName" value="${data.name || ''}" placeholder="给助手起个名字">
+                                </div>
                             </div>
                             <input type="file" id="assistantAvatarInput" accept="image/*" style="display:none" onchange="handleAssistantAvatarUpload(this)">
                             <input type="hidden" id="editAssistantAvatar" value="${data.avatar || ''}">
-                            <button class="btn btn-secondary" style="margin-top: 8px; width: 100%;" onclick="clearAssistantAvatar()">清除头像</button>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">助手名称</label>
-                            <input type="text" class="form-input" id="editAssistantName" value="${data.name || ''}" placeholder="给助手起个名字">
                         </div>
                     </div>
 
@@ -6212,8 +6626,9 @@
                     `</div>`;
                 }
 
-                // 获取用户头像
+                // 获取用户头像和名称
                 const userAvatar = appData.settings.userAvatar;
+                const userName = appData.settings.userName || '';
                 const userAvatarHtml = userAvatar
                     ? `<img src="${userAvatar}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
                     : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
@@ -6226,7 +6641,7 @@
                         <div class="message-body">
                             <div class="message-header">
                                 <span class="message-time">${formatTime(msg.timestamp)}</span>
-                                <span class="message-name">妙妙</span>
+                                ${userName ? `<span class="message-name">${escapeHtml(userName)}</span>` : ''}
                             </div>
                             ${attachmentsHtml}
                             <div class="message-bubble">${formatMessageContent(currentContent, false)}</div>
@@ -7421,7 +7836,9 @@
             openPage('wechatChatPage');
             setupWechatInput();
             initWechatLongPress();
-            applyWechatBackground();
+            applyWechatTheme();
+            applyBubbleOpacity();
+            applyWechatPattern();
         }
 
         function backToWechatList() {
@@ -7469,12 +7886,45 @@
             });
         }
 
+        // 缓存头像HTML避免重复生成
+        let cachedUserAvatarHtml = null;
+        let cachedAssistantAvatarHtml = {};
+
+        function getCachedUserAvatarHtml() {
+            const userAvatar = appData.settings.userAvatar;
+            if (cachedUserAvatarHtml === null || cachedUserAvatarHtml.src !== userAvatar) {
+                cachedUserAvatarHtml = {
+                    src: userAvatar,
+                    html: userAvatar
+                        ? `<img src="${userAvatar}" alt="">`
+                        : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+                };
+            }
+            return cachedUserAvatarHtml.html;
+        }
+
+        function getCachedAssistantAvatarHtml(assistant) {
+            if (!assistant) return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+            const cached = cachedAssistantAvatarHtml[assistant.id];
+            if (cached && cached.src === assistant.avatar) {
+                return cached.html;
+            }
+
+            const html = assistant.avatar
+                ? `<img src="${assistant.avatar}" alt="">`
+                : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
+            cachedAssistantAvatarHtml[assistant.id] = { src: assistant.avatar, html };
+            return html;
+        }
+
         function renderWechatMessages() {
             const container = document.getElementById('wechatMessages');
             const conv = wechatData.conversations[wechatData.currentAssistantId];
             const messages = conv ? conv.messages : [];
             const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
-            
+
             if (messages.length === 0 && wechatData.pendingMessages.length === 0) {
                 container.innerHTML = `
                     <div class="wechat-empty" style="height: 100%;">
@@ -7484,6 +7934,10 @@
                 `;
                 return;
             }
+
+            // 预先缓存头像HTML
+            const userAvatarHtml = getCachedUserAvatarHtml();
+            const assistantAvatarHtml = getCachedAssistantAvatarHtml(assistant);
 
             let html = '';
             let lastDate = null;
@@ -7495,33 +7949,32 @@
                     html += `<div class="wechat-time-divider"><span>${formatWechatDate(msg.timestamp)}</span></div>`;
                     lastDate = msgDate;
                 }
-                html += renderWechatMessage(msg, assistant);
+                html += renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml);
             });
 
             // 渲染暂存的消息
             wechatData.pendingMessages.forEach(msg => {
-                html += renderWechatMessage(msg, assistant, true);
+                html += renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, true);
             });
 
             container.innerHTML = html;
-            container.scrollTop = container.scrollHeight;
+            requestAnimationFrame(() => {
+                container.scrollTop = container.scrollHeight;
+            });
         }
 
+        // 向后兼容的包装函数
         function renderWechatMessage(msg, assistant, isPending = false) {
+            const userAvatarHtml = getCachedUserAvatarHtml();
+            const assistantAvatarHtml = getCachedAssistantAvatarHtml(assistant);
+            return renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, isPending);
+        }
+
+        function renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, isPending = false) {
             const isUser = msg.role === 'user';
             const bubbleClass = isPending ? 'style="opacity: 0.7;"' : '';
             const isSelected = wechatMultiSelectMode && wechatSelectedMessages.has(msg.id);
             const selectedClass = isSelected ? ' selected' : '';
-
-            // 用户头像（使用全局设置或默认）
-            const userAvatar = appData.settings.userAvatar;
-            const userAvatarHtml = userAvatar
-                ? `<img src="${userAvatar}" alt="">`
-                : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-            // 助手头像
-            const assistantAvatarHtml = assistant?.avatar
-                ? `<img src="${assistant.avatar}" alt="">`
-                : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
             // 多选复选框
             const selectCheckbox = '<div class="select-checkbox"></div>';
@@ -10951,8 +11404,18 @@ ${chatContext}
             document.getElementById('wechatTtsEnabled').classList.toggle('on', settings.ttsEnabled || false);
             document.getElementById('wechatVoiceId').value = settings.voiceId || '';
 
-            // 背景图片预览
-            updateWechatBgPreview();
+            // 背景图案
+            const pattern = settings.pattern || 'none';
+            document.querySelectorAll('.wechat-pattern-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.pattern === pattern);
+            });
+            // 如果有自定义背景，显示预览
+            if (settings.chatBackground) {
+                const customPreview = document.getElementById('wechatCustomPatternPreview');
+                customPreview.style.backgroundImage = `url(${settings.chatBackground})`;
+                customPreview.style.backgroundSize = 'cover';
+                customPreview.innerHTML = '';
+            }
 
             openPage('wechatSettingsPage');
         }
@@ -10960,6 +11423,10 @@ ${chatContext}
         function saveWechatChatSettings() {
             const conv = wechatData.conversations[wechatData.currentAssistantId];
             if (conv) {
+                // 获取选中的图案
+                const activePattern = document.querySelector('.wechat-pattern-option.active');
+                const pattern = activePattern ? activePattern.dataset.pattern : 'none';
+
                 conv.settings = {
                     ...conv.settings,
                     memoryCount: parseInt(document.getElementById('wechatMemoryCount').value) || 20,
@@ -10967,11 +11434,53 @@ ${chatContext}
                     timeAwareIntensity: document.getElementById('wechatTimeAwareIntensity').value,
                     voiceMode: document.getElementById('wechatVoiceMode').classList.contains('on'),
                     ttsEnabled: document.getElementById('wechatTtsEnabled').classList.contains('on'),
-                    voiceId: document.getElementById('wechatVoiceId').value.trim()
+                    voiceId: document.getElementById('wechatVoiceId').value.trim(),
+                    pattern: pattern
                 };
                 saveWechatData();
+                applyWechatPattern();
             }
             closePage('wechatSettingsPage');
+        }
+
+        // 微信背景图案选择
+        function selectWechatPattern(pattern) {
+            document.querySelectorAll('.wechat-pattern-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.pattern === pattern);
+            });
+            // 如果选择custom，会触发文件选择
+        }
+
+        // 应用微信主题（全局设置）
+        function applyWechatTheme() {
+            const theme = appData.settings.wechatTheme || 'default';
+            const chatPage = document.getElementById('wechatChatPage');
+            if (chatPage) {
+                if (theme === 'default') {
+                    chatPage.removeAttribute('data-wechat-theme');
+                } else {
+                    chatPage.setAttribute('data-wechat-theme', theme);
+                }
+            }
+        }
+
+        // 应用微信背景图案
+        function applyWechatPattern() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const pattern = conv?.settings?.pattern || 'none';
+            const messagesEl = document.getElementById('wechatMessages');
+            if (messagesEl) {
+                if (pattern === 'custom' && conv?.settings?.chatBackground) {
+                    messagesEl.setAttribute('data-pattern', 'custom');
+                    messagesEl.style.backgroundImage = `url(${conv.settings.chatBackground})`;
+                } else if (pattern !== 'none') {
+                    messagesEl.setAttribute('data-pattern', pattern);
+                    messagesEl.style.backgroundImage = '';
+                } else {
+                    messagesEl.removeAttribute('data-pattern');
+                    messagesEl.style.backgroundImage = '';
+                }
+            }
         }
 
         // ==================== 微信背景图片设置 ====================
@@ -11009,9 +11518,20 @@ ${chatContext}
                     if (conv) {
                         conv.settings = conv.settings || {};
                         conv.settings.chatBackground = base64;
+                        conv.settings.pattern = 'custom';
                         saveWechatData();
-                        updateWechatBgPreview();
-                        applyWechatBackground();
+
+                        // 更新图案选择器
+                        document.querySelectorAll('.wechat-pattern-option').forEach(opt => {
+                            opt.classList.toggle('active', opt.dataset.pattern === 'custom');
+                        });
+                        // 更新自定义预览
+                        const customPreview = document.getElementById('wechatCustomPatternPreview');
+                        customPreview.style.backgroundImage = `url(${base64})`;
+                        customPreview.style.backgroundSize = 'cover';
+                        customPreview.innerHTML = '';
+
+                        applyWechatPattern();
                     }
                 };
                 img.src = e.target.result;
