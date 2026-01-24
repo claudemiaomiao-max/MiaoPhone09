@@ -529,6 +529,32 @@
             font-size: 12px;
             color: var(--text-secondary);
         }
+        /* 自定义壁纸/背景删除按钮 */
+        .wallpaper-option.has-custom .wallpaper-preview,
+        .wechat-pattern-option.has-custom .wechat-pattern-preview {
+            position: relative;
+        }
+        .custom-delete-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 18px;
+            height: 18px;
+            background: rgba(0,0,0,0.6);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 12px;
+            line-height: 18px;
+            text-align: center;
+            cursor: pointer;
+            display: none;
+            z-index: 5;
+        }
+        .wallpaper-option.has-custom .custom-delete-btn,
+        .wechat-pattern-option.has-custom .custom-delete-btn {
+            display: block;
+        }
         /* 头像紧凑样式（带X删除按钮） */
         .avatar-name-row {
             display: flex;
@@ -655,46 +681,51 @@
             --wechat-ai-text: #000;
             --wechat-pattern-color: rgba(0, 0, 0, 0.05);
             --wechat-bubble-opacity: 1;
+            --wechat-accent: #07c160;
         }
         [data-wechat-theme="pink"] {
             --wechat-bg: #fdf5f6;
             --wechat-header-bg: linear-gradient(135deg, #e8b4b8 0%, #d4a5a5 100%);
             --wechat-header-text: #fff;
-            --wechat-user-bubble: #e8b4b8;
-            --wechat-user-text: #fff;
+            --wechat-user-bubble: #f5d5d8;
+            --wechat-user-text: #5a4a4e;
             --wechat-ai-bubble: #fff;
             --wechat-ai-text: #5a4a4e;
             --wechat-pattern-color: rgba(232, 180, 184, 0.15);
+            --wechat-accent: #e8b4b8;
         }
         [data-wechat-theme="blue"] {
             --wechat-bg: #f5f6fa;
             --wechat-header-bg: linear-gradient(135deg, #94A0D3 0%, #7b89c4 100%);
             --wechat-header-text: #fff;
-            --wechat-user-bubble: #94A0D3;
-            --wechat-user-text: #fff;
+            --wechat-user-bubble: #c5cce8;
+            --wechat-user-text: #4a4e69;
             --wechat-ai-bubble: #eef0f8;
             --wechat-ai-text: #4a4e69;
             --wechat-pattern-color: rgba(148, 160, 211, 0.15);
+            --wechat-accent: #94A0D3;
         }
         [data-wechat-theme="purple"] {
             --wechat-bg: #f9f7fb;
             --wechat-header-bg: linear-gradient(135deg, #c4b5d4 0%, #a594b8 100%);
             --wechat-header-text: #fff;
-            --wechat-user-bubble: #c4b5d4;
-            --wechat-user-text: #fff;
+            --wechat-user-bubble: #ddd4e8;
+            --wechat-user-text: #5a5060;
             --wechat-ai-bubble: #f3f0f8;
             --wechat-ai-text: #5a5060;
             --wechat-pattern-color: rgba(196, 181, 212, 0.15);
+            --wechat-accent: #c4b5d4;
         }
         [data-wechat-theme="brown"] {
             --wechat-bg: #f7f4f1;
             --wechat-header-bg: linear-gradient(135deg, #b5a191 0%, #968272 100%);
             --wechat-header-text: #fff;
-            --wechat-user-bubble: #b5a191;
-            --wechat-user-text: #fff;
+            --wechat-user-bubble: #d9cfc5;
+            --wechat-user-text: #5a524a;
             --wechat-ai-bubble: #f3eeea;
             --wechat-ai-text: #5a524a;
             --wechat-pattern-color: rgba(181, 161, 145, 0.15);
+            --wechat-accent: #b5a191;
         }
         [data-wechat-theme="dark"] {
             --wechat-bg: #1a1d21;
@@ -708,6 +739,7 @@
             --wechat-input-bg: #2d3339;
             --wechat-input-text: #e0e0e0;
             --wechat-input-border: #4a5568;
+            --wechat-accent: #5a7a94;
         }
 
         /* ==================== 页面层（设置、聊天等） ==================== */
@@ -2837,7 +2869,16 @@
 
         .wechat-voice-duration {
             font-size: 14px;
-            color: #333;
+            color: var(--wechat-ai-text, #333);
+        }
+        .wechat-msg.user .wechat-voice-duration {
+            color: var(--wechat-user-text, #333);
+        }
+        .wechat-voice-icon {
+            stroke: var(--wechat-ai-text, currentColor);
+        }
+        .wechat-msg.user .wechat-voice-icon {
+            stroke: var(--wechat-user-text, currentColor);
         }
 
         .wechat-msg.user .wechat-voice-bubble {
@@ -2847,7 +2888,7 @@
         /* 转文字按钮 */
         .wechat-voice-convert {
             font-size: 12px;
-            color: #576b95;
+            color: var(--wechat-user-bubble, #576b95);
             margin-left: 8px;
             cursor: pointer;
             white-space: nowrap;
@@ -2861,11 +2902,15 @@
         .wechat-voice-text {
             display: none;
             font-size: 13px;
-            color: #666;
+            color: var(--wechat-ai-text, #666);
             margin-top: 6px;
             padding: 8px;
-            background: #f5f5f5;
+            background: var(--wechat-ai-bubble, #f5f5f5);
             border-radius: 4px;
+        }
+        .wechat-msg.user .wechat-voice-text {
+            background: var(--wechat-user-bubble, #f5f5f5);
+            color: var(--wechat-user-text, #666);
         }
         .wechat-voice-text.show {
             display: block;
@@ -2962,18 +3007,19 @@
         }
 
         .wechat-btn-send {
-            background: #07c160;
+            background: var(--wechat-accent, #07c160);
             color: #fff;
         }
 
         .wechat-btn-send:hover {
-            background: #06ad56;
+            filter: brightness(0.9);
         }
 
         .wechat-btn-send:disabled {
             background: #e0e0e0;
             color: #999;
             cursor: not-allowed;
+            filter: none;
         }
 
         /* 时间分割线 */
@@ -3546,11 +3592,11 @@
         /* 引用消息样式 */
         .wechat-quote-preview {
             display: none;
-            background: #f5f5f5;
+            background: var(--wechat-ai-bubble, #f5f5f5);
             padding: 8px 12px;
             margin: 0 12px 8px;
             border-radius: 8px;
-            border-left: 3px solid #07c160;
+            border-left: 3px solid var(--wechat-user-bubble, #07c160);
             position: relative;
         }
         .wechat-quote-preview.show {
@@ -3558,7 +3604,7 @@
         }
         .wechat-quote-preview-content {
             font-size: 13px;
-            color: #666;
+            color: var(--wechat-ai-text, #666);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -3566,7 +3612,8 @@
         }
         .wechat-quote-preview-name {
             font-size: 12px;
-            color: #999;
+            color: var(--wechat-ai-text, #999);
+            opacity: 0.7;
             margin-bottom: 2px;
         }
         .wechat-quote-preview-close {
@@ -3590,15 +3637,15 @@
             padding: 6px 10px;
             border-radius: 6px;
             margin-bottom: 6px;
-            border-left: 2px solid #07c160;
+            border-left: 2px solid var(--wechat-user-bubble, #07c160);
             font-size: 12px;
-            color: #666;
+            color: var(--wechat-ai-text, #666);
             max-width: 100%;
             overflow: hidden;
         }
         .wechat-msg-quote-name {
             font-size: 11px;
-            color: #999;
+            opacity: 0.7;
             margin-bottom: 2px;
         }
         .wechat-msg-quote-content {
@@ -3607,6 +3654,11 @@
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
+        }
+        /* 用户气泡内的引用样式适配 */
+        .wechat-msg.user .wechat-msg-quote {
+            color: var(--wechat-user-text, #666);
+            border-left-color: var(--wechat-ai-bubble, #fff);
         }
 
         /* 微信主题选择器 */
@@ -4504,9 +4556,10 @@
                             <div class="wallpaper-preview" style="background: linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 100%);"></div>
                             <span>绿色</span>
                         </div>
-                        <div class="wallpaper-option" data-wallpaper="custom" onclick="document.getElementById('wallpaperInput').click()">
+                        <div class="wallpaper-option" data-wallpaper="custom" id="customWallpaperOption" onclick="document.getElementById('wallpaperInput').click()">
                             <div class="wallpaper-preview" id="customWallpaperPreview" style="background: #eee; display: flex; align-items: center; justify-content: center;">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                <span class="custom-delete-btn" onclick="event.stopPropagation(); clearCustomWallpaper()">×</span>
                             </div>
                             <span>自定义</span>
                         </div>
@@ -5023,9 +5076,10 @@
                                 <div class="wechat-pattern-preview wechat-pattern-stripes"></div>
                                 <span>竖条</span>
                             </div>
-                            <div class="wechat-pattern-option" data-pattern="custom" onclick="document.getElementById('wechatBgInput').click()">
+                            <div class="wechat-pattern-option" data-pattern="custom" id="wechatCustomPatternOption" onclick="document.getElementById('wechatBgInput').click()">
                                 <div class="wechat-pattern-preview" id="wechatCustomPatternPreview" style="background: #eee; display: flex; align-items: center; justify-content: center;">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                    <span class="custom-delete-btn" onclick="event.stopPropagation(); clearWechatChatBackground()">×</span>
                                 </div>
                                 <span>自定义</span>
                             </div>
@@ -5046,11 +5100,15 @@
                 <div class="wechat-settings-section">
                     <div class="wechat-settings-item" onclick="exportWechatChat()">
                         <span class="wechat-settings-label">导出聊天记录</span>
-                        <span class="wechat-settings-value"><span class="icon-arrow"></span></span>
+                        <span class="wechat-settings-value" style="font-size: 11px; color: #999;">不含图片</span>
                     </div>
                     <div class="wechat-settings-item" onclick="importWechatChat()">
                         <span class="wechat-settings-label">导入聊天记录</span>
                         <span class="wechat-settings-value"><span class="icon-arrow"></span></span>
+                    </div>
+                    <div class="wechat-settings-item" onclick="clearWechatImageCache()">
+                        <span class="wechat-settings-label">清除图片缓存</span>
+                        <span class="wechat-settings-value" id="wechatImageCacheCount" style="color: #576b95;">0 张</span>
                     </div>
                     <div class="wechat-settings-item" onclick="clearWechatChat()">
                         <span class="wechat-settings-label" style="color: #fa5151;">清空聊天记录</span>
@@ -5698,8 +5756,16 @@
             document.querySelectorAll('.wallpaper-option').forEach(opt => {
                 opt.classList.toggle('active', opt.dataset.wallpaper === wallpaper);
             });
+            const customWallpaperOption = document.getElementById('customWallpaperOption');
+            const customWallpaperPreview = document.getElementById('customWallpaperPreview');
             if (appData.settings.customWallpaper) {
-                document.getElementById('customWallpaperPreview').style.backgroundImage = `url(${appData.settings.customWallpaper})`;
+                customWallpaperPreview.style.backgroundImage = `url(${appData.settings.customWallpaper})`;
+                customWallpaperPreview.innerHTML = '<span class="custom-delete-btn" onclick="event.stopPropagation(); clearCustomWallpaper()">×</span>';
+                customWallpaperOption.classList.add('has-custom');
+            } else {
+                customWallpaperPreview.style.backgroundImage = '';
+                customWallpaperPreview.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span class="custom-delete-btn" onclick="event.stopPropagation(); clearCustomWallpaper()">×</span>';
+                customWallpaperOption.classList.remove('has-custom');
             }
 
             // 加载微信主题
@@ -5760,10 +5826,19 @@
         }
 
         // 图片压缩函数
-        function compressImage(file, maxSize = 200, maxWidth = 400) {
+        function compressImage(file, maxSizeKB = 200, maxWidth = 400) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
+                    const originalBase64 = e.target.result;
+                    const originalSizeKB = Math.round(originalBase64.length * 0.75 / 1024);
+
+                    // 如果文件已经小于目标大小，直接返回原始数据
+                    if (originalSizeKB <= maxSizeKB) {
+                        resolve(originalBase64);
+                        return;
+                    }
+
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
@@ -5786,14 +5861,14 @@
                         let result = canvas.toDataURL('image/jpeg', quality);
 
                         // 如果还是太大，继续降低质量
-                        while (result.length > maxSize * 1024 && quality > 0.1) {
+                        while (result.length * 0.75 > maxSizeKB * 1024 && quality > 0.3) {
                             quality -= 0.1;
                             result = canvas.toDataURL('image/jpeg', quality);
                         }
 
                         resolve(result);
                     };
-                    img.src = e.target.result;
+                    img.src = originalBase64;
                 };
                 reader.readAsDataURL(file);
             });
@@ -5833,10 +5908,10 @@
         // 气泡颜色配置（用于透明度计算）
         const themeColors = {
             'default': { userBubble: [149, 236, 105], aiBubble: [255, 255, 255] },
-            'pink': { userBubble: [232, 180, 184], aiBubble: [255, 255, 255] },
-            'blue': { userBubble: [148, 160, 211], aiBubble: [238, 240, 248] },
-            'purple': { userBubble: [196, 181, 212], aiBubble: [243, 240, 248] },
-            'brown': { userBubble: [181, 161, 145], aiBubble: [243, 238, 234] },
+            'pink': { userBubble: [245, 213, 216], aiBubble: [255, 255, 255] },
+            'blue': { userBubble: [197, 204, 232], aiBubble: [238, 240, 248] },
+            'purple': { userBubble: [221, 212, 232], aiBubble: [243, 240, 248] },
+            'brown': { userBubble: [217, 207, 197], aiBubble: [243, 238, 234] },
             'dark': { userBubble: [90, 122, 148], aiBubble: [45, 51, 57] }
         };
 
@@ -5848,6 +5923,13 @@
             const userBubbleRgba = `rgba(${colors.userBubble.join(',')}, ${opacity})`;
             const aiBubbleRgba = `rgba(${colors.aiBubble.join(',')}, ${opacity})`;
 
+            // 设置在chatPage上以覆盖主题选择器的CSS变量
+            const chatPage = document.getElementById('wechatChatPage');
+            if (chatPage) {
+                chatPage.style.setProperty('--wechat-user-bubble', userBubbleRgba);
+                chatPage.style.setProperty('--wechat-ai-bubble', aiBubbleRgba);
+            }
+            // 同时设置在root上用于预览等场景
             document.documentElement.style.setProperty('--wechat-user-bubble', userBubbleRgba);
             document.documentElement.style.setProperty('--wechat-ai-bubble', aiBubbleRgba);
         }
@@ -5875,10 +5957,27 @@
             const base64 = await compressImage(file, 500, 800);
             appData.settings.customWallpaper = base64;
             appData.settings.wallpaper = 'custom';
-            document.getElementById('customWallpaperPreview').style.backgroundImage = `url(${base64})`;
+            const previewEl = document.getElementById('customWallpaperPreview');
+            previewEl.style.backgroundImage = `url(${base64})`;
+            previewEl.innerHTML = '<span class="custom-delete-btn" onclick="event.stopPropagation(); clearCustomWallpaper()">×</span>';
+            document.getElementById('customWallpaperOption').classList.add('has-custom');
             document.querySelectorAll('.wallpaper-option').forEach(opt => {
                 opt.classList.toggle('active', opt.dataset.wallpaper === 'custom');
             });
+        }
+
+        function clearCustomWallpaper() {
+            appData.settings.customWallpaper = null;
+            appData.settings.wallpaper = 'default';
+            const previewEl = document.getElementById('customWallpaperPreview');
+            previewEl.style.backgroundImage = '';
+            previewEl.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span class="custom-delete-btn" onclick="event.stopPropagation(); clearCustomWallpaper()">×</span>';
+            document.getElementById('customWallpaperOption').classList.remove('has-custom');
+            document.querySelectorAll('.wallpaper-option').forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.wallpaper === 'default');
+            });
+            saveData();
+            applyWallpaper();
         }
 
         function applyWallpaper() {
@@ -7323,14 +7422,27 @@
             event.target.value = ''; // 清空input以便重复选择
         }
 
-        // 图片压缩函数（自适应压缩，目标大小500KB以内）
-        function compressImage(file, maxSize = 1600, quality = 0.8) {
+        // 图片压缩函数（自适应压缩，目标大小300KB以内，已满足条件的不压缩）
+        function compressImageForChat(file, maxSize = 1600, quality = 0.8) {
             return new Promise((resolve, reject) => {
+                const TARGET_SIZE = 300 * 1024; // 目标300KB
+
+                // 如果文件已经小于目标大小，直接转为base64返回
+                if (file.size <= TARGET_SIZE) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        console.log(`图片无需压缩: ${(file.size/1024).toFixed(1)}KB`);
+                        resolve(e.target.result);
+                    };
+                    reader.onerror = () => reject(new Error('文件读取失败'));
+                    reader.readAsDataURL(file);
+                    return;
+                }
+
                 const img = new Image();
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 const objectUrl = URL.createObjectURL(file);
-                const TARGET_SIZE = 300 * 1024; // 目标300KB
 
                 img.onload = () => {
                     const originalWidth = img.width;
@@ -7378,7 +7490,7 @@
                     }
 
                     const originalSize = file.size;
-                    console.log(`图片压缩: ${(originalSize/1024/1024).toFixed(2)}MB → ${(compressedSize/1024/1024).toFixed(2)}MB (${originalWidth}x${originalHeight} → ${width}x${height}, 质量${Math.round(currentQuality*100)}%)`);
+                    console.log(`图片压缩: ${(originalSize/1024).toFixed(1)}KB → ${(compressedSize/1024).toFixed(1)}KB (${originalWidth}x${originalHeight} → ${width}x${height}, 质量${Math.round(currentQuality*100)}%)`);
 
                     URL.revokeObjectURL(objectUrl);
                     resolve(compressedDataUrl);
@@ -7418,7 +7530,7 @@
             let base64Promise;
             if (isImage) {
                 // 图片：压缩后转base64（最大1920px，质量0.85）
-                base64Promise = compressImage(file, 1920, 0.85);
+                base64Promise = compressImageForChat(file, 1920, 0.85);
             } else {
                 // 非图片：直接读取base64
                 base64Promise = new Promise((resolve, reject) => {
@@ -8099,6 +8211,15 @@
 
             // 图片消息
             if (msg.type === 'image') {
+                // 检查图片数据是否存在
+                const hasImage = msg.content && msg.content.startsWith('data:');
+                const hasThumbnail = msg.thumbnail && msg.thumbnail.startsWith('data:');
+                const imageContent = hasImage
+                    ? `<img src="${msg.content}" alt="${msg.fileName || '图片'}">`
+                    : hasThumbnail
+                        ? `<img src="${msg.thumbnail}" alt="缩略图" style="opacity: 0.5; filter: blur(1px);">`
+                        : `<div style="width: 100px; height: 100px; background: #eee; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">[图片已清除]</div>`;
+                const clickHandler = hasImage ? `onclick="showWechatImagePreview('${msg.id}')"` : '';
                 return `
                     <div class="wechat-msg ${isUser ? 'user' : 'assistant'}${selectedClass}" ${bubbleClass} data-msg-id="${msg.id}">
                         ${selectCheckbox}
@@ -8106,8 +8227,8 @@
                             ${isUser ? userAvatarHtml : assistantAvatarHtml}
                         </div>
                         <div class="wechat-msg-body">
-                            <div class="wechat-msg-image" onclick="showWechatImagePreview('${msg.id}')">
-                                <img src="${msg.content}" alt="${msg.fileName || '图片'}">
+                            <div class="wechat-msg-image" ${clickHandler}>
+                                ${imageContent}
                             </div>
                             <div class="wechat-msg-time">${formatTime(msg.timestamp)}</div>
                         </div>
@@ -11409,13 +11530,24 @@ ${chatContext}
             document.querySelectorAll('.wechat-pattern-option').forEach(opt => {
                 opt.classList.toggle('active', opt.dataset.pattern === pattern);
             });
-            // 如果有自定义背景，显示预览
+            // 自定义背景预览和删除按钮
+            const customPreview = document.getElementById('wechatCustomPatternPreview');
+            const customOption = document.getElementById('wechatCustomPatternOption');
             if (settings.chatBackground) {
-                const customPreview = document.getElementById('wechatCustomPatternPreview');
                 customPreview.style.backgroundImage = `url(${settings.chatBackground})`;
                 customPreview.style.backgroundSize = 'cover';
-                customPreview.innerHTML = '';
+                customPreview.innerHTML = '<span class="custom-delete-btn" onclick="event.stopPropagation(); clearWechatChatBackground()">×</span>';
+                customOption.classList.add('has-custom');
+            } else {
+                customPreview.style.backgroundImage = '';
+                customPreview.style.backgroundSize = '';
+                customPreview.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span class="custom-delete-btn" onclick="event.stopPropagation(); clearWechatChatBackground()">×</span>';
+                customOption.classList.remove('has-custom');
             }
+
+            // 统计图片数量（图片数据在content字段）
+            const imageCount = (conv?.messages || []).filter(m => m.type === 'image' && m.content && m.content.startsWith('data:')).length;
+            document.getElementById('wechatImageCacheCount').textContent = imageCount + ' 张';
 
             openPage('wechatSettingsPage');
         }
@@ -11488,7 +11620,7 @@ ${chatContext}
             document.getElementById('wechatBgInput').click();
         }
 
-        function handleWechatBgUpload(event) {
+        async function handleWechatBgUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
             if (!file.type.startsWith('image/')) {
@@ -11496,48 +11628,53 @@ ${chatContext}
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const maxSize = 1920;
-                    let width = img.width, height = img.height;
-                    if (width > maxSize || height > maxSize) {
-                        if (width > height) { height *= maxSize / width; width = maxSize; }
-                        else { width *= maxSize / height; height = maxSize; }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    const base64 = canvas.toDataURL('image/jpeg', 0.85);
+            // 压缩图片到合适大小（约300KB）
+            const base64 = await compressImage(file, 300, 1200);
 
-                    // 保存到当前会话设置
-                    const conv = wechatData.conversations[wechatData.currentAssistantId];
-                    if (conv) {
-                        conv.settings = conv.settings || {};
-                        conv.settings.chatBackground = base64;
-                        conv.settings.pattern = 'custom';
-                        saveWechatData();
+            // 保存到当前会话设置
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (conv) {
+                conv.settings = conv.settings || {};
+                conv.settings.chatBackground = base64;
+                conv.settings.pattern = 'custom';
+                saveWechatData();
 
-                        // 更新图案选择器
-                        document.querySelectorAll('.wechat-pattern-option').forEach(opt => {
-                            opt.classList.toggle('active', opt.dataset.pattern === 'custom');
-                        });
-                        // 更新自定义预览
-                        const customPreview = document.getElementById('wechatCustomPatternPreview');
-                        customPreview.style.backgroundImage = `url(${base64})`;
-                        customPreview.style.backgroundSize = 'cover';
-                        customPreview.innerHTML = '';
+                // 更新图案选择器
+                document.querySelectorAll('.wechat-pattern-option').forEach(opt => {
+                    opt.classList.toggle('active', opt.dataset.pattern === 'custom');
+                });
+                // 更新自定义预览
+                const customPreview = document.getElementById('wechatCustomPatternPreview');
+                customPreview.style.backgroundImage = `url(${base64})`;
+                customPreview.style.backgroundSize = 'cover';
+                customPreview.innerHTML = '<span class="custom-delete-btn" onclick="event.stopPropagation(); clearWechatChatBackground()">×</span>';
+                document.getElementById('wechatCustomPatternOption').classList.add('has-custom');
 
-                        applyWechatPattern();
-                    }
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+                applyWechatPattern();
+            }
             event.target.value = '';
+        }
+
+        function clearWechatChatBackground() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (conv && conv.settings) {
+                conv.settings.chatBackground = null;
+                conv.settings.pattern = 'none';
+                saveWechatData();
+
+                // 更新图案选择器
+                document.querySelectorAll('.wechat-pattern-option').forEach(opt => {
+                    opt.classList.toggle('active', opt.dataset.pattern === 'none');
+                });
+                // 重置自定义预览
+                const customPreview = document.getElementById('wechatCustomPatternPreview');
+                customPreview.style.backgroundImage = '';
+                customPreview.style.backgroundSize = '';
+                customPreview.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span class="custom-delete-btn" onclick="event.stopPropagation(); clearWechatChatBackground()">×</span>';
+                document.getElementById('wechatCustomPatternOption').classList.remove('has-custom');
+
+                applyWechatPattern();
+            }
         }
 
         function updateWechatBgPreview() {
@@ -11600,14 +11737,26 @@ ${chatContext}
                 alert('没有聊天记录可导出');
                 return;
             }
-            
+
             const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
+            // 导出时排除图片base64数据，只保留基本信息
+            const messagesWithoutImages = conv.messages.map(msg => {
+                if (msg.type === 'image') {
+                    return {
+                        ...msg,
+                        content: '[图片已移除]', // 移除base64图片数据
+                        thumbnail: msg.thumbnail || null // 保留缩略图（如果有）
+                    };
+                }
+                return msg;
+            });
+
             const dataStr = JSON.stringify({
                 assistant: assistant?.name,
                 exportTime: new Date().toISOString(),
-                messages: conv.messages
+                messages: messagesWithoutImages
             }, null, 2);
-            
+
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -11615,6 +11764,33 @@ ${chatContext}
             a.download = `wechat_${assistant?.name || 'chat'}_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
             URL.revokeObjectURL(url);
+        }
+
+        // 清除图片缓存（图片数据在msg.content中）
+        function clearWechatImageCache() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (!conv) return;
+
+            let imageCount = 0;
+            conv.messages.forEach(msg => {
+                // 图片消息的base64数据存储在content字段
+                if (msg.type === 'image' && msg.content && msg.content.startsWith('data:')) {
+                    // 生成简单占位符
+                    msg.thumbnail = null; // 不生成缩略图，显示占位符即可
+                    msg.content = null; // 清除base64图片数据
+                    imageCount++;
+                }
+            });
+
+            if (imageCount > 0) {
+                saveWechatData();
+                renderWechatMessages();
+                // 更新显示的图片数量
+                document.getElementById('wechatImageCacheCount').textContent = '0 张';
+                alert(`已清除 ${imageCount} 张图片缓存`);
+            } else {
+                alert('没有图片缓存需要清除');
+            }
         }
 
         function importWechatChat() {
