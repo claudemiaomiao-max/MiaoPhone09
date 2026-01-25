@@ -741,6 +741,9 @@
             --wechat-input-border: #4a5568;
             --wechat-accent: #5a7a94;
         }
+        [data-wechat-theme="dark"] .wechat-voice-convert {
+            color: rgba(255, 255, 255, 0.4);
+        }
 
         /* ==================== 页面层（设置、聊天等） ==================== */
         .page {
@@ -2708,6 +2711,30 @@
             display: block;
         }
 
+        .wechat-chat-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 1;
+        }
+
+        .wechat-chat-memory-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--wechat-header-text, #000);
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .wechat-chat-memory-btn:active {
+            opacity: 0.5;
+        }
+
         .wechat-chat-settings {
             width: 32px;
             height: 32px;
@@ -2888,7 +2915,7 @@
         /* 转文字按钮 */
         .wechat-voice-convert {
             font-size: 12px;
-            color: var(--wechat-user-bubble, #576b95);
+            color: rgba(0, 0, 0, 0.35);
             margin-left: 8px;
             cursor: pointer;
             white-space: nowrap;
@@ -3034,6 +3061,25 @@
             background: #ededed;
             padding: 4px 12px;
             border-radius: 4px;
+        }
+
+        /* 加载更多按钮 */
+        .wechat-load-more {
+            text-align: center;
+            padding: 12px 0;
+            margin-bottom: 8px;
+        }
+        .wechat-load-more span {
+            font-size: 13px;
+            color: #576b95;
+            cursor: pointer;
+            padding: 8px 16px;
+            background: rgba(87, 107, 149, 0.08);
+            border-radius: 16px;
+            transition: background 0.2s;
+        }
+        .wechat-load-more span:active {
+            background: rgba(87, 107, 149, 0.15);
         }
 
         /* 拍一拍系统消息 */
@@ -4472,6 +4518,22 @@
                             </select>
                         </div>
                     </div>
+                    <div class="settings-card" style="margin-top: 12px;">
+                        <div class="settings-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+                            <div class="settings-item-left" style="width: 100%;">
+                                <div class="settings-item-icon" style="background: #e8f5e9; color: #4caf50;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M4.22 4.22l2.83 2.83m9.9 9.9l2.83 2.83M1 12h4m14 0h4M4.22 19.78l2.83-2.83m9.9-9.9l2.83-2.83"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">副模型（后台任务）</div>
+                                    <div class="settings-item-desc">用于自动总结记忆等后台任务</div>
+                                </div>
+                            </div>
+                            <select class="form-select" id="globalSecondaryModel" onchange="saveGlobalSecondaryModel()" style="width: 100%; margin-top: 8px;">
+                                <option value="">使用主模型</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div class="settings-section">
                     <div class="settings-section-title">数据管理</div>
@@ -4811,9 +4873,18 @@
                     <div class="wechat-chat-title" id="wechatChatTitle">聊天</div>
                     <div class="wechat-chat-typing" id="wechatTyping">正在输入中...</div>
                 </div>
-                <button class="wechat-chat-settings" onclick="openWechatChatSettings()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                </button>
+                <div class="wechat-chat-header-actions">
+                    <button class="wechat-chat-memory-btn" onclick="openWechatMemoryPage()" title="长期记忆">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+                            <path d="M10 21h4"/>
+                            <path d="M9 9h1.5l1.5 2 1.5-2H15"/>
+                        </svg>
+                    </button>
+                    <button class="wechat-chat-settings" onclick="openWechatChatSettings()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                    </button>
+                </div>
             </div>
             <div class="wechat-messages" id="wechatMessages">
                 <!-- 动态渲染消息 -->
@@ -4981,6 +5052,51 @@
             <button class="delete-btn" onclick="deleteWechatSelectedMessages()">删除</button>
         </div>
 
+        <!-- 微信模式 - 长期记忆页 -->
+        <div class="page wechat-page" id="wechatMemoryPage">
+            <div class="page-header" style="background: #ededed; border-bottom: 1px solid #d9d9d9;">
+                <button class="page-back" onclick="closePage('wechatMemoryPage')">
+                    <span class="icon-back"></span>
+                </button>
+                <span class="page-title">长期记忆</span>
+                <button class="page-action" onclick="openAddMemoryModal()" style="color: #576b95; font-size: 14px; width: auto; padding: 0 12px;">
+                    添加
+                </button>
+            </div>
+            <div class="page-content" style="padding: 0; background: #ededed;">
+                <!-- 操作区 -->
+                <div style="padding: 12px; background: #fff; margin-bottom: 8px;">
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="triggerManualSummary()" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #07c160, #06ad56); color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+                            ✨ 让AI总结记忆
+                        </button>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 12px; color: #999; text-align: center;" id="wechatMemoryStatus">
+                        <!-- 状态提示 -->
+                    </div>
+                </div>
+                <!-- 记忆列表 -->
+                <div id="wechatMemoryList" style="padding: 0 12px 12px;">
+                    <!-- 动态渲染 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加/编辑记忆弹窗 -->
+        <div class="wechat-modal-overlay" id="memoryEditModal" onclick="closeMemoryEditModal()">
+            <div class="wechat-modal" style="width: 320px;" onclick="event.stopPropagation()">
+                <div class="wechat-modal-title" id="memoryModalTitle">添加记忆</div>
+                <textarea id="memoryEditContent" placeholder="输入记忆内容..." style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; resize: none; box-sizing: border-box; margin-bottom: 12px;"></textarea>
+                <div style="font-size: 12px; color: #999; margin-bottom: 16px;">
+                    💡 简短描述重要信息，如喜好、计划、约定等
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="closeMemoryEditModal()" style="flex: 1; padding: 10px; background: #f5f5f5; color: #333; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">取消</button>
+                    <button onclick="saveMemoryEdit()" style="flex: 1; padding: 10px; background: #07c160; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">保存</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 微信模式 - 聊天设置页 -->
         <div class="page wechat-page" id="wechatSettingsPage">
             <div class="page-header" style="background: #ededed; border-bottom: 1px solid #d9d9d9;">
@@ -5093,6 +5209,20 @@
                     <div class="wechat-settings-item">
                         <span class="wechat-settings-label">语音 ID</span>
                         <input type="text" class="wechat-settings-input" id="wechatVoiceId" placeholder="moss_audio_xxx..." style="width: 140px; font-size: 12px;">
+                    </div>
+                </div>
+                <!-- 长期记忆自动总结设置 -->
+                <div class="wechat-settings-section">
+                    <div class="wechat-settings-item">
+                        <span class="wechat-settings-label">自动总结记忆</span>
+                        <div class="switch" id="wechatAutoSummaryEnabled" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div class="wechat-settings-item">
+                        <span class="wechat-settings-label">总结间隔（消息条数）</span>
+                        <input type="number" class="wechat-settings-input" id="wechatAutoSummaryInterval" min="10" max="200" value="50" style="width: 70px; text-align: center;">
+                    </div>
+                    <div style="padding: 8px 16px; font-size: 12px; color: #999;">
+                        每隔指定条数的新消息后，自动调用副模型总结对话记忆
                     </div>
                 </div>
                 <div class="wechat-settings-section">
@@ -5662,6 +5792,7 @@
 
         function openSettings() {
             populateGlobalModelDropdown();
+            populateSecondaryModelDropdown();
             openPage('settingsPage');
         }
 
@@ -5689,10 +5820,39 @@
             }
         }
 
+        // 填充副模型下拉框
+        function populateSecondaryModelDropdown() {
+            const select = document.getElementById('globalSecondaryModel');
+            if (!select) return;
+
+            const enabledProviders = appData.providers.filter(p => p.models && p.models.length > 0);
+
+            let html = '<option value="">使用主模型</option>';
+            enabledProviders.forEach(p => {
+                html += `<optgroup label="${p.name}">`;
+                p.models.forEach(m => {
+                    html += `<option value="${p.id}||${m.id}">${m.name || m.id}</option>`;
+                });
+                html += '</optgroup>';
+            });
+            select.innerHTML = html;
+
+            if (appData.settings.secondaryModel) {
+                select.value = appData.settings.secondaryModel;
+            }
+        }
+
         // 保存全局默认模型
         function saveGlobalDefaultModel() {
             const select = document.getElementById('globalDefaultModel');
             appData.settings.defaultModel = select.value;
+            saveData();
+        }
+
+        // 保存副模型
+        function saveGlobalSecondaryModel() {
+            const select = document.getElementById('globalSecondaryModel');
+            appData.settings.secondaryModel = select.value;
             saveData();
         }
 
@@ -7995,7 +8155,11 @@
             return html;
         }
 
-        function renderWechatMessages() {
+        // 消息分页配置
+        const WECHAT_PAGE_SIZE = 50; // 每页显示50条消息
+        let wechatCurrentPage = 1; // 当前显示的页数（从最新往前数）
+
+        function renderWechatMessages(loadMore = false) {
             const container = document.getElementById('wechatMessages');
             const conv = wechatData.conversations[wechatData.currentAssistantId];
             const messages = conv ? conv.messages : [];
@@ -8008,8 +8172,21 @@
                         <div class="wechat-empty-text">开始聊天吧</div>
                     </div>
                 `;
+                wechatCurrentPage = 1;
                 return;
             }
+
+            // 如果不是加载更多，重置页数
+            if (!loadMore) {
+                wechatCurrentPage = 1;
+            }
+
+            // 计算要显示的消息范围
+            const totalMessages = messages.length;
+            const displayCount = wechatCurrentPage * WECHAT_PAGE_SIZE;
+            const startIndex = Math.max(0, totalMessages - displayCount);
+            const visibleMessages = messages.slice(startIndex);
+            const hasMore = startIndex > 0;
 
             // 预先缓存头像HTML
             const userAvatarHtml = getCachedUserAvatarHtml();
@@ -8018,8 +8195,15 @@
             let html = '';
             let lastDate = null;
 
-            // 渲染已发送的消息
-            messages.forEach(msg => {
+            // 如果还有更多历史消息，显示加载更多按钮
+            if (hasMore) {
+                html += `<div class="wechat-load-more" onclick="loadMoreWechatMessages()">
+                    <span>↑ 加载更早的消息 (还有${startIndex}条)</span>
+                </div>`;
+            }
+
+            // 渲染可见的消息
+            visibleMessages.forEach(msg => {
                 const msgDate = new Date(msg.timestamp).toDateString();
                 if (msgDate !== lastDate) {
                     html += `<div class="wechat-time-divider"><span>${formatWechatDate(msg.timestamp)}</span></div>`;
@@ -8033,10 +8217,29 @@
                 html += renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, true);
             });
 
+            // 如果是加载更多，保存当前滚动位置
+            const oldScrollHeight = container.scrollHeight;
+
             container.innerHTML = html;
-            requestAnimationFrame(() => {
-                container.scrollTop = container.scrollHeight;
-            });
+
+            if (loadMore) {
+                // 加载更多后，保持视觉位置不变
+                requestAnimationFrame(() => {
+                    const newScrollHeight = container.scrollHeight;
+                    container.scrollTop = newScrollHeight - oldScrollHeight;
+                });
+            } else {
+                // 新渲染，滚动到底部
+                requestAnimationFrame(() => {
+                    container.scrollTop = container.scrollHeight;
+                });
+            }
+        }
+
+        // 加载更多历史消息
+        function loadMoreWechatMessages() {
+            wechatCurrentPage++;
+            renderWechatMessages(true);
         }
 
         // 向后兼容的包装函数
@@ -8671,6 +8874,9 @@
             saveWechatData();
             renderWechatMessages();
             renderWechatList();
+
+            // 检查是否需要自动总结记忆
+            checkAutoSummary();
         }
 
         function buildWechatRequestMessages(conv, assistant) {
@@ -8815,6 +9021,17 @@ type可以是"text"(文字)或"voice_message"(语音)，你自由选择。
 - 根据时间间隔和上下文，灵活判断：是接着之前的话题、还是开启新话题、还是关心一下对方
 - 不需要每次都提时间，但当时间信息能让对话更自然时，可以用上`;
                 }
+            }
+
+            // 添加长期记忆（如果有）
+            const longTermMemory = settings.longTermMemory || [];
+            if (longTermMemory.length > 0) {
+                const memoryText = longTermMemory.map(m => m.content).join('\n');
+                systemPart += `
+
+【关于用户的长期记忆】
+以下是你对这位用户的了解，请在对话中自然地参考这些信息：
+${memoryText}`;
             }
 
             fullContent += systemPart + '\n\n';
@@ -9070,10 +9287,27 @@ type可以是"text"(文字)或"voice_message"(语音)，你自由选择。
             let replies = [];
             let prefixText = ''; // JSON前的多余文字
 
+            // 第一步：清理思考链和其他干扰内容
+            let trimmed = content.trim();
+
+            // 清理 <thinking>...</thinking> 标签（Claude风格）
+            trimmed = trimmed.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+            // 清理 ```thinking...``` 代码块
+            trimmed = trimmed.replace(/```thinking[\s\S]*?```/gi, '');
+            // 清理 <think>...</think> 标签
+            trimmed = trimmed.replace(/<think>[\s\S]*?<\/think>/gi, '');
+            // 清理 [思考]...[/思考] 或 【思考】...【/思考】
+            trimmed = trimmed.replace(/[\[【]思考[\]】][\s\S]*?[\[【]\/思考[\]】]/gi, '');
+
+            trimmed = trimmed.trim();
+
+            if (!trimmed) {
+                console.warn('清理思考链后内容为空，使用原始内容');
+                trimmed = content.trim();
+            }
+
             // 尝试解析JSON数组
             try {
-                let trimmed = content.trim();
-
                 // 处理 ```json ... ``` 代码块格式（上下文长时AI容易这样返回）
                 if (trimmed.includes('```')) {
                     // 移除 ```json 或 ``` 开头
@@ -11489,6 +11723,10 @@ ${chatContext}
             document.getElementById('wechatTtsEnabled').classList.toggle('on', settings.ttsEnabled || false);
             document.getElementById('wechatVoiceId').value = settings.voiceId || '';
 
+            // 自动总结记忆设置
+            document.getElementById('wechatAutoSummaryEnabled').classList.toggle('on', settings.autoSummaryEnabled || false);
+            document.getElementById('wechatAutoSummaryInterval').value = settings.autoSummaryInterval || 50;
+
             // 背景图案
             const pattern = settings.pattern || 'none';
             document.querySelectorAll('.wechat-pattern-option').forEach(opt => {
@@ -11546,9 +11784,11 @@ ${chatContext}
                     voiceMode: document.getElementById('wechatVoiceMode').classList.contains('on'),
                     ttsEnabled: document.getElementById('wechatTtsEnabled').classList.contains('on'),
                     voiceId: document.getElementById('wechatVoiceId').value.trim(),
+                    autoSummaryEnabled: document.getElementById('wechatAutoSummaryEnabled').classList.contains('on'),
+                    autoSummaryInterval: parseInt(document.getElementById('wechatAutoSummaryInterval').value) || 50,
                     pattern: pattern,
                     theme: theme,
-                    bubbleOpacity: parseInt(document.getElementById('wechatBubbleOpacity').value) || 100
+                    bubbleOpacity: parseInt(document.getElementById('wechatBubbleOpacity').value ?? 100)
                 };
                 saveWechatData();
                 applyWechatPattern();
@@ -11755,6 +11995,298 @@ ${chatContext}
                 enhanceItem.style.pointerEvents = timeAwareOn ? 'auto' : 'none';
             }
         }
+
+        // ==================== 长期记忆功能 ====================
+
+        // 打开长期记忆页面
+        function openWechatMemoryPage() {
+            renderWechatMemoryList();
+            openPage('wechatMemoryPage');
+        }
+
+        // 记忆编辑状态
+        let memoryEditingIndex = -1; // -1表示添加新记忆，>=0表示编辑已有记忆
+
+        // 渲染记忆列表
+        function renderWechatMemoryList() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const memories = conv?.settings?.longTermMemory || [];
+            const container = document.getElementById('wechatMemoryList');
+
+            if (memories.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #999;">
+                        <div style="font-size: 48px; margin-bottom: 12px;">🧠</div>
+                        <div>暂无记忆</div>
+                        <div style="font-size: 12px; margin-top: 8px;">点击上方按钮让AI总结，或手动添加记忆</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 按时间倒序显示（最新的在上面）
+            const sortedMemories = [...memories].sort((a, b) => new Date(b.time) - new Date(a.time));
+
+            container.innerHTML = sortedMemories.map((mem, idx) => {
+                const realIdx = memories.indexOf(mem);
+                const time = new Date(mem.time);
+                const timeStr = `${time.getFullYear()}/${(time.getMonth()+1).toString().padStart(2,'0')}/${time.getDate().toString().padStart(2,'0')} ${time.getHours().toString().padStart(2,'0')}:${time.getMinutes().toString().padStart(2,'0')}`;
+                const typeLabel = mem.type === 'user' ? '📝 用户添加' : (mem.auto ? '🤖 自动总结' : '🤖 AI总结');
+                const typeColor = mem.type === 'user' ? '#576b95' : '#07c160';
+
+                return `
+                    <div class="memory-item" style="background: #fff; border-radius: 8px; padding: 12px; margin-bottom: 8px; position: relative;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 12px; color: ${typeColor}; font-weight: 500;">${typeLabel}</span>
+                            <span style="font-size: 11px; color: #999;">${timeStr}</span>
+                        </div>
+                        <div style="font-size: 14px; color: #333; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(mem.content)}</div>
+                        <div class="memory-actions" style="position: absolute; top: 8px; right: 8px; display: none; gap: 4px;">
+                            <button onclick="openEditMemoryModal(${realIdx})" style="width: 24px; height: 24px; border: none; background: none; color: #576b95; cursor: pointer; font-size: 14px;" title="编辑">✎</button>
+                            <button onclick="deleteMemory(${realIdx})" style="width: 24px; height: 24px; border: none; background: none; color: #fa5151; cursor: pointer; font-size: 16px;" title="删除">×</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 添加悬停显示操作按钮
+            container.querySelectorAll('.memory-item').forEach(item => {
+                const actions = item.querySelector('.memory-actions');
+                item.addEventListener('mouseenter', () => actions.style.display = 'flex');
+                item.addEventListener('mouseleave', () => actions.style.display = 'none');
+            });
+        }
+
+        // 删除记忆
+        function deleteMemory(index) {
+            if (!confirm('确定要删除这条记忆吗？')) return;
+
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (conv?.settings?.longTermMemory) {
+                conv.settings.longTermMemory.splice(index, 1);
+                saveWechatData();
+                renderWechatMemoryList();
+            }
+        }
+
+        // 打开添加记忆弹窗
+        function openAddMemoryModal() {
+            memoryEditingIndex = -1;
+            document.getElementById('memoryModalTitle').textContent = '添加记忆';
+            document.getElementById('memoryEditContent').value = '';
+            document.getElementById('memoryEditModal').classList.add('show');
+        }
+
+        // 打开编辑记忆弹窗
+        function openEditMemoryModal(index) {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const memory = conv?.settings?.longTermMemory?.[index];
+            if (!memory) return;
+
+            memoryEditingIndex = index;
+            document.getElementById('memoryModalTitle').textContent = '编辑记忆';
+            document.getElementById('memoryEditContent').value = memory.content;
+            document.getElementById('memoryEditModal').classList.add('show');
+        }
+
+        // 关闭记忆编辑弹窗
+        function closeMemoryEditModal() {
+            document.getElementById('memoryEditModal').classList.remove('show');
+            memoryEditingIndex = -1;
+        }
+
+        // 保存记忆（添加或编辑）
+        function saveMemoryEdit() {
+            const content = document.getElementById('memoryEditContent').value.trim();
+            if (!content) {
+                alert('请输入记忆内容');
+                return;
+            }
+
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (!conv) {
+                alert('请先进入聊天页面');
+                closeMemoryEditModal();
+                return;
+            }
+
+            if (!conv.settings) conv.settings = {};
+            if (!conv.settings.longTermMemory) conv.settings.longTermMemory = [];
+
+            if (memoryEditingIndex >= 0) {
+                // 编辑已有记忆
+                conv.settings.longTermMemory[memoryEditingIndex].content = content;
+                conv.settings.longTermMemory[memoryEditingIndex].editTime = new Date().toISOString();
+            } else {
+                // 添加新记忆
+                conv.settings.longTermMemory.push({
+                    type: 'user',
+                    content: content,
+                    time: new Date().toISOString()
+                });
+            }
+
+            saveWechatData();
+            closeMemoryEditModal();
+            renderWechatMemoryList();
+        }
+
+        // 手动触发AI总结记忆
+        async function triggerManualSummary() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (!conv || !conv.messages || conv.messages.length < 5) {
+                alert('对话消息太少，无法生成有效总结（至少需要5条消息）');
+                return;
+            }
+
+            const statusEl = document.getElementById('wechatMemoryStatus');
+            statusEl.innerHTML = '<span style="color: #07c160;">⏳ 正在生成记忆总结...</span>';
+
+            try {
+                const summary = await generateMemorySummary(conv);
+                if (summary) {
+                    if (!conv.settings) conv.settings = {};
+                    if (!conv.settings.longTermMemory) conv.settings.longTermMemory = [];
+
+                    conv.settings.longTermMemory.push({
+                        type: 'ai',
+                        content: summary,
+                        time: new Date().toISOString(),
+                        messageCount: conv.messages.length
+                    });
+
+                    saveWechatData();
+                    renderWechatMemoryList();
+                    statusEl.innerHTML = '<span style="color: #07c160;">✅ 记忆总结已生成</span>';
+                    setTimeout(() => statusEl.innerHTML = '', 3000);
+                }
+            } catch (err) {
+                console.error('生成记忆总结失败:', err);
+                statusEl.innerHTML = '<span style="color: #fa5151;">❌ 生成失败: ' + err.message + '</span>';
+            }
+        }
+
+        // 生成记忆总结（调用AI）
+        async function generateMemorySummary(conv) {
+            const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
+            const assistantName = assistant?.name || 'AI助手';
+            const today = new Date().toLocaleDateString('zh-CN');
+
+            // 获取模型配置（优先使用副模型）
+            let modelConfig = null;
+            const secondaryModel = appData.settings.secondaryModel;
+            const primaryModel = appData.settings.defaultModel;
+            const modelToUse = secondaryModel || primaryModel;
+
+            if (modelToUse) {
+                const [providerId, modelId] = modelToUse.split('||');
+                const provider = appData.providers.find(p => p.id === providerId);
+                if (provider) {
+                    modelConfig = {
+                        provider: provider,
+                        model: provider.models.find(m => m.id === modelId)
+                    };
+                }
+            }
+
+            if (!modelConfig) {
+                throw new Error('未配置模型，请在设置中选择默认模型');
+            }
+
+            // 使用用户设置的间隔数，或默认200条
+            const summaryCount = conv.settings?.autoSummaryInterval || 200;
+            const recentMessages = conv.messages.slice(-summaryCount);
+
+            const dialogueText = recentMessages.map(msg => {
+                const role = msg.role === 'user' ? '用户' : assistantName;
+                const content = msg.type === 'image' ? '[图片]' : (msg.type === 'voice' ? '[语音]' : (msg.content || ''));
+                return `${role}: ${content}`;
+            }).join('\n');
+
+            // 使用330风格的提示词：第一人称、简短、事实导向
+            const summaryPrompt = `# 你的任务
+你就是"${assistantName}"。请回顾下面和用户的对话，然后用【第一人称 ("我")】的口吻，总结出一段简短的、客观的、包含关键信息的记忆。
+
+# 当前时间
+- **今天是：${today}**
+
+# 核心规则
+1. **【视角铁律】**: 你的总结【必须】使用【主观的第一人称视角 ("我")】来写。
+2. **【内容核心】**: 专注于以下几点：
+   * **关键议题**: 我们聊了什么核心话题？
+   * **重要决定与共识**: 达成了什么共识或做出了什么决定？
+   * **后续计划与任务**: 有没有确定下来什么下一步的行动或计划？
+   * **关键信息**: 有没有交换什么重要的信息（如用户的喜好、习惯、重要日期等）？
+3. **【时间转换铁律】**: 如果对话中提到了相对时间（如"明天"），结合"今天是${today}"这个信息，将其转换为【具体的日期】。
+4. **【风格要求】**: 像一份备忘录或要点记录，不是抒情散文。简洁明了。
+5. **【长度限制】**: 总长度控制在100字以内，只记录重要信息。
+
+# 对话记录
+${dialogueText}
+
+请直接输出总结内容，不要加任何前缀或格式标记。`;
+
+            const provider = modelConfig.provider;
+            const modelId = modelConfig.model.id;
+
+            const response = await fetch(provider.baseUrl + provider.apiPath, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + provider.apiKey
+                },
+                body: JSON.stringify({
+                    model: modelId,
+                    messages: [{ role: 'user', content: summaryPrompt }],
+                    temperature: 0.5
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+            }
+
+            const data = await response.json();
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content.trim();
+            }
+
+            throw new Error('API返回格式异常');
+        }
+
+        // 检查是否需要自动总结（在发送消息后调用）
+        function checkAutoSummary() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (!conv || !conv.settings?.autoSummaryEnabled) return;
+
+            const interval = conv.settings.autoSummaryInterval || 50;
+            const lastSummaryCount = conv.settings.lastAutoSummaryCount || 0;
+            const currentCount = conv.messages?.length || 0;
+
+            if (currentCount - lastSummaryCount >= interval) {
+                // 后台执行自动总结
+                generateMemorySummary(conv).then(summary => {
+                    if (summary) {
+                        if (!conv.settings.longTermMemory) conv.settings.longTermMemory = [];
+                        conv.settings.longTermMemory.push({
+                            type: 'ai',
+                            content: summary,
+                            time: new Date().toISOString(),
+                            messageCount: currentCount,
+                            auto: true
+                        });
+                        conv.settings.lastAutoSummaryCount = currentCount;
+                        saveWechatData();
+                        console.log('自动记忆总结已生成');
+                    }
+                }).catch(err => {
+                    console.error('自动总结失败:', err);
+                });
+            }
+        }
+
+        // ==================== 长期记忆功能 END ====================
 
         function exportWechatChat() {
             const conv = wechatData.conversations[wechatData.currentAssistantId];
