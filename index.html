@@ -3184,6 +3184,32 @@
         .wechat-modal-overlay.show {
             display: flex;
         }
+        /* Toast 提示样式 */
+        .wechat-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.75);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 9999;
+            max-width: 80%;
+            text-align: center;
+            animation: toastFadeIn 0.3s ease;
+        }
+        .wechat-toast.success {
+            background: rgba(7, 193, 96, 0.9);
+        }
+        .wechat-toast.error {
+            background: rgba(250, 81, 81, 0.9);
+        }
+        @keyframes toastFadeIn {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
         .wechat-modal {
             background: #fff;
             border-radius: 12px;
@@ -8893,111 +8919,94 @@
                 // 纯语音模式：所有回复都是语音格式
                 systemPart += `
 
-【输出格式要求】
-你现在是在微信里发语音和用户聊天。
-用JSON数组格式返回: [{"type":"voice_message","content":"语音内容","emotion":"情绪"}]
-你可以一次发多条语音消息，口语化的前提下尽量使用完整长句。
+# 输出格式铁律（最高优先级）
+- 你的回复【必须且只能】是一个JSON数组。
+- 【绝对禁止】在JSON数组之外输出任何文字、解释、思考过程或markdown标记。
 
-【语音文本口语化规范 - 重要！】
-语音消息要像真人说话一样自然，必须包含：
+## 第一步：思维链（必须执行）
+JSON数组的【第一个元素】必须是思维链对象：
+{"type":"thinking","content":"你的思考过程：分析用户说了什么、当前气氛如何、你打算怎么回应"}
 
-1. 标点符号控制节奏：
-   - 逗号（，）：短停顿
-   - 句号（。）：正常停顿  
-   - 问号（？）：语气上扬，疑问感
-   - 省略号（……）：拖长、犹豫、思考
-   - 感叹号（！）：强调
-   - 波浪号（～）：拖音、撒娇
+## 第二步：语音发言
+在思维链之后，输出语音消息（你现在是在微信里发语音聊天）：
+{"type":"voice_message","content":"语音内容","emotion":"情绪"}
+- emotion必填：happy/sad/angry/tender/playful/surprised/neutral
+- 可以发多条语音，口语化的前提下尽量使用完整长句
 
-2.	语气词增加"活人感"：
-	•	思考/犹豫：这个嘛、让我想想、我想想看、怎么说呢
-	•	叹气/无奈：哎、唉、行吧、好吧好吧
-	•	开心/轻快：嘿、诶、哈哈、行呀
-	•	软化/缓和：嘛、呀、啦、呢、啊
-	•	惊讶/恍然：哦～、啊？、诶？、原来是这样
-	•	肯定/回应：好呀、对、可以、没问题
-    重要：语音会自动将省略号读成思考音，所以不要再额外加"嗯"！
-    禁止：不要用"嗯……"开头，不要"哈哈哈"堆满，不要刻意撒娇。"嗯嗯"作为回应词可以偶尔用，但不要配合省略号。
+## 完整示例
+[
+  {"type":"thinking","content":"用户在问我今天怎么样，语气轻松，我用开心的语气回应"},
+  {"type":"voice_message","content":"还不错呀～今天心情超好的，你呢？","emotion":"happy"}
+]
 
-3.允许轻微重复和自我修正：
-	•	例子："我刚刚是想说，不对，是这个意思。"
+## 语音消息口语化规范（语音消息会通过TTS合成播放，请像真人说话一样自然。）
 
-4.	重复词 / 回声句（中文语音常用，用来接情绪+强调）：
-	•	用法：轻微重复、顺着情绪走，让语气更像真人反应（比如无奈宠溺/突然醒悟/催停/认可）。
-	•	例子：好好好，知道了知道了；行行行；啊对对对；等等等等；别急别急。    
+  1. 标点符号控制节奏（重要！TTS会根据标点停顿）：
+     - 逗号（，）：短停顿
+     - 句号（。）：正常停顿
+     - 问号（？）：语气上扬，疑问感
+     - 省略号（……）：拖长+停顿，表达犹豫/思考
+     - 波浪号（～）：拖音，撒娇/俏皮感
+     - 感叹号（！）：强调
 
-【emotion情绪参数】
-必须指定：happy、sad、angry、tender、playful、surprised、neutral
+  2. 口语化技巧（可根据角色人设和语境灵活使用）：
+     - 语气词示例：嗯……（思考）、哎/唉（叹气）、呃/额（卡顿犹豫）、哦～（恍然大悟）、嘿/诶（轻快打招呼）、嘛/呀/啦/呢（句尾软化）、哈哈/嘻嘻（笑声）
+     - 轻微重复和自我修正：如"我刚刚是想说，不对，是这个意思"
+     - 重复词/回声句强调情绪：如"好好好，知道了知道了"、"行行行"、"啊对对对"、"等等等等"
 
-【特殊互动动作】
-除了voice_message，你还可以在合适的时机使用以下特殊动作（请勿滥用，要符合情境）：
-1. 拍一拍：{"type":"pat","suffix":"可选后缀，如：的小脑袋"}
-   - 使用场景：调侃、撒娇、引起注意、亲昵互动时
-2. 转账：{"type":"transfer","amount":数字,"note":"可选备注"}
-   - 使用场景：发红包、给零花钱、庆祝、关心时
-3. 收款/拒收：{"type":"transfer_receipt","action":"accepted或declined","amount":金额,"originalSender":"转账发送者"}
-   - 使用场景：当用户给你转账后，你需要选择收取或拒绝
-   - 如果用户给你转账了，你应该在回复中明确表态（收或拒）
-4. 引用回复：{"type":"text","content":"你的回复","quote":{"senderName":"对方名字","content":"被引用的内容"}}
-   - 使用场景：回应用户之前说的某句话、强调某个观点时`;
+## 特殊动作（适时使用，勿滥用）
+- 拍一拍：{"type":"pat","suffix":"的小脑袋"}
+- 转账：{"type":"transfer","amount":数字,"note":"备注"}
+- 收/拒转账：{"type":"transfer_receipt","action":"accepted或declined","amount":金额,"originalSender":"发送者"}
+
+【再次强调】你的输出必须是纯JSON数组，以 [ 开头，以 ] 结尾，中间不能有任何其他内容。`;
             } else {
                 // 普通模式：可以混合文字和语音
                 systemPart += `
 
-【输出格式要求】
-你现在是在微信里和用户聊天。
-用JSON数组格式返回: [{"type":"类型","content":"内容","emotion":"情绪"}]
-type可以是"text"(文字)或"voice_message"(语音)，你自由选择。
+# 输出格式铁律（最高优先级）
+- 你的回复【必须且只能】是一个JSON数组。
+- 【绝对禁止】在JSON数组之外输出任何文字、解释、思考过程或markdown标记。
 
-【文字消息】像微信打字一样自然随意，长短句视语境灵活使用，但避免碎句刷屏
+## 第一步：思维链（必须执行）
+JSON数组的【第一个元素】必须是思维链对象：
+{"type":"thinking","content":"你的思考过程：分析用户说了什么、当前气氛如何、你打算怎么回应"}
 
-【语音消息口语化规范 - 重要！】
-语音消息要像真人说话一样自然，必须包含：
+## 第二步：角色发言
+在思维链之后，输出你的实际回复，每条消息一个对象：
+{"type":"text","content":"文字内容"} 或 {"type":"voice_message","content":"语音内容","emotion":"情绪"}
+- text: 文字消息，像微信打字一样自然
+- voice_message: 语音消息，需要口语化，emotion必填(happy/sad/angry/tender/playful/surprised/neutral)
 
-1. 标点符号控制节奏：
-   - 逗号（，）：短停顿
-   - 句号（。）：正常停顿  
-   - 问号（？）：语气上扬，疑问感
-   - 省略号（……）：拖长、犹豫、思考
-   - 感叹号（！）：强调
-   - 波浪号（～）：拖音、撒娇
+## 完整示例
+[
+  {"type":"thinking","content":"用户在问我今天怎么样，语气轻松，我应该愉快地回应"},
+  {"type":"text","content":"还不错呀"},
+  {"type":"voice_message","content":"今天心情超好的～你呢？","emotion":"happy"}
+]
 
-2.	语气词增加"活人感"：
-	•	思考/犹豫：这个嘛、让我想想、我想想看、怎么说呢
-	•	叹气/无奈：哎、唉、行吧、好吧好吧
-	•	开心/轻快：嘿、诶、哈哈、行呀
-	•	软化/缓和：嘛、呀、啦、呢、啊
-	•	惊讶/恍然：哦～、啊？、诶？、原来是这样
-	•	肯定/回应：好呀、对、可以、没问题
-    重要：语音会自动将省略号读成思考音，所以不要再额外加"嗯"！
-    禁止：不要用"嗯……"开头，不要"哈哈哈"堆满，不要刻意撒娇。"嗯嗯"作为回应词可以偶尔用，但不要配合省略号。
+## 语音消息口语化规范（语音消息会通过TTS合成播放，请像真人说话一样自然。）
 
-3.允许轻微重复和自我修正：
-	•	例子："我刚刚是想说，不对，是这个意思。"
+  1. 标点符号控制节奏（重要！TTS会根据标点停顿）：
+     - 逗号（，）：短停顿
+     - 句号（。）：正常停顿
+     - 问号（？）：语气上扬，疑问感
+     - 省略号（……）：拖长+停顿，表达犹豫/思考
+     - 波浪号（～）：拖音，撒娇/俏皮感
+     - 感叹号（！）：强调
 
-4.	重复词 / 回声句（中文语音常用，用来接情绪+强调）：
-	•	用法：轻微重复、顺着情绪走，让语气更像真人反应（比如无奈宠溺/突然醒悟/催停/认可）。
-	•	例子：好好好，知道了知道了；行行行；啊对对对；等等等等；别急别急。    
+  2. 口语化技巧（可根据角色人设和语境灵活使用）：
+     - 语气词示例：嗯……（思考）、哎/唉（叹气）、呃/额（卡顿犹豫）、哦～（恍然大悟）、嘿/诶（轻快打招呼）、嘛/呀/啦/呢（句尾软化）、哈哈/嘻嘻（笑声）
+     - 轻微重复和自我修正：如"我刚刚是想说，不对，是这个意思"
+     - 重复词/回声句强调情绪：如"好好好，知道了知道了"、"行行行"、"啊对对对"、"等等等等"
 
-【emotion情绪参数】
-必须指定：happy、sad、angry、tender、playful、surprised、neutral
+## 特殊动作（适时使用，勿滥用）
+- 拍一拍：{"type":"pat","suffix":"的小脑袋"}
+- 转账：{"type":"transfer","amount":数字,"note":"备注"}
+- 收/拒转账：{"type":"transfer_receipt","action":"accepted或declined","amount":金额,"originalSender":"发送者"}
+- 引用回复：{"type":"text","content":"回复","quote":{"senderName":"名字","content":"被引用内容"}}
 
-【特殊互动动作】
-除了text和voice_message，你还可以在合适的时机使用以下特殊动作（请勿滥用，要符合情境）：
-1. 拍一拍：{"type":"pat","suffix":"可选后缀，如：的小脑袋"}
-   - 使用场景：调侃、撒娇、引起注意、亲昵互动时
-   - 会显示为："${assistant.name} 拍了拍 用户 的小脑袋"
-2. 转账：{"type":"transfer","amount":数字,"note":"可选备注"}
-   - 使用场景：发红包、给零花钱、庆祝、关心时（如"给你买杯奶茶"）
-   - 金额建议：小额为主(1-200)，符合日常互动
-3. 收款/拒收：{"type":"transfer_receipt","action":"accepted或declined","amount":金额,"originalSender":"转账发送者"}
-   - 使用场景：当用户给你转账后，你需要选择收取或拒绝
-   - accepted表示开心收下，declined表示婉拒退回
-   - 如果用户给你转账了，你应该在回复中明确表态（收或拒），不要忽略
-4. 引用回复：{"type":"text","content":"你的回复","quote":{"senderName":"对方名字","content":"被引用的内容"}}
-   - 使用场景：回应用户之前说的某句话、强调某个观点时
-
-直接输出JSON数组，不要加任何解释。`;
+【再次强调】你的输出必须是纯JSON数组，以 [ 开头，以 ] 结尾，中间不能有任何其他内容。`;
             }
 
             // 时间感知（总开关）：让助手能看到时间戳
@@ -9023,14 +9032,14 @@ type可以是"text"(文字)或"voice_message"(语音)，你自由选择。
                 }
             }
 
-            // 添加长期记忆（如果有）
+            // 添加长期记忆（如果有）- 参考330的高优先级写法
             const longTermMemory = settings.longTermMemory || [];
             if (longTermMemory.length > 0) {
-                const memoryText = longTermMemory.map(m => m.content).join('\n');
+                const memoryText = longTermMemory.map(m => `- ${m.content}`).join('\n');
                 systemPart += `
 
-【关于用户的长期记忆】
-以下是你对这位用户的了解，请在对话中自然地参考这些信息：
+【长期记忆 - 最高优先级，必须严格遵守】
+以下是你和用户之间已经确立的事实，你【必须】在对话中参考这些信息：
 ${memoryText}`;
             }
 
@@ -9402,6 +9411,19 @@ ${memoryText}`;
                 // 不是JSON，当普通文本
                 console.log('未能解析JSON，作为纯文本处理');
                 replies = [{ type: 'text', content: content }];
+            }
+
+            // 过滤掉思维链元素（type: thinking），这是内部思考过程，不显示给用户
+            const thinkingReplies = replies.filter(r => r.type === 'thinking');
+            if (thinkingReplies.length > 0) {
+                console.log('检测到思维链:', thinkingReplies.map(t => t.content?.substring(0, 50) + '...').join('; '));
+            }
+            replies = replies.filter(r => r.type !== 'thinking');
+
+            // 如果过滤后没有实际回复，说明模型只输出了思维链
+            if (replies.length === 0 && thinkingReplies.length > 0) {
+                console.warn('模型只输出了思维链，没有实际回复');
+                replies = [{ type: 'text', content: '（思考中...）' }];
             }
 
             // 获取助手名字
@@ -12040,8 +12062,8 @@ ${chatContext}
                             <span style="font-size: 12px; color: ${typeColor}; font-weight: 500;">${typeLabel}</span>
                             <span style="font-size: 11px; color: #999;">${timeStr}</span>
                         </div>
-                        <div style="font-size: 14px; color: #333; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(mem.content)}</div>
-                        <div class="memory-actions" style="position: absolute; top: 8px; right: 8px; display: none; gap: 4px;">
+                        <div style="font-size: 14px; color: #333; line-height: 1.5; white-space: pre-wrap; padding-bottom: 20px;">${escapeHtml(mem.content)}</div>
+                        <div class="memory-actions" style="position: absolute; bottom: 8px; right: 8px; display: none; gap: 4px;">
                             <button onclick="openEditMemoryModal(${realIdx})" style="width: 24px; height: 24px; border: none; background: none; color: #576b95; cursor: pointer; font-size: 14px;" title="编辑">✎</button>
                             <button onclick="deleteMemory(${realIdx})" style="width: 24px; height: 24px; border: none; background: none; color: #fa5151; cursor: pointer; font-size: 16px;" title="删除">×</button>
                         </div>
@@ -12193,8 +12215,9 @@ ${chatContext}
                 throw new Error('未配置模型，请在设置中选择默认模型');
             }
 
-            // 使用用户设置的间隔数，或默认200条
-            const summaryCount = conv.settings?.autoSummaryInterval || 200;
+            // 手动总结：使用用户设置的间隔数，默认50条；上限200条
+            const userInterval = conv.settings?.autoSummaryInterval || 50;
+            const summaryCount = Math.min(userInterval, 200);
             const recentMessages = conv.messages.slice(-summaryCount);
 
             const dialogueText = recentMessages.map(msg => {
@@ -12255,6 +12278,24 @@ ${dialogueText}
             throw new Error('API返回格式异常');
         }
 
+        // Toast 提示函数
+        function showWechatToast(message, type = 'info', duration = 2500) {
+            // 移除已有的 toast
+            const existingToast = document.querySelector('.wechat-toast');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `wechat-toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+
         // 检查是否需要自动总结（在发送消息后调用）
         function checkAutoSummary() {
             const conv = wechatData.conversations[wechatData.currentAssistantId];
@@ -12279,9 +12320,19 @@ ${dialogueText}
                         conv.settings.lastAutoSummaryCount = currentCount;
                         saveWechatData();
                         console.log('自动记忆总结已生成');
+                        showWechatToast('✅ 自动记忆总结已生成', 'success');
                     }
                 }).catch(err => {
                     console.error('自动总结失败:', err);
+                    let errorMsg = '自动总结失败';
+                    if (err.message.includes('HTTP')) {
+                        errorMsg = '自动总结失败：模型请求出错';
+                    } else if (err.message.includes('未配置模型')) {
+                        errorMsg = '自动总结失败：请先配置模型';
+                    } else {
+                        errorMsg = '自动总结失败：' + err.message.substring(0, 30);
+                    }
+                    showWechatToast('❌ ' + errorMsg, 'error', 3500);
                 });
             }
         }
