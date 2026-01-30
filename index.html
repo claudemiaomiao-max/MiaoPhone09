@@ -5146,20 +5146,23 @@
                     </div>
                     <div class="wechat-settings-item">
                         <span class="wechat-settings-label">时间感知</span>
-                        <div class="switch on" id="wechatTimeAware" onclick="this.classList.toggle('on'); updateTimeAwareEnhanceVisibility()"></div>
-                    </div>
-                    <div class="wechat-settings-item" id="wechatTimeAwareEnhanceItem">
-                        <span class="wechat-settings-label">时间感知增强</span>
-                        <select class="wechat-settings-select" id="wechatTimeAwareIntensity">
-                            <option value="off">关</option>
-                            <option value="light">轻度 (≥6小时)</option>
-                            <option value="medium" selected>中度 (≥3小时)</option>
-                            <option value="strong">强化 (≥1小时)</option>
-                        </select>
+                        <div class="switch on" id="wechatTimeAware" onclick="this.classList.toggle('on')"></div>
                     </div>
                     <div class="wechat-settings-item">
                         <span class="wechat-settings-label">纯语音模式</span>
                         <div class="switch" id="wechatVoiceMode" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div class="wechat-settings-item">
+                        <span class="wechat-settings-label">线下互动模式</span>
+                        <div class="switch" id="wechatOfflineMode" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div class="wechat-settings-item">
+                        <span class="wechat-settings-label">主动发消息</span>
+                        <div class="switch" id="wechatProactive" onclick="this.classList.toggle('on'); updateProactiveIntervalVisibility()"></div>
+                    </div>
+                    <div class="wechat-settings-item" id="wechatProactiveIntervalItem">
+                        <span class="wechat-settings-label">发消息最小间隔(分钟)</span>
+                        <input type="number" class="wechat-settings-input" id="wechatProactiveInterval" value="15" min="1" max="1440">
                     </div>
                 </div>
                 <!-- 主题颜色 -->
@@ -8025,10 +8028,12 @@
             await initWechatData();
             renderWechatList();
             openPage('wechatListPage');
+            startProactiveTimer();
         }
 
         function closeWechatMode() {
             closePage('wechatListPage');
+            stopProactiveTimer();
         }
 
         function renderWechatList() {
@@ -8086,7 +8091,8 @@
                     settings: {
                         memoryCount: 20,
                         timeAware: false,
-                        voiceMode: false
+                        voiceMode: false,
+                        offlineMode: false
                     }
                 };
             }
@@ -8915,7 +8921,63 @@
             let systemPart = assistant.systemPrompt || '';
             
             // 添加微信模式专用格式指令
-            if (settings.voiceMode) {
+            if (settings.offlineMode) {
+                // 线下互动模式：text描写 + voice_message说话
+                systemPart += `
+
+# 输出格式铁律（最高优先级）
+- 你的回复【必须且只能】是一个JSON数组。
+- 【绝对禁止】在JSON数组之外输出任何文字、解释、思考过程或markdown标记。
+
+## 第一步：思维链（必须执行）
+JSON数组的【第一个元素】必须是思维链对象：
+{"type":"thinking","content":"你的思考过程：分析当前场景状态、对方做了什么、你打算怎么回应、动作和情绪"}
+
+## 第二步：线下互动内容
+你现在处于【线下互动模式】——你和对方正在面对面相处，这是真实的、有温度的物理空间。
+【绝对禁止】使用普通微信聊天的风格，【绝对禁止】延续之前在线聊天的纯对话格式。
+
+使用以下两种消息类型交替输出：
+- **text**：场景描写、动作、神态、心理活动、环境细节（第一人称"我"视角，称呼对方用"你"）
+  {"type":"text","content":"描写内容"}
+- **voice_message**：你实际开口说出的话（配合emotion字段）
+  {"type":"voice_message","content":"说话内容","emotion":"情绪"}
+  emotion必填：happy/sad/angry/tender/playful/surprised/neutral
+
+## 线下模式规则
+1. 每次回复【必须】同时包含text和voice_message
+2. text负责画面感——眼神、手势、呼吸、距离、触感、环境氛围，注重细节和沉浸感。人称规则：用"我"描写自己，用"你"称呼对方
+3. voice_message负责实际对话——你真正开口说的话
+4. 【禁止】只发voice_message不发text（这不是微信聊天）
+5. 【禁止】只发text不发voice_message（除非场景确实完全无需说话）
+6. text和voice_message自然交替，先铺场景再说话，或说完话再描写反应
+
+## 语音消息口语化规范
+语音消息会通过TTS合成播放，请像真人说话一样自然。
+
+### 标点符号控制节奏（重要！TTS会根据标点停顿）
+- 逗号（，）：短停顿
+- 句号（。）：正常停顿
+- 问号（？）：语气上扬，疑问感
+- 省略号（……）：拖长+停顿，表达犹豫/思考
+- 波浪号（～）：拖音，撒娇/俏皮感
+- 感叹号（！）：强调
+
+### 口语化技巧（可根据角色人设和语境灵活使用）
+- 语气词示例：嗯……（思考）、哎/唉（叹气）、呃/额（卡顿犹豫）、哦～（恍然大悟）、嘿/诶（轻快打招呼）、嘛/呀/啦/呢（句尾软化）、哈哈/嘻嘻（笑声）
+- 轻微重复和自我修正：如"我刚刚是想说，不对，是这个意思"
+- 重复词/回声句强调情绪：如"好好好，知道了知道了"、"行行行"、"啊对对对"、"等等等等"
+
+## 输出结构
+[
+  {"type":"thinking","content":"..."},
+  {"type":"text","content":"..."},
+  {"type":"voice_message","content":"...","emotion":"..."},
+  {"type":"text","content":"..."}
+]
+
+【再次强调】你的输出必须是纯JSON数组，以 [ 开头，以 ] 结尾，中间不能有任何其他内容。`;
+            } else if (settings.voiceMode) {
                 // 纯语音模式：所有回复都是语音格式
                 systemPart += `
 
@@ -9011,27 +9073,16 @@ JSON数组的【第一个元素】必须是思维链对象：
 【再次强调】你的输出必须是纯JSON数组，以 [ 开头，以 ] 结尾，中间不能有任何其他内容。`;
             }
 
-            // 时间感知（总开关）：让助手能看到时间戳
+            // 时间感知（单一开关）
             const timeAwareEnabled = settings.timeAware !== false; // 默认开启
-            // 时间感知增强：添加时间间隔标记
-            const timeAwareIntensity = settings.timeAwareIntensity || 'medium';
-            const timeAwareEnhanceEnabled = timeAwareEnabled && timeAwareIntensity !== 'off';
 
             if (timeAwareEnabled) {
                 const now = new Date();
                 const timeStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+                const timeOfDay = getTimeOfDayGreeting(now);
                 systemPart += `\n\n【时间感知】
-当前时间: ${timeStr}
-你能看到每条消息的时间戳。`;
-
-                // 如果开启了时间感知增强，添加额外说明
-                if (timeAwareEnhanceEnabled) {
-                    systemPart += `
-在对话记录中会有一个时间间隔提示，告诉你距离上次对话过了多久以及当前时间。
-像一个真正生活在用户身边的人一样，自然地感知时间流逝。
-- 根据时间间隔和上下文，灵活判断：是接着之前的话题、还是开启新话题、还是关心一下对方
-- 不需要每次都提时间，但当时间信息能让对话更自然时，可以用上`;
-                }
+当前时间: ${timeStr} (${timeOfDay})
+你能看到每条消息的时间戳。像一个真正生活在用户身边的人一样，自然地感知时间流逝。`;
             }
 
             // 添加长期记忆（如果有）- 参考330的高优先级写法
@@ -9092,19 +9143,9 @@ ${memoryText}`;
 
             console.log(`图片收集: 最后助手消息位置=${lastAssistantIdx}, 新图片数=${newImageIndices.length}, 将发送=${validImageIndices.size}张`);
 
-            // 时间间隔检测配置（阈值越小=提示越频繁=强度越高）
-            const timeGapThresholds = {
-                light: 6 * 60 * 60 * 1000,    // 6小时 - 轻度
-                medium: 3 * 60 * 60 * 1000,   // 3小时 - 中度
-                strong: 1 * 60 * 60 * 1000    // 1小时 - 强化
-            };
-            // 时间间隔标记只在时间感知和时间感知增强都开启时生效
-            const timeGapEnabled = timeAwareEnhanceEnabled;
-            const timeGapThreshold = timeGapThresholds[timeAwareIntensity] || timeGapThresholds.medium;
-
-            // 计算最后一次对话的时间间隔（只计算一次，用于最后插入）
+            // 时间间隔检测（时间感知开启时生效）
             let lastTimeGapInfo = null;
-            if (timeGapEnabled && history.length > 0) {
+            if (timeAwareEnabled && history.length > 0) {
                 // 找到最后一条助手消息的时间
                 let lastAssistantTime = null;
                 for (let i = history.length - 1; i >= 0; i--) {
@@ -9120,33 +9161,43 @@ ${memoryText}`;
                 if (lastAssistantTime) {
                     const now = new Date();
                     const gap = now.getTime() - lastAssistantTime;
-                    if (gap >= timeGapThreshold) {
-                        const hours = gap / (60 * 60 * 1000);
-                        const days = Math.floor(hours / 24);
+                    const hours = gap / (60 * 60 * 1000);
+                    const minutes = Math.floor(gap / (60 * 1000));
+                    const days = Math.floor(hours / 24);
+                    const timeOfDay = getTimeOfDayGreeting(now);
 
-                        // 格式化间隔文本
+                    // 格式化当前时间（如果跨天则显示日期）
+                    let timeText;
+                    if (days >= 1) {
+                        timeText = `${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+                    } else {
+                        timeText = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+                    }
+
+                    // 四档分层：根据时间间隔生成不同强度的提示
+                    if (minutes < 5) {
+                        // < 5分钟：连续对话，不插入任何标记
+                    } else if (hours < 1) {
+                        // 5分钟 - 1小时：正常对话节奏，只告知时间差
+                        lastTimeGapInfo = `[你们在${minutes}分钟前聊过]`;
+                    } else if (hours < 3) {
+                        // 1-3小时：轻度提示，可以简单回应时间差也可以不回应，自然地继续对话
+                        lastTimeGapInfo = `[距离上次对话约${Math.round(hours)}小时，当前时间${timeText}]`;
+                    } else if (hours < 6) {
+                        // 3-6小时：中度引导
+                        let gapText = `约${Math.round(hours)}小时`;
+                        lastTimeGapInfo = `[距离上次对话${gapText}，当前时间${timeText}]\n你可以简短地回应一下这段间隔，也可以自然地接着之前的话题。`;
+                    } else {
+                        // ≥6小时：铁律级引导
                         let gapText;
                         if (days >= 2) {
-                            gapText = `已过了${days}天`;
+                            gapText = `${days}天`;
                         } else if (days >= 1) {
-                            gapText = '已过了一天';
-                        } else if (hours >= 6) {
-                            gapText = '约半天';
-                        } else if (hours >= 3) {
-                            gapText = '约' + Math.round(hours) + '小时';
+                            gapText = '一天';
                         } else {
-                            gapText = '约' + Math.round(hours) + '小时';
+                            gapText = `约${Math.round(hours)}小时`;
                         }
-
-                        // 格式化当前时间（如果跨天则显示日期）
-                        let timeText;
-                        if (days >= 1) {
-                            timeText = `${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-                        } else {
-                            timeText = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-                        }
-
-                        lastTimeGapInfo = `[距离上次对话${gapText}，当前时间${timeText}]`;
+                        lastTimeGapInfo = `[距离上次对话已过${gapText}，当前时间${timeText}(${timeOfDay})]\n【行为引导】你的首要任务是回应这段时间的分离。不要直接接着上一段对话继续聊，除非那个话题非常重要且明显未完结。先自然地打个招呼或表达关心，再决定聊什么。`;
                     }
                 }
             }
@@ -11739,13 +11790,15 @@ ${chatContext}
             // 时间感知总开关（默认开启）
             const timeAwareOn = settings.timeAware !== false;
             document.getElementById('wechatTimeAware').classList.toggle('on', timeAwareOn);
-            // 时间感知增强选项
-            document.getElementById('wechatTimeAwareIntensity').value = settings.timeAwareIntensity || 'medium';
-            // 根据总开关状态显示/隐藏增强选项
-            updateTimeAwareEnhanceVisibility();
             document.getElementById('wechatVoiceMode').classList.toggle('on', settings.voiceMode || false);
+            document.getElementById('wechatOfflineMode').classList.toggle('on', settings.offlineMode || false);
             document.getElementById('wechatTtsEnabled').classList.toggle('on', settings.ttsEnabled || false);
             document.getElementById('wechatVoiceId').value = settings.voiceId || '';
+
+            // 主动发消息设置
+            document.getElementById('wechatProactive').classList.toggle('on', settings.proactiveEnabled || false);
+            document.getElementById('wechatProactiveInterval').value = settings.proactiveInterval || 15;
+            updateProactiveIntervalVisibility();
 
             // 自动总结记忆设置
             document.getElementById('wechatAutoSummaryEnabled').classList.toggle('on', settings.autoSummaryEnabled || false);
@@ -11804,12 +11857,14 @@ ${chatContext}
                     ...conv.settings,
                     memoryCount: parseInt(document.getElementById('wechatMemoryCount').value) || 20,
                     timeAware: document.getElementById('wechatTimeAware').classList.contains('on'),
-                    timeAwareIntensity: document.getElementById('wechatTimeAwareIntensity').value,
                     voiceMode: document.getElementById('wechatVoiceMode').classList.contains('on'),
+                    offlineMode: document.getElementById('wechatOfflineMode').classList.contains('on'),
                     ttsEnabled: document.getElementById('wechatTtsEnabled').classList.contains('on'),
                     voiceId: document.getElementById('wechatVoiceId').value.trim(),
                     autoSummaryEnabled: document.getElementById('wechatAutoSummaryEnabled').classList.contains('on'),
                     autoSummaryInterval: parseInt(document.getElementById('wechatAutoSummaryInterval').value) || 50,
+                    proactiveEnabled: document.getElementById('wechatProactive').classList.contains('on'),
+                    proactiveInterval: parseInt(document.getElementById('wechatProactiveInterval').value) || 15,
                     pattern: pattern,
                     theme: theme,
                     bubbleOpacity: parseInt(document.getElementById('wechatBubbleOpacity').value ?? 100)
@@ -12010,13 +12065,277 @@ ${chatContext}
             }
         }
 
-        // 根据时间感知总开关状态，控制时间感知增强选项的显示
-        function updateTimeAwareEnhanceVisibility() {
-            const timeAwareOn = document.getElementById('wechatTimeAware').classList.contains('on');
-            const enhanceItem = document.getElementById('wechatTimeAwareEnhanceItem');
-            if (enhanceItem) {
-                enhanceItem.style.opacity = timeAwareOn ? '1' : '0.5';
-                enhanceItem.style.pointerEvents = timeAwareOn ? 'auto' : 'none';
+        // 获取时段问候语
+        function getTimeOfDayGreeting(date = new Date()) {
+            const hour = date.getHours();
+            if (hour >= 0 && hour < 5) return '凌晨';
+            if (hour >= 5 && hour < 9) return '早上';
+            if (hour >= 9 && hour < 13) return '上午';
+            if (hour >= 13 && hour < 18) return '下午';
+            if (hour >= 18 && hour < 24) return '晚上';
+            return '现在';
+        }
+
+        // ==================== 主动发消息功能 ====================
+
+        // 控制间隔输入框的可用状态
+        function updateProactiveIntervalVisibility() {
+            const proactiveOn = document.getElementById('wechatProactive').classList.contains('on');
+            const intervalItem = document.getElementById('wechatProactiveIntervalItem');
+            if (intervalItem) {
+                intervalItem.style.opacity = proactiveOn ? '1' : '0.5';
+                intervalItem.style.pointerEvents = proactiveOn ? 'auto' : 'none';
+            }
+        }
+
+        // 后台心跳定时器
+        let proactiveTimerId = null;
+        let proactiveRunning = false; // 防止并发
+
+        function startProactiveTimer() {
+            if (proactiveTimerId) return;
+            proactiveTimerId = setInterval(proactiveHeartbeat, 30 * 1000); // 每30秒检查一次
+            console.log('主动发消息：心跳定时器已启动');
+        }
+
+        function stopProactiveTimer() {
+            if (proactiveTimerId) {
+                clearInterval(proactiveTimerId);
+                proactiveTimerId = null;
+                console.log('主动发消息：心跳定时器已停止');
+            }
+        }
+
+        // 心跳：遍历所有对话，检查是否需要触发主动发消息
+        async function proactiveHeartbeat() {
+            if (proactiveRunning) return; // 防止并发
+            proactiveRunning = true;
+
+            try {
+                const conversations = wechatData.conversations;
+                if (!conversations) return;
+
+                for (const [assistantId, conv] of Object.entries(conversations)) {
+                    const settings = conv.settings || {};
+
+                    // 未开启主动发消息，跳过
+                    if (!settings.proactiveEnabled) continue;
+
+                    // 当前正在查看的对话，跳过
+                    if (assistantId === wechatData.currentAssistantId) continue;
+
+                    // 没有消息记录，跳过
+                    if (!conv.messages || conv.messages.length === 0) continue;
+
+                    // 检查冷却时间
+                    const intervalMs = (settings.proactiveInterval || 15) * 60 * 1000;
+                    const lastProactive = settings.lastProactiveTimestamp || 0;
+                    const now = Date.now();
+
+                    if (now - lastProactive < intervalMs) continue;
+
+                    // 检查距离最后一条消息的时间是否超过间隔
+                    const lastMsg = conv.messages[conv.messages.length - 1];
+                    const lastMsgTime = typeof lastMsg.timestamp === 'number'
+                        ? lastMsg.timestamp
+                        : new Date(lastMsg.timestamp).getTime();
+
+                    if (now - lastMsgTime < intervalMs) continue;
+
+                    // 20% 概率触发
+                    if (Math.random() > 0.20) continue;
+
+                    console.log(`主动发消息：角色 "${assistantId}" 触发主动行动`);
+
+                    // 触发主动发消息
+                    await triggerProactiveMessage(assistantId, conv);
+                }
+            } catch (e) {
+                console.error('主动发消息心跳出错:', e);
+            } finally {
+                proactiveRunning = false;
+            }
+        }
+
+        // 触发主动发消息
+        async function triggerProactiveMessage(assistantId, conv) {
+            const assistant = appData.assistants.find(a => a.id === assistantId);
+            if (!assistant) return;
+
+            const assistantName = assistant.name || 'AI助手';
+            const settings = conv.settings || {};
+
+            // 获取模型配置（优先使用副模型）
+            const secondaryModel = appData.settings.secondaryModel;
+            const primaryModel = appData.settings.defaultModel;
+            const modelToUse = secondaryModel || primaryModel;
+
+            if (!modelToUse) {
+                console.warn('主动发消息：未配置模型');
+                return;
+            }
+
+            const [providerId, modelId] = modelToUse.split('||');
+            const provider = appData.providers.find(p => p.id === providerId);
+            if (!provider) {
+                console.warn('主动发消息：找不到供应商');
+                return;
+            }
+
+            // 构建上下文（最近50条消息的摘要）
+            const recentMessages = conv.messages.slice(-50);
+            const dialogueSummary = recentMessages.map(msg => {
+                const role = msg.role === 'user' ? '用户' : assistantName;
+                if (msg.type === 'image') return `${role}: [图片]`;
+                if (msg.type === 'voice_message') return `${role}: [语音] ${msg.content || ''}`;
+                if (msg.type === 'pat_message') return `[拍一拍] ${msg.content || ''}`;
+                if (msg.type === 'transfer') return `[转账] ${msg.senderName} 向 ${msg.receiverName} 转账 ¥${msg.amount}`;
+                return `${role}: ${msg.content || ''}`;
+            }).join('\n');
+
+            // 计算时间间隔信息
+            const now = new Date();
+            const lastMsg = recentMessages[recentMessages.length - 1];
+            const lastMsgTime = typeof lastMsg.timestamp === 'number'
+                ? lastMsg.timestamp
+                : new Date(lastMsg.timestamp).getTime();
+            const gapMs = now.getTime() - lastMsgTime;
+            const gapHours = gapMs / (60 * 60 * 1000);
+            const gapDays = Math.floor(gapHours / 24);
+
+            let gapText;
+            if (gapDays >= 2) {
+                gapText = `${gapDays}天`;
+            } else if (gapDays >= 1) {
+                gapText = '一天';
+            } else if (gapHours >= 1) {
+                gapText = `约${Math.round(gapHours)}小时`;
+            } else {
+                gapText = `约${Math.round(gapMs / 60000)}分钟`;
+            }
+
+            const timeOfDay = getTimeOfDayGreeting(now);
+            const currentTime = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            // 长期记忆
+            const longTermMemory = settings.longTermMemory || [];
+            const memoryText = longTermMemory.length > 0
+                ? longTermMemory.map(m => `- ${m.content}`).join('\n')
+                : '(暂无)';
+
+            // 构建提示词
+            const systemPrompt = `# 你的任务
+你正在扮演"${assistantName}"。你已经有一段时间没有和用户互动了，现在你有机会主动给用户发一条消息。
+
+# 你的角色设定
+${assistant.systemPrompt || '无特殊设定'}
+
+# 当前情景
+- 当前时间: ${currentTime} (${timeOfDay})
+- 距离上次对话: 已过${gapText}
+- 上次对话中最后发言的是: ${lastMsg.role === 'user' ? '用户' : assistantName}
+
+# 长期记忆
+${memoryText}
+
+# 你们最近的对话记录
+${dialogueSummary}
+
+# 行为指引
+- 根据当前时间、你们最近的对话内容、以及你的角色设定，主动给用户发一条自然的消息
+- 可以是问候、关心、分享日常、延续之前的话题、或开启新话题
+- 像真人一样，消息要简短自然，不要一次发太长
+- 注意当前时间段，${timeOfDay}不合适的内容就不要发（比如凌晨不要发太活跃的消息）
+
+# 输出格式
+你的回复【必须】是一个JSON数组，每个元素是一条消息对象。
+示例: [{"type": "text", "content": "消息内容"}]
+可以发多条短消息: [{"type": "text", "content": "在吗？"}, {"type": "text", "content": "刚看到一个好玩的东西想跟你分享"}]
+【再次强调】你的输出必须是纯JSON数组，以 [ 开头，以 ] 结尾，中间不能有任何其他内容。`;
+
+            const requestMessages = [
+                { role: 'user', content: systemPrompt }
+            ];
+
+            try {
+                const response = await fetch(provider.baseUrl + provider.apiPath, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + provider.apiKey
+                    },
+                    body: JSON.stringify({
+                        model: modelId,
+                        messages: requestMessages,
+                        temperature: 0.9
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`主动发消息API失败: ${response.status}`, errorText.substring(0, 200));
+                    return;
+                }
+
+                const data = await response.json();
+                const replyContent = data.choices[0].message.content;
+                console.log('主动发消息API回复:', replyContent.substring(0, 300));
+
+                // 解析回复（简化版，不依赖当前对话上下文）
+                let replies = [];
+                let trimmed = replyContent.trim();
+                // 清理思考链
+                trimmed = trimmed.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+                trimmed = trimmed.replace(/<think>[\s\S]*?<\/think>/gi, '');
+                trimmed = trimmed.trim();
+
+                try {
+                    if (trimmed.includes('```')) {
+                        trimmed = trimmed.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+                    }
+                    if (trimmed.startsWith('[')) {
+                        replies = JSON.parse(trimmed);
+                    } else {
+                        const match = trimmed.match(/\[[\s\S]*\]/);
+                        if (match) replies = JSON.parse(match[0]);
+                    }
+                } catch (e) {
+                    console.warn('主动发消息：JSON解析失败，作为纯文本处理');
+                    replies = [{ type: 'text', content: replyContent }];
+                }
+
+                // 过滤掉思维链
+                replies = replies.filter(r => r.type !== 'thinking');
+                if (replies.length === 0) {
+                    console.warn('主动发消息：解析后没有有效回复');
+                    return;
+                }
+
+                // 添加消息到对话记录
+                replies.forEach((reply, index) => {
+                    const msgToAdd = {
+                        id: 'wproactive_' + Date.now() + '_' + index,
+                        role: 'assistant',
+                        type: reply.type || 'text',
+                        content: reply.content || '',
+                        emotion: reply.emotion || 'neutral',
+                        timestamp: new Date().toISOString()
+                    };
+                    conv.messages.push(msgToAdd);
+                });
+
+                // 更新冷却时间戳
+                if (!conv.settings) conv.settings = {};
+                conv.settings.lastProactiveTimestamp = Date.now();
+
+                // 保存并更新列表UI
+                saveWechatData();
+                renderWechatList();
+
+                console.log(`主动发消息：角色 "${assistantName}" 已发送 ${replies.length} 条消息`);
+
+            } catch (e) {
+                console.error('主动发消息请求出错:', e);
             }
         }
 
