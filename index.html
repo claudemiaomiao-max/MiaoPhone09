@@ -744,6 +744,17 @@
         [data-wechat-theme="dark"] .wechat-voice-convert {
             color: rgba(255, 255, 255, 0.4);
         }
+        [data-wechat-theme="red"] {
+            --wechat-bg: #faf5f5;
+            --wechat-header-bg: linear-gradient(135deg, #c4232e 0%, #A20609 100%);
+            --wechat-header-text: #fff;
+            --wechat-user-bubble: #e8b4b6;
+            --wechat-user-text: #4a1a1c;
+            --wechat-ai-bubble: #faf0f0;
+            --wechat-ai-text: #4a1a1c;
+            --wechat-pattern-color: rgba(162, 6, 9, 0.1);
+            --wechat-accent: #A20609;
+        }
 
         /* ==================== 页面层（设置、聊天等） ==================== */
         .page {
@@ -5188,6 +5199,9 @@
                             <div class="wechat-theme-dot" data-theme="dark" onclick="selectWechatTheme('dark')" title="深色">
                                 <div style="background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);"></div>
                             </div>
+                            <div class="wechat-theme-dot" data-theme="red" onclick="selectWechatTheme('red')" title="红色">
+                                <div style="background: linear-gradient(135deg, #c4232e 0%, #A20609 100%);"></div>
+                            </div>
                         </div>
                     </div>
                     <div class="wechat-settings-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -6067,7 +6081,8 @@
             'blue': { userBubble: [197, 204, 232], aiBubble: [238, 240, 248] },
             'purple': { userBubble: [221, 212, 232], aiBubble: [243, 240, 248] },
             'brown': { userBubble: [217, 207, 197], aiBubble: [243, 238, 234] },
-            'dark': { userBubble: [90, 122, 148], aiBubble: [45, 51, 57] }
+            'dark': { userBubble: [90, 122, 148], aiBubble: [45, 51, 57] },
+            'red': { userBubble: [232, 180, 182], aiBubble: [250, 240, 240] }
         };
 
         function applyBubbleOpacity() {
@@ -8937,8 +8952,13 @@ JSON数组的【第一个元素】必须是思维链对象：
 你现在处于【线下互动模式】——你和对方正在面对面相处，这是真实的、有温度的物理空间。
 【绝对禁止】使用普通微信聊天的风格，【绝对禁止】延续之前在线聊天的纯对话格式。
 
+### 【人称铁律】
+- text中描写自己【必须】用"我"，称呼对方【必须】用"你"
+- 【绝对禁止】用第三人称（他/她/对方/某某）来指代用户
+- voice_message中同理，说话时称呼对方用"你"
+
 使用以下两种消息类型交替输出：
-- **text**：场景描写、动作、神态、心理活动、环境细节（第一人称"我"视角，称呼对方用"你"）
+- **text**：场景描写、动作、神态、心理活动、环境细节（"我"视角+"你"称呼对方）
   {"type":"text","content":"描写内容"}
 - **voice_message**：你实际开口说出的话（配合emotion字段）
   {"type":"voice_message","content":"说话内容","emotion":"情绪"}
@@ -8946,7 +8966,7 @@ JSON数组的【第一个元素】必须是思维链对象：
 
 ## 线下模式规则
 1. 每次回复【必须】同时包含text和voice_message
-2. text负责画面感——眼神、手势、呼吸、距离、触感、环境氛围，注重细节和沉浸感。人称规则：用"我"描写自己，用"你"称呼对方
+2. text负责画面感——眼神、手势、呼吸、距离、触感、环境氛围，注重细节和沉浸感
 3. voice_message负责实际对话——你真正开口说的话
 4. 【禁止】只发voice_message不发text（这不是微信聊天）
 5. 【禁止】只发text不发voice_message（除非场景确实完全无需说话）
