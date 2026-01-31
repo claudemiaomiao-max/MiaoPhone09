@@ -768,39 +768,37 @@
         }
 
         /* ==================== PWA 全屏模式适配（仅添加到主屏幕后生效） ==================== */
-        html.standalone, html.standalone body {
-            height: 100%;
-            overflow: hidden;
+        html.standalone body {
             background: var(--bg-primary);
         }
         html.standalone .phone-container {
-            height: 100%;
+            height: calc(100vh + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
         }
         /* 顶部 safe-area：header 背景延伸到状态栏后面 */
         html.standalone .desktop {
-            padding-top: calc(20px + env(safe-area-inset-top, 0px));
+            padding-top: env(safe-area-inset-top, 0px);
         }
         html.standalone .page-header {
-            padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+            padding: env(safe-area-inset-top, 0px) 16px 10px;
         }
         html.standalone .chat-header {
-            padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
+            padding: env(safe-area-inset-top, 0px) 12px 8px;
         }
         html.standalone .wechat-chat-header {
-            padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px;
+            padding: env(safe-area-inset-top, 0px) 12px 10px;
         }
         /* 底部 safe-area：底部元素延伸到 Home Indicator 后面 */
         html.standalone .dock {
-            margin-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            margin-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
         }
         html.standalone .chat-input-area {
-            padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
         html.standalone .wechat-input-area {
-            padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
         html.standalone .wechat-plus-panel {
-            padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         /* ==================== 页面层（设置、聊天等） ==================== */
