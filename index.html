@@ -787,6 +787,14 @@
         html.standalone .wechat-chat-header {
             padding: env(safe-area-inset-top, 0px) 12px 10px;
         }
+        html.standalone .wechat-chat-header-center {
+            top: env(safe-area-inset-top, 0px);
+            bottom: 0;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         /* 底部 safe-area：底部元素延伸到 Home Indicator 后面 */
         html.standalone .dock {
             margin-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
