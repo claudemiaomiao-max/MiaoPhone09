@@ -12,6 +12,12 @@
     <!-- 移动端调试工具 eruda，点击右下角齿轮图标可打开控制台 -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
+    <script>
+    // PWA standalone 模式检测（iOS 用 navigator.standalone，其他用 matchMedia）
+    if (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) {
+        document.documentElement.classList.add('standalone');
+    }
+    </script>
     <!-- Markdown 渲染库 -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -762,41 +768,39 @@
         }
 
         /* ==================== PWA 全屏模式适配（仅添加到主屏幕后生效） ==================== */
-        @media all and (display-mode: standalone) {
-            html, body {
-                height: 100%;
-                overflow: hidden;
-                background: var(--bg-primary);
-            }
-            .phone-container {
-                height: 100%;
-            }
-            /* 顶部 safe-area：header 背景延伸到状态栏后面 */
-            .desktop {
-                padding-top: calc(20px + env(safe-area-inset-top, 0px));
-            }
-            .page-header {
-                padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
-            }
-            .chat-header {
-                padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
-            }
-            .wechat-chat-header {
-                padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px;
-            }
-            /* 底部 safe-area：底部元素延伸到 Home Indicator 后面 */
-            .dock {
-                margin-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-            }
-            .chat-input-area {
-                padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-            }
-            .wechat-input-area {
-                padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-            }
-            .wechat-plus-panel {
-                padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
-            }
+        html.standalone, html.standalone body {
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-primary);
+        }
+        html.standalone .phone-container {
+            height: 100%;
+        }
+        /* 顶部 safe-area：header 背景延伸到状态栏后面 */
+        html.standalone .desktop {
+            padding-top: calc(20px + env(safe-area-inset-top, 0px));
+        }
+        html.standalone .page-header {
+            padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+        }
+        html.standalone .chat-header {
+            padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
+        }
+        html.standalone .wechat-chat-header {
+            padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px;
+        }
+        /* 底部 safe-area：底部元素延伸到 Home Indicator 后面 */
+        html.standalone .dock {
+            margin-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+        }
+        html.standalone .chat-input-area {
+            padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        }
+        html.standalone .wechat-input-area {
+            padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        }
+        html.standalone .wechat-plus-panel {
+            padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
         }
 
         /* ==================== 页面层（设置、聊天等） ==================== */
