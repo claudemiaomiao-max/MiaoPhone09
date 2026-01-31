@@ -54,16 +54,12 @@
             --chat-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
         }
 
-        html {
-            height: 100%;
-        }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            height: 100%;
-            overflow: hidden;
+            min-height: 100vh;
+            min-height: 100dvh;
         }
 
         /* ==================== 图标样式 ==================== */
@@ -264,7 +260,8 @@
         .phone-container {
             max-width: 430px;
             margin: 0 auto;
-            height: 100%;
+            height: 100vh;
+            height: 100dvh;
             background: var(--bg-desktop);
             display: flex;
             flex-direction: column;
@@ -275,7 +272,7 @@
         /* 桌面区域 - 移除顶部状态栏空间 */
         .desktop {
             flex: 1;
-            padding: calc(20px + env(safe-area-inset-top, 0px)) 24px 20px;
+            padding: 20px 24px 20px;
             display: flex;
             flex-direction: column;
         }
@@ -337,7 +334,7 @@
             background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            margin: 0 12px calc(20px + env(safe-area-inset-bottom, 0px));
+            margin: 0 12px 20px;
             padding: 12px 16px;
             border-radius: 24px;
             display: flex;
@@ -764,6 +761,44 @@
             --wechat-accent: #A20609;
         }
 
+        /* ==================== PWA 全屏模式适配（仅添加到主屏幕后生效） ==================== */
+        @media all and (display-mode: standalone) {
+            html, body {
+                height: 100%;
+                overflow: hidden;
+                background: var(--bg-primary);
+            }
+            .phone-container {
+                height: 100%;
+            }
+            /* 顶部 safe-area：header 背景延伸到状态栏后面 */
+            .desktop {
+                padding-top: calc(20px + env(safe-area-inset-top, 0px));
+            }
+            .page-header {
+                padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+            }
+            .chat-header {
+                padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
+            }
+            .wechat-chat-header {
+                padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px;
+            }
+            /* 底部 safe-area：底部元素延伸到 Home Indicator 后面 */
+            .dock {
+                margin-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            }
+            .chat-input-area {
+                padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            }
+            .wechat-input-area {
+                padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            }
+            .wechat-plus-panel {
+                padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+            }
+        }
+
         /* ==================== 页面层（设置、聊天等） ==================== */
         .page {
             position: absolute;
@@ -787,7 +822,7 @@
         }
 
         .page-header {
-            padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+            padding: 10px 16px;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
             display: flex;
@@ -1285,7 +1320,7 @@
 
         /* 聊天header - 缩短高度 */
         .chat-header {
-            padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
+            padding: 8px 12px;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
             display: flex;
@@ -1643,7 +1678,7 @@
 
         /* 输入区域 */
         .chat-input-area {
-            padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+            padding: 10px 16px 12px;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border);
             flex-shrink: 0;
@@ -2681,7 +2716,7 @@
 
         /* 微信聊天界面 */
         .wechat-chat-header {
-            padding: calc(10px + env(safe-area-inset-top, 0px)) 12px 10px;
+            padding: 10px 12px;
             background: var(--wechat-header-bg, #ededed);
             border-bottom: 1px solid rgba(0,0,0,0.1);
             display: flex;
@@ -2964,7 +2999,7 @@
 
         /* 微信输入区 */
         .wechat-input-area {
-            padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+            padding: 8px 12px;
             background: var(--wechat-bg, #f7f7f7);
             border-top: 1px solid rgba(0,0,0,0.1);
             flex-shrink: 0;
@@ -3117,7 +3152,7 @@
             display: none;
             background: #f7f7f7;
             border-top: 1px solid #e0e0e0;
-            padding: 15px 10px calc(15px + env(safe-area-inset-bottom, 0px));
+            padding: 15px 10px;
         }
         .wechat-plus-panel.show {
             display: block;
