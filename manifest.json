@@ -1,0 +1,8 @@
+{
+  "name": "MiaoPhone",
+  "short_name": "MiaoPhone",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ededed",
+  "theme_color": "#ededed"
+}
