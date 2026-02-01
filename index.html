@@ -790,10 +790,10 @@
         html.standalone .wechat-chat-header-center {
             top: env(safe-area-inset-top, 0px);
             bottom: 0;
-			padding-bottom: 10px;
+            padding-bottom: 10px;
             transform: translateX(-50%);
             display: flex;
-			flex-direction: column;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
@@ -4487,6 +4487,659 @@
             font-size: 14px;
             text-align: center;
         }
+
+        /* ==================== 语音通话模式 ==================== */
+        /* 通讯录页面 */
+        .vc-contact-list {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .vc-contact-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .vc-contact-item:active {
+            background: rgba(0,0,0,0.05);
+        }
+        .vc-contact-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #e0d5e8, #c9b8d4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #fff;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .vc-contact-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .vc-contact-name {
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+        /* 设置页面 */
+        .vc-settings-section {
+            padding: 16px;
+        }
+        .vc-settings-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .vc-settings-item:last-child {
+            border-bottom: none;
+        }
+        .vc-settings-label {
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+        .vc-settings-input {
+            width: 80px;
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            background: var(--bg-primary);
+        }
+        /* 拨号确认弹窗 */
+        .vc-dial-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .vc-dial-modal.show {
+            display: flex;
+        }
+        .vc-dial-content {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px 24px;
+            text-align: center;
+            width: 280px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .vc-dial-avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            background: linear-gradient(135deg, #e0d5e8, #c9b8d4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #fff;
+            overflow: hidden;
+        }
+        .vc-dial-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .vc-dial-name {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .vc-dial-hint {
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 20px;
+        }
+        .vc-dial-btns {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .vc-dial-btn {
+            padding: 10px 28px;
+            border: none;
+            border-radius: 24px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .vc-dial-btn.cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+        .vc-dial-btn.call {
+            background: #4caf50;
+            color: #fff;
+        }
+        .vc-dial-btn.call:active {
+            background: #43a047;
+        }
+        /* 拨号动画页面 */
+        .vc-dialing-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+        }
+        .vc-dialing-avatar-wrap {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .vc-dialing-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e0d5e8, #c9b8d4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+        }
+        .vc-dialing-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .vc-dialing-ripple {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+            animation: vc-ripple 1.5s ease-out infinite;
+        }
+        .vc-dialing-ripple:nth-child(2) { animation-delay: 0.5s; }
+        .vc-dialing-ripple:nth-child(3) { animation-delay: 1s; }
+        @keyframes vc-ripple {
+            0% { width: 100px; height: 100px; opacity: 1; }
+            100% { width: 200px; height: 200px; opacity: 0; }
+        }
+        .vc-dialing-name {
+            font-size: 22px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .vc-dialing-status {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+        }
+        /* 通话界面 */
+        .vc-active-page {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: var(--bg-primary);
+        }
+        .vc-header {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .vc-header-name {
+            font-size: 17px;
+            font-weight: 500;
+        }
+        .vc-header-timer {
+            font-size: 14px;
+            opacity: 0.7;
+            font-variant-numeric: tabular-nums;
+        }
+        .vc-messages {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .vc-msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .vc-msg-user {
+            align-self: flex-end;
+            background: #95ec69;
+            color: #000;
+            border-bottom-right-radius: 4px;
+        }
+        .vc-msg-assistant {
+            align-self: flex-start;
+            background: #fff;
+            color: #000;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .vc-msg-loading {
+            align-self: flex-start;
+            padding: 12px 18px;
+        }
+        .vc-msg-loading .vc-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            margin: 0 2px;
+            animation: vc-dot-bounce 1.4s ease-in-out infinite;
+        }
+        .vc-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .vc-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes vc-dot-bounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        /* 声纹效果 */
+        .vc-waveform {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            height: 36px;
+            padding: 0 16px;
+            flex-shrink: 0;
+        }
+        .vc-waveform-bar {
+            width: 3px;
+            height: 6px;
+            border-radius: 2px;
+            background: #4caf50;
+            transition: height 0.1s ease;
+        }
+        .vc-waveform.active .vc-waveform-bar {
+            animation: vc-wave 0.6s ease-in-out infinite alternate;
+        }
+        .vc-waveform-bar:nth-child(1) { animation-delay: 0s; }
+        .vc-waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+        .vc-waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+        .vc-waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+        .vc-waveform-bar:nth-child(5) { animation-delay: 0.15s; }
+        .vc-waveform-bar:nth-child(6) { animation-delay: 0.25s; }
+        .vc-waveform-bar:nth-child(7) { animation-delay: 0.05s; }
+        @keyframes vc-wave {
+            0% { height: 6px; }
+            100% { height: 28px; }
+        }
+        /* 输入区 */
+        .vc-bottom-area {
+            flex-shrink: 0;
+            padding: 10px 16px;
+            background: var(--bg-secondary);
+            border-top: 1px solid rgba(0,0,0,0.06);
+        }
+        .vc-input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .vc-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 15px;
+            background: var(--bg-primary);
+            outline: none;
+        }
+        .vc-send-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: #4caf50;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .vc-send-btn:active {
+            background: #43a047;
+        }
+        .vc-hangup-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin: 0 auto;
+            padding: 10px 32px;
+            border: none;
+            border-radius: 24px;
+            background: #e53935;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .vc-hangup-btn:active {
+            background: #c62828;
+        }
+        /* 保存确认弹窗 */
+        .vc-save-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .vc-save-modal.show {
+            display: flex;
+        }
+        .vc-save-content {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            width: 260px;
+        }
+        .vc-save-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+        .vc-save-btns {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        .vc-save-btn {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .vc-save-btn.discard {
+            background: #f0f0f0;
+            color: #666;
+        }
+        .vc-save-btn.save {
+            background: #4caf50;
+            color: #fff;
+        }
+        /* 通话记录日历页 */
+        .vc-records-page {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .vc-calendar {
+            background: #fff;
+            padding: 12px;
+        }
+        .vc-calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0 16px;
+        }
+        .vc-calendar-nav {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f5f5f5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #666;
+        }
+        .vc-calendar-title {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .vc-calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .vc-calendar-weekday {
+            font-size: 12px;
+            color: #999;
+            padding: 8px 0;
+        }
+        .vc-calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .vc-calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            position: relative;
+            font-size: 14px;
+            color: #333;
+        }
+        .vc-calendar-day:hover {
+            background: #f5f5f5;
+        }
+        .vc-calendar-day.other-month {
+            color: #ccc;
+        }
+        .vc-calendar-day.today {
+            background: #f0f4ff;
+            font-weight: 500;
+        }
+        .vc-calendar-day.selected {
+            background: #4caf50;
+            color: #fff;
+        }
+        .vc-calendar-day.has-records {
+            background: rgba(76, 175, 80, 0.1);
+        }
+        .vc-calendar-dots {
+            position: absolute;
+            bottom: 3px;
+            display: flex;
+            gap: 2px;
+        }
+        .vc-calendar-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #4caf50;
+        }
+        .vc-calendar-day.selected .vc-calendar-dot {
+            background: rgba(255,255,255,0.8);
+        }
+        /* 记录列表 */
+        .vc-record-list {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px 16px;
+        }
+        .vc-record-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            cursor: pointer;
+        }
+        .vc-record-card:active {
+            background: #f9f9f9;
+        }
+        .vc-record-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .vc-record-assistant {
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .vc-record-time {
+            font-size: 12px;
+            color: #999;
+        }
+        .vc-record-duration {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+        /* 记录详情页 */
+        .vc-detail-header {
+            padding: 16px;
+            background: #fff;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            text-align: center;
+        }
+        .vc-detail-date {
+            font-size: 14px;
+            color: #999;
+        }
+        .vc-detail-meta {
+            font-size: 13px;
+            color: #999;
+            margin-top: 4px;
+        }
+        .vc-detail-assistant {
+            font-size: 17px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+        .vc-detail-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 10px;
+            background: #fff;
+        }
+        .vc-detail-nav-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+        }
+        .vc-detail-nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .vc-detail-nav-text {
+            font-size: 13px;
+            color: #999;
+        }
+        .vc-detail-messages {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .vc-detail-msg {
+            max-width: 80%;
+        }
+        .vc-detail-msg-name {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+        .vc-detail-msg-user .vc-detail-msg-name {
+            text-align: right;
+        }
+        .vc-detail-msg-user {
+            align-self: flex-end;
+        }
+        .vc-detail-msg-assistant {
+            align-self: flex-start;
+        }
+        .vc-detail-msg-bubble {
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 15px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .vc-detail-msg-user .vc-detail-msg-bubble {
+            background: #95ec69;
+            color: #000;
+            border-bottom-right-radius: 4px;
+        }
+        .vc-detail-msg-assistant .vc-detail-msg-bubble {
+            background: #fff;
+            color: #000;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .vc-detail-play-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #4caf50;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+        .vc-detail-play-btn:active {
+            opacity: 0.6;
+        }
+        /* PWA standalone 适配 */
+        html.standalone .vc-header {
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+        html.standalone .vc-bottom-area {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        /* 语音通话图标 */
+        .app-voice-call .app-icon-img {
+            background: linear-gradient(135deg, #5b86e5 0%, #36d1dc 100%);
+        }
     </style>
 </head>
 <body>
@@ -4512,6 +5165,12 @@
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
                     </div>
                     <span class="app-icon-label">日记本</span>
+                </div>
+                <div class="app-icon app-voice-call" onclick="openVoiceCallMode()">
+                    <div class="app-icon-img">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </div>
+                    <span class="app-icon-label">语音通话</span>
                 </div>
             </div>
         </div>
@@ -5618,6 +6277,181 @@
                 </div>
             </div>
         </div>
+
+        <!-- ==================== 语音通话模式页面 ==================== -->
+        <!-- 通讯录页面 -->
+        <div class="page" id="voiceCallPage">
+            <div class="page-header">
+                <button class="page-back" onclick="closePage('voiceCallPage')"><span class="icon-back"></span></button>
+                <span class="page-title">语音通话</span>
+                <button class="page-action" onclick="openVoiceCallRecords()" title="通话记录">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </button>
+                <button class="page-action" onclick="openVoiceCallSettings()" title="设置">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                </button>
+            </div>
+            <div class="vc-contact-list" id="vcContactList">
+                <!-- 动态渲染 -->
+            </div>
+        </div>
+
+        <!-- 语音通话设置页 -->
+        <div class="page" id="voiceCallSettingsPage">
+            <div class="page-header">
+                <button class="page-back" onclick="closePage('voiceCallSettingsPage')"><span class="icon-back"></span></button>
+                <span class="page-title">通话设置</span>
+            </div>
+            <div class="vc-settings-section">
+                <div class="vc-settings-item">
+                    <span class="vc-settings-label">沉默后自动发送</span>
+                    <div class="switch" id="vcAutoSend" onclick="this.classList.toggle('on'); toggleVcAutoSendDelay()"></div>
+                </div>
+                <div class="vc-settings-item" id="vcAutoSendDelayRow" style="display: none;">
+                    <span class="vc-settings-label">沉默等待 (秒)</span>
+                    <input type="number" class="vc-settings-input" id="vcAutoSendDelay" min="1" max="5" value="2">
+                </div>
+                <div class="vc-settings-item">
+                    <span class="vc-settings-label">携带微信上下文</span>
+                    <div class="switch" id="vcCarryContext" onclick="this.classList.toggle('on'); toggleVcContextCount()"></div>
+                </div>
+                <div class="vc-settings-item" id="vcContextCountRow" style="display: none;">
+                    <span class="vc-settings-label">上下文条数</span>
+                    <input type="number" class="vc-settings-input" id="vcContextCount" min="5" max="100" value="30">
+                </div>
+                <div class="vc-settings-item">
+                    <span class="vc-settings-label">语音 ID</span>
+                    <input type="text" class="vc-settings-input" id="vcVoiceId" placeholder="male-qn-qingse" style="width: 160px;">
+                </div>
+            </div>
+            <div style="padding: 16px;">
+                <button class="btn btn-primary" style="width: 100%;" onclick="saveVoiceCallSettings()">保存设置</button>
+            </div>
+        </div>
+
+        <!-- 拨号动画页 -->
+        <div class="page" id="voiceCallDialingPage">
+            <div class="vc-dialing-page">
+                <div class="vc-dialing-avatar-wrap">
+                    <div class="vc-dialing-ripple"></div>
+                    <div class="vc-dialing-ripple"></div>
+                    <div class="vc-dialing-ripple"></div>
+                    <div class="vc-dialing-avatar" id="vcDialingAvatar"></div>
+                </div>
+                <div class="vc-dialing-name" id="vcDialingName"></div>
+                <div class="vc-dialing-status">正在呼叫...</div>
+            </div>
+        </div>
+
+        <!-- 通话界面 -->
+        <div class="page" id="voiceCallActivePage">
+            <div class="vc-active-page">
+                <div class="vc-header">
+                    <span class="vc-header-name" id="vcActiveName"></span>
+                    <span class="vc-header-timer" id="vcActiveTimer">00:00</span>
+                </div>
+                <div class="vc-messages" id="vcMessages">
+                    <!-- 动态渲染 -->
+                </div>
+                <div class="vc-waveform" id="vcWaveform">
+                    <div class="vc-waveform-bar"></div>
+                    <div class="vc-waveform-bar"></div>
+                    <div class="vc-waveform-bar"></div>
+                    <div class="vc-waveform-bar"></div>
+                    <div class="vc-waveform-bar"></div>
+                    <div class="vc-waveform-bar"></div>
+                    <div class="vc-waveform-bar"></div>
+                </div>
+                <div class="vc-bottom-area">
+                    <div class="vc-input-row">
+                        <input type="text" class="vc-input" id="vcInput" placeholder="语音识别中...">
+                        <button class="vc-send-btn" id="vcSendBtn" onclick="vcManualSend()" style="display: none;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                    </div>
+                    <button class="vc-hangup-btn" onclick="hangupVoiceCall()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        挂断
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通话记录页（日历） -->
+        <div class="page" id="voiceCallRecordsPage">
+            <div class="vc-records-page">
+                <div class="page-header">
+                    <button class="page-back" onclick="closePage('voiceCallRecordsPage')"><span class="icon-back"></span></button>
+                    <span class="page-title">通话记录</span>
+                </div>
+                <div class="vc-calendar">
+                    <div class="vc-calendar-header">
+                        <button class="vc-calendar-nav" onclick="vcCalendarPrevMonth()">‹</button>
+                        <span class="vc-calendar-title" id="vcCalendarTitle"></span>
+                        <button class="vc-calendar-nav" onclick="vcCalendarNextMonth()">›</button>
+                    </div>
+                    <div class="vc-calendar-weekdays">
+                        <span class="vc-calendar-weekday">日</span>
+                        <span class="vc-calendar-weekday">一</span>
+                        <span class="vc-calendar-weekday">二</span>
+                        <span class="vc-calendar-weekday">三</span>
+                        <span class="vc-calendar-weekday">四</span>
+                        <span class="vc-calendar-weekday">五</span>
+                        <span class="vc-calendar-weekday">六</span>
+                    </div>
+                    <div class="vc-calendar-days" id="vcCalendarDays"></div>
+                </div>
+                <div class="vc-record-list" id="vcRecordList">
+                    <!-- 动态渲染当天记录 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 通话记录详情页 -->
+        <div class="page" id="voiceCallDetailPage">
+            <div class="vc-records-page">
+                <div class="page-header">
+                    <button class="page-back" onclick="closePage('voiceCallDetailPage')"><span class="icon-back"></span></button>
+                    <span class="page-title">通话详情</span>
+                </div>
+                <div class="vc-detail-header" id="vcDetailHeader">
+                    <!-- 动态：日期、时长、助手名 -->
+                </div>
+                <div class="vc-detail-nav" id="vcDetailNav" style="display: none;">
+                    <button class="vc-detail-nav-btn" id="vcDetailPrev" onclick="vcDetailPrevRecord()">‹</button>
+                    <span class="vc-detail-nav-text" id="vcDetailNavText">1/1</span>
+                    <button class="vc-detail-nav-btn" id="vcDetailNext" onclick="vcDetailNextRecord()">›</button>
+                </div>
+                <div class="vc-detail-messages" id="vcDetailMessages">
+                    <!-- 动态渲染 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 拨号确认弹窗 -->
+        <div class="vc-dial-modal" id="vcDialModal">
+            <div class="vc-dial-content">
+                <div class="vc-dial-avatar" id="vcDialAvatar"></div>
+                <div class="vc-dial-name" id="vcDialName"></div>
+                <div class="vc-dial-hint">语音通话</div>
+                <div class="vc-dial-btns">
+                    <button class="vc-dial-btn cancel" onclick="closeVcDialModal()">取消</button>
+                    <button class="vc-dial-btn call" onclick="startVoiceCall()">拨打</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 挂断保存确认弹窗 -->
+        <div class="vc-save-modal" id="vcSaveModal">
+            <div class="vc-save-content">
+                <div class="vc-save-title" id="vcSaveTitle">是否保存通话记录？</div>
+                <div class="vc-save-btns" id="vcSaveBtns">
+                    <button class="vc-save-btn discard" onclick="vcDiscardCall()">不保存</button>
+                    <button class="vc-save-btn save" onclick="vcSaveCall()">保存</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -5709,7 +6543,7 @@
 
         // ==================== IndexedDB 存储 ====================
         const DB_NAME = 'MiaomiaoChat';
-        const DB_VERSION = 1;
+        const DB_VERSION = 2;
         let dbInstance = null;
 
         // 初始化 IndexedDB
@@ -5742,6 +6576,12 @@
                     }
                     if (!db.objectStoreNames.contains('wechatData')) {
                         db.createObjectStore('wechatData', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('voiceCallData')) {
+                        db.createObjectStore('voiceCallData', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('voiceCallAudio')) {
+                        db.createObjectStore('voiceCallAudio', { keyPath: 'id' });
                     }
                     console.log('IndexedDB数据库结构创建完成');
                 };
@@ -12931,6 +13771,969 @@ ${dialogueText}
 
             alert('数据已清除，请刷新页面');
         };
+
+        // ==================== 语音通话模式 ====================
+        let voiceCallData = {
+            settings: {
+                autoSend: true,
+                autoSendDelay: 2,
+                carryWechatContext: false,
+                contextCount: 30,
+                voiceId: ''
+            },
+            records: []
+        };
+
+        // 通话状态
+        let vcState = {
+            assistantId: null,
+            assistant: null,
+            messages: [],       // 当前通话消息 [{role, content, emotion}]
+            recognition: null,  // SpeechRecognition 实例
+            audioContext: null,  // Web Audio API
+            analyser: null,
+            micStream: null,
+            timerInterval: null,
+            timerSeconds: 0,
+            startTime: null,
+            isProcessing: false, // 正在等待AI回复
+            autoSendTimeout: null,
+            waveformInterval: null,
+            pendingText: '',
+            processedCount: 0
+        };
+
+        // 日历状态
+        let vcCalendarYear = new Date().getFullYear();
+        let vcCalendarMonth = new Date().getMonth();
+        let vcSelectedDate = null;
+        let vcDetailRecords = [];
+        let vcDetailIndex = 0;
+
+        // 加载/保存语音通话数据
+        async function loadVoiceCallData() {
+            if (dbInstance) {
+                const saved = await loadFromIndexedDB('voiceCallData');
+                if (saved) {
+                    voiceCallData = { ...voiceCallData, ...saved };
+                    return;
+                }
+            }
+            const saved = localStorage.getItem('miaomiao_voicecall_v1');
+            if (saved) {
+                voiceCallData = { ...voiceCallData, ...JSON.parse(saved) };
+            }
+        }
+
+        function saveVoiceCallData() {
+            if (dbInstance) {
+                saveToIndexedDB('voiceCallData', voiceCallData).then(success => {
+                    if (!success) {
+                        try { localStorage.setItem('miaomiao_voicecall_v1', JSON.stringify(voiceCallData)); } catch(e) {}
+                    }
+                });
+                return;
+            }
+            try { localStorage.setItem('miaomiao_voicecall_v1', JSON.stringify(voiceCallData)); } catch(e) {}
+        }
+
+        // 保存音频Blob到IndexedDB
+        function saveVoiceCallAudio(key, blob) {
+            return new Promise((resolve) => {
+                if (!dbInstance) { resolve(false); return; }
+                try {
+                    const tx = dbInstance.transaction(['voiceCallAudio'], 'readwrite');
+                    const store = tx.objectStore('voiceCallAudio');
+                    store.put({ id: key, data: blob });
+                    tx.oncomplete = () => resolve(true);
+                    tx.onerror = () => resolve(false);
+                } catch(e) { resolve(false); }
+            });
+        }
+
+        function loadVoiceCallAudio(key) {
+            return new Promise((resolve) => {
+                if (!dbInstance) { resolve(null); return; }
+                try {
+                    const tx = dbInstance.transaction(['voiceCallAudio'], 'readonly');
+                    const store = tx.objectStore('voiceCallAudio');
+                    const req = store.get(key);
+                    req.onsuccess = () => resolve(req.result?.data || null);
+                    req.onerror = () => resolve(null);
+                } catch(e) { resolve(null); }
+            });
+        }
+
+        // ---- 打开语音通话模式 ----
+        function openVoiceCallMode() {
+            loadVoiceCallData().then(() => {
+                renderVcContactList();
+                openPage('voiceCallPage');
+            });
+        }
+
+        // ---- 渲染通讯录 ----
+        function renderVcContactList() {
+            const list = document.getElementById('vcContactList');
+            const assistants = appData.assistants || [];
+            if (assistants.length === 0) {
+                list.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">暂无助手，请先在设置中添加</div>';
+                return;
+            }
+            list.innerHTML = assistants.map(a => {
+                const avatarHtml = a.avatar
+                    ? `<img src="${a.avatar}" alt="">`
+                    : a.name?.charAt(0) || '?';
+                return `<div class="vc-contact-item" onclick="showVcDialConfirm('${a.id}')">
+                    <div class="vc-contact-avatar">${avatarHtml}</div>
+                    <div class="vc-contact-name">${a.name || '未命名助手'}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // ---- 拨号确认 ----
+        function showVcDialConfirm(assistantId) {
+            const assistant = appData.assistants.find(a => a.id === assistantId);
+            if (!assistant) return;
+            vcState.assistantId = assistantId;
+            vcState.assistant = assistant;
+
+            const avatarEl = document.getElementById('vcDialAvatar');
+            avatarEl.innerHTML = assistant.avatar
+                ? `<img src="${assistant.avatar}" alt="">`
+                : assistant.name?.charAt(0) || '?';
+            document.getElementById('vcDialName').textContent = assistant.name || '未命名助手';
+            document.getElementById('vcDialModal').classList.add('show');
+        }
+
+        function closeVcDialModal() {
+            document.getElementById('vcDialModal').classList.remove('show');
+        }
+
+        // ---- 开始通话 ----
+        function startVoiceCall() {
+            closeVcDialModal();
+            const assistant = vcState.assistant;
+
+            // 显示拨号动画
+            const dialAvatar = document.getElementById('vcDialingAvatar');
+            dialAvatar.innerHTML = assistant.avatar
+                ? `<img src="${assistant.avatar}" alt="">`
+                : assistant.name?.charAt(0) || '?';
+            document.getElementById('vcDialingName').textContent = assistant.name;
+            openPage('voiceCallDialingPage');
+
+            // 初始化通话状态
+            vcState.messages = [];
+            vcState.timerSeconds = 0;
+            vcState.startTime = new Date();
+            vcState.isProcessing = false;
+            vcState.pendingText = '';
+            vcState.processedCount = 0;
+
+            // 设置通话界面
+            document.getElementById('vcActiveName').textContent = assistant.name;
+            document.getElementById('vcActiveTimer').textContent = '00:00';
+            document.getElementById('vcMessages').innerHTML = '';
+            document.getElementById('vcInput').value = '';
+
+            // 非自动发送模式显示发送按钮
+            const sendBtn = document.getElementById('vcSendBtn');
+            sendBtn.style.display = voiceCallData.settings.autoSend ? 'none' : 'flex';
+
+            // 延迟进入通话界面（拨号动画至少2秒）
+            setTimeout(() => {
+                closePage('voiceCallDialingPage');
+                openPage('voiceCallActivePage');
+                startVcTimer();
+                startVcRecognition();
+                startVcWaveform();
+            }, 2500);
+        }
+
+        // ---- 通话计时器 ----
+        function startVcTimer() {
+            vcState.timerSeconds = 0;
+            vcState.timerInterval = setInterval(() => {
+                vcState.timerSeconds++;
+                const m = String(Math.floor(vcState.timerSeconds / 60)).padStart(2, '0');
+                const s = String(vcState.timerSeconds % 60).padStart(2, '0');
+                document.getElementById('vcActiveTimer').textContent = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function stopVcTimer() {
+            if (vcState.timerInterval) {
+                clearInterval(vcState.timerInterval);
+                vcState.timerInterval = null;
+            }
+        }
+
+        // ---- 声纹效果 ----
+        function startVcWaveform() {
+            try {
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    vcState.micStream = stream;
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    vcState.audioContext = new AudioCtx();
+                    vcState.analyser = vcState.audioContext.createAnalyser();
+                    vcState.analyser.fftSize = 64;
+                    const source = vcState.audioContext.createMediaStreamSource(stream);
+                    source.connect(vcState.analyser);
+
+                    const bars = document.querySelectorAll('#vcWaveform .vc-waveform-bar');
+                    const dataArray = new Uint8Array(vcState.analyser.frequencyBinCount);
+
+                    vcState.waveformInterval = setInterval(() => {
+                        vcState.analyser.getByteFrequencyData(dataArray);
+                        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+                        bars.forEach((bar, i) => {
+                            const val = dataArray[i * 2] || 0;
+                            const height = Math.max(6, (val / 255) * 32);
+                            bar.style.height = height + 'px';
+                        });
+                        // 有声音时显示active
+                        const waveform = document.getElementById('vcWaveform');
+                        if (avg > 20) {
+                            waveform.classList.add('active');
+                        } else {
+                            waveform.classList.remove('active');
+                        }
+                    }, 80);
+                }).catch(err => {
+                    console.warn('麦克风访问失败:', err);
+                });
+            } catch(e) {
+                console.warn('Web Audio API不可用:', e);
+            }
+        }
+
+        function stopVcWaveform() {
+            if (vcState.waveformInterval) {
+                clearInterval(vcState.waveformInterval);
+                vcState.waveformInterval = null;
+            }
+            if (vcState.micStream) {
+                vcState.micStream.getTracks().forEach(t => t.stop());
+                vcState.micStream = null;
+            }
+            if (vcState.audioContext) {
+                vcState.audioContext.close().catch(() => {});
+                vcState.audioContext = null;
+            }
+        }
+
+        // ---- 语音识别 ----
+        function startVcRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('您的浏览器不支持语音识别');
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'zh-CN';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            vcState.recognition = recognition;
+
+            recognition.onresult = (event) => {
+                if (vcState.isProcessing) return; // AI回复中不处理新输入
+
+                let interim = '';
+                let finalText = '';
+                for (let i = vcState.processedCount; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalText += event.results[i][0].transcript;
+                        vcState.processedCount = i + 1;
+                    } else {
+                        interim += event.results[i][0].transcript;
+                    }
+                }
+
+                if (finalText) {
+                    vcState.pendingText += finalText;
+                }
+
+                const display = vcState.pendingText + interim;
+                document.getElementById('vcInput').value = display;
+
+                // 自动发送：有最终文本时重置计时器
+                if (voiceCallData.settings.autoSend && finalText) {
+                    clearTimeout(vcState.autoSendTimeout);
+                    vcState.autoSendTimeout = setTimeout(() => {
+                        if (vcState.pendingText.trim()) {
+                            vcSendUserMessage(vcState.pendingText.trim());
+                            vcState.pendingText = '';
+                            document.getElementById('vcInput').value = '';
+                        }
+                    }, (voiceCallData.settings.autoSendDelay || 2) * 1000);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.warn('语音识别错误:', event.error);
+                if (event.error === 'no-speech' || event.error === 'aborted') {
+                    // 自动重启
+                    setTimeout(() => {
+                        if (vcState.recognition) {
+                            try { vcState.recognition.start(); } catch(e) {}
+                        }
+                    }, 500);
+                }
+            };
+
+            recognition.onend = () => {
+                // 通话未结束则自动重启
+                if (document.getElementById('voiceCallActivePage').classList.contains('active')) {
+                    setTimeout(() => {
+                        if (vcState.recognition) {
+                            try {
+                                vcState.processedCount = 0;
+                                vcState.recognition.start();
+                            } catch(e) {}
+                        }
+                    }, 300);
+                }
+            };
+
+            recognition.start();
+        }
+
+        function stopVcRecognition() {
+            if (vcState.recognition) {
+                vcState.recognition.onend = null; // 防止自动重启
+                vcState.recognition.stop();
+                vcState.recognition = null;
+            }
+            clearTimeout(vcState.autoSendTimeout);
+        }
+
+        // ---- 手动发送 ----
+        function vcManualSend() {
+            const input = document.getElementById('vcInput');
+            const text = input.value.trim();
+            if (!text || vcState.isProcessing) return;
+            vcState.pendingText = '';
+            vcState.processedCount = 0;
+            input.value = '';
+            vcSendUserMessage(text);
+        }
+
+        // ---- 发送消息并获取AI回复 ----
+        async function vcSendUserMessage(text) {
+            if (vcState.isProcessing) return;
+            vcState.isProcessing = true;
+
+            // 暂停语音识别
+            if (vcState.recognition) {
+                try { vcState.recognition.stop(); } catch(e) {}
+            }
+
+            // 添加用户消息
+            vcState.messages.push({ role: 'user', content: text });
+            vcRenderMessages();
+
+            // 显示loading
+            const loadingId = 'vc-loading-' + Date.now();
+            const messagesEl = document.getElementById('vcMessages');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = loadingId;
+            loadingDiv.className = 'vc-msg vc-msg-assistant vc-msg-loading';
+            loadingDiv.innerHTML = '<div class="vc-dots"><span></span><span></span><span></span></div>';
+            messagesEl.appendChild(loadingDiv);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+
+            try {
+                // 获取模型配置
+                const globalModel = appData.settings.defaultModel;
+                if (!globalModel) throw new Error('请先在设置中选择默认模型');
+                const [providerId, modelId] = globalModel.split('||');
+                const provider = appData.providers.find(p => p.id === providerId);
+                if (!provider) throw new Error('找不到供应商配置');
+
+                // 构建请求
+                const requestMessages = buildVcRequestMessages();
+                const requestBody = {
+                    model: modelId,
+                    messages: requestMessages,
+                    temperature: vcState.assistant.temperature || 0.8
+                };
+
+                const response = await fetch(provider.baseUrl + provider.apiPath, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + provider.apiKey
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errText.substring(0, 200)}`);
+                }
+
+                const data = await response.json();
+                const replyContent = data.choices[0].message.content;
+                console.log('语音通话API回复:', replyContent.substring(0, 300));
+
+                // 解析回复
+                const parsed = vcParseReply(replyContent);
+
+                // 移除loading
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+
+                // 添加助手消息并播放TTS
+                for (const msg of parsed) {
+                    vcState.messages.push({ role: 'assistant', content: msg.content, emotion: msg.emotion || 'neutral' });
+                    vcRenderMessages();
+
+                    // TTS自动播放（优先用语音通话设置的voiceId，其次微信助手设置，最后默认）
+                    const conv = wechatData.conversations?.[vcState.assistantId];
+                    const voiceId = voiceCallData.settings.voiceId || conv?.settings?.voiceId || 'male-qn-qingse';
+                    const tts = appData.ttsSettings;
+                    if (tts.groupId && tts.apiKey) {
+                        try {
+                            resetAudioRoute();
+                            await new Promise(r => setTimeout(r, 100));
+                            await vcPlayTts(msg.content, voiceId, msg.emotion || 'neutral');
+                        } catch(e) {
+                            console.warn('TTS播放失败:', e);
+                        }
+                    }
+                }
+
+            } catch(error) {
+                console.error('语音通话请求失败:', error);
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+                vcState.messages.push({ role: 'assistant', content: '请求失败: ' + error.message });
+                vcRenderMessages();
+            }
+
+            vcState.isProcessing = false;
+
+            // 重启语音识别
+            if (document.getElementById('voiceCallActivePage').classList.contains('active')) {
+                vcState.pendingText = '';
+                vcState.processedCount = 0;
+                if (vcState.recognition) {
+                    try { vcState.recognition.start(); } catch(e) {
+                        startVcRecognition();
+                    }
+                } else {
+                    startVcRecognition();
+                }
+            }
+        }
+
+        // 构建语音通话请求消息
+        function buildVcRequestMessages() {
+            const assistant = vcState.assistant;
+            let systemPrompt = assistant.systemPrompt || '';
+
+            systemPrompt += `
+
+你现在正在与用户进行实时语音通话，就像打电话一样。
+
+# 输出格式铁律（最高优先级）
+- 你的回复【必须且只能】是一个JSON数组。
+- 【绝对禁止】在JSON数组之外输出任何文字。
+
+## 第一步：思维链
+{"type":"thinking","content":"简要分析用户说了什么，你打算怎么回应"}
+
+## 第二步：语音回复
+{"type":"voice_message","content":"你说的话","emotion":"情绪"}
+- emotion必填：happy/sad/angry/tender/playful/surprised/neutral
+- 每次回复控制在50-100字以内，像打电话说话一样简洁自然
+- 口语化，就像面对面说话，不要书面语
+
+## 标点符号控制节奏（重要！TTS会根据标点停顿）
+- 逗号（，）：短停顿
+- 句号（。）：正常停顿
+- 问号（？）：语气上扬
+- 省略号（……）：拖长+停顿，犹豫/思考
+- 波浪号（～）：拖音，俏皮感
+- 感叹号（！）：强调
+
+## 口语化技巧
+- 语气词：嗯……、哎、呃、哦～、嘿、嘛/呀/啦/呢
+- 自然的重复和自我修正
+- 像真人说话一样有呼吸感
+
+## 输出结构
+[
+  {"type":"thinking","content":"..."},
+  {"type":"voice_message","content":"...","emotion":"..."}
+]`;
+
+            // 时间感知
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+            systemPrompt += `\n\n【当前时间】${timeStr}`;
+
+            // 长期记忆
+            const conv = wechatData.conversations?.[vcState.assistantId];
+            const longTermMemory = conv?.settings?.longTermMemory || [];
+            if (longTermMemory.length > 0) {
+                systemPrompt += `\n\n【长期记忆】\n` + longTermMemory.map(m => `- ${m.content}`).join('\n');
+            }
+
+            let fullContent = systemPrompt + '\n\n=====对话记录=====\n';
+
+            // 携带微信上下文
+            if (voiceCallData.settings.carryWechatContext && conv?.messages?.length) {
+                const ctxCount = voiceCallData.settings.contextCount || 30;
+                const ctxMsgs = conv.messages.slice(-ctxCount);
+                fullContent += '【微信聊天上下文】\n';
+                const assistantName = assistant.name || '助手';
+                ctxMsgs.forEach(m => {
+                    const speaker = m.role === 'user' ? '用户' : assistantName;
+                    const content = m.content || (m.type === 'image' ? '[图片]' : '');
+                    if (content) fullContent += `${speaker}: ${content}\n`;
+                });
+                fullContent += '\n【以下是当前语音通话】\n';
+            }
+
+            // 当前通话消息
+            const assistantName = assistant.name || '助手';
+            vcState.messages.forEach(m => {
+                const speaker = m.role === 'user' ? '用户' : assistantName;
+                fullContent += `${speaker}: ${m.content}\n`;
+            });
+
+            return [{ role: 'user', content: fullContent }];
+        }
+
+        // 解析AI回复
+        function vcParseReply(content) {
+            let trimmed = content.trim();
+            // 清理思考标签
+            trimmed = trimmed.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
+            trimmed = trimmed.replace(/<think>[\s\S]*?<\/think>/gi, '');
+            trimmed = trimmed.replace(/```(?:json)?\s*/gi, '').replace(/\s*```/g, '');
+            trimmed = trimmed.trim();
+
+            const results = [];
+            try {
+                let arr;
+                if (trimmed.startsWith('[')) {
+                    arr = JSON.parse(trimmed);
+                } else {
+                    const match = trimmed.match(/\[[\s\S]*\]/);
+                    arr = match ? JSON.parse(match[0]) : null;
+                }
+
+                if (Array.isArray(arr)) {
+                    for (const item of arr) {
+                        if (item.type === 'voice_message' && item.content) {
+                            results.push({ content: item.content, emotion: item.emotion || 'neutral' });
+                        } else if (item.type === 'text' && item.content && item.type !== 'thinking') {
+                            results.push({ content: item.content, emotion: 'neutral' });
+                        }
+                    }
+                }
+            } catch(e) {
+                console.warn('语音通话JSON解析失败:', e);
+            }
+
+            if (results.length === 0) {
+                // fallback: 当纯文本处理
+                const cleaned = trimmed.replace(/^\[?\s*\{[\s\S]*?\}\s*\]?$/, '').trim() || trimmed;
+                results.push({ content: cleaned, emotion: 'neutral' });
+            }
+            return results;
+        }
+
+        // TTS播放（简化版，不缓存到页面元素）
+        async function vcPlayTts(text, voiceId, emotion) {
+            const tts = appData.ttsSettings;
+            const processedText = typeof addNaturalPauses === 'function' ? addNaturalPauses(text) : text;
+            const voiceParams = typeof calculateVoiceParams === 'function' ? calculateVoiceParams(emotion) : { speed: 1, pitch: 0, vol: 3 };
+
+            const response = await fetch(`https://${tts.domain}/v1/t2a_v2?GroupId=${tts.groupId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + tts.apiKey
+                },
+                body: JSON.stringify({
+                    model: tts.model,
+                    text: processedText,
+                    stream: false,
+                    output_format: "url",
+                    voice_setting: {
+                        voice_id: voiceId,
+                        speed: voiceParams.speed,
+                        vol: voiceParams.vol,
+                        pitch: voiceParams.pitch,
+                        emotion: emotion
+                    },
+                    audio_setting: { format: 'wav', sample_rate: 24000 }
+                })
+            });
+
+            if (!response.ok) throw new Error('TTS HTTP ' + response.status);
+            const data = await response.json();
+            const audioUrl = data.data?.audio_url;
+            if (!audioUrl) throw new Error('无音频URL');
+
+            // 缓存URL用于保存
+            const lastMsg = vcState.messages[vcState.messages.length - 1];
+            if (lastMsg) lastMsg._audioUrl = audioUrl;
+
+            return new Promise((resolve, reject) => {
+                if (currentTtsAudio) {
+                    currentTtsAudio.pause();
+                    currentTtsAudio = null;
+                }
+                const audio = new Audio(audioUrl);
+                currentTtsAudio = audio;
+                audio.onended = () => { currentTtsAudio = null; resolve(); };
+                audio.onerror = (e) => { currentTtsAudio = null; reject(e); };
+                audio.play().catch(reject);
+            });
+        }
+
+        // 渲染通话消息
+        function vcRenderMessages() {
+            const el = document.getElementById('vcMessages');
+            el.innerHTML = vcState.messages.map(m => {
+                const cls = m.role === 'user' ? 'vc-msg-user' : 'vc-msg-assistant';
+                return `<div class="vc-msg ${cls}">${m.content}</div>`;
+            }).join('');
+            el.scrollTop = el.scrollHeight;
+        }
+
+        // ---- 挂断 ----
+        function hangupVoiceCall() {
+            stopVcRecognition();
+            stopVcTimer();
+            stopVcWaveform();
+            if (currentTtsAudio) {
+                currentTtsAudio.pause();
+                currentTtsAudio = null;
+            }
+            resetAudioRoute();
+
+            if (vcState.messages.length > 0) {
+                document.getElementById('vcSaveModal').classList.add('show');
+                document.getElementById('vcSaveTitle').textContent = '是否保存通话记录？';
+                document.getElementById('vcSaveBtns').style.display = 'flex';
+            } else {
+                closePage('voiceCallActivePage');
+            }
+        }
+
+        function vcDiscardCall() {
+            document.getElementById('vcSaveModal').classList.remove('show');
+            closePage('voiceCallActivePage');
+        }
+
+        async function vcSaveCall() {
+            const saveBtns = document.getElementById('vcSaveBtns');
+            saveBtns.style.display = 'none';
+            document.getElementById('vcSaveTitle').textContent = '正在保存...';
+
+            const record = {
+                id: 'vcrec_' + Date.now(),
+                assistantId: vcState.assistantId,
+                assistantName: vcState.assistant?.name || '助手',
+                startTime: vcState.startTime?.toISOString(),
+                endTime: new Date().toISOString(),
+                duration: vcState.timerSeconds,
+                messages: vcState.messages.map(m => ({
+                    role: m.role,
+                    content: m.content,
+                    emotion: m.emotion || undefined
+                }))
+            };
+
+            // 下载TTS音频并保存
+            let audioIndex = 0;
+            for (let i = 0; i < vcState.messages.length; i++) {
+                const msg = vcState.messages[i];
+                if (msg.role === 'assistant' && msg._audioUrl) {
+                    try {
+                        const resp = await fetch(msg._audioUrl);
+                        const blob = await resp.blob();
+                        const audioKey = `${record.id}_${i}`;
+                        await saveVoiceCallAudio(audioKey, blob);
+                        record.messages[i].hasAudio = true;
+                        record.messages[i].audioKey = audioKey;
+                        audioIndex++;
+                    } catch(e) {
+                        console.warn('保存音频失败:', e);
+                    }
+                }
+            }
+
+            voiceCallData.records.push(record);
+            saveVoiceCallData();
+
+            document.getElementById('vcSaveTitle').textContent = '保存成功';
+            setTimeout(() => {
+                document.getElementById('vcSaveModal').classList.remove('show');
+                closePage('voiceCallActivePage');
+            }, 1000);
+        }
+
+        // ---- 设置 ----
+        function openVoiceCallSettings() {
+            const s = voiceCallData.settings;
+            const autoSendEl = document.getElementById('vcAutoSend');
+            if (s.autoSend) autoSendEl.classList.add('on');
+            else autoSendEl.classList.remove('on');
+
+            document.getElementById('vcAutoSendDelay').value = s.autoSendDelay || 2;
+            document.getElementById('vcAutoSendDelayRow').style.display = s.autoSend ? 'flex' : 'none';
+
+            const ctxEl = document.getElementById('vcCarryContext');
+            if (s.carryWechatContext) ctxEl.classList.add('on');
+            else ctxEl.classList.remove('on');
+
+            document.getElementById('vcContextCount').value = s.contextCount || 30;
+            document.getElementById('vcContextCountRow').style.display = s.carryWechatContext ? 'flex' : 'none';
+
+            document.getElementById('vcVoiceId').value = s.voiceId || '';
+
+            openPage('voiceCallSettingsPage');
+        }
+
+        function toggleVcAutoSendDelay() {
+            const on = document.getElementById('vcAutoSend').classList.contains('on');
+            document.getElementById('vcAutoSendDelayRow').style.display = on ? 'flex' : 'none';
+        }
+
+        function toggleVcContextCount() {
+            const on = document.getElementById('vcCarryContext').classList.contains('on');
+            document.getElementById('vcContextCountRow').style.display = on ? 'flex' : 'none';
+        }
+
+        function saveVoiceCallSettings() {
+            voiceCallData.settings.autoSend = document.getElementById('vcAutoSend').classList.contains('on');
+            voiceCallData.settings.autoSendDelay = parseInt(document.getElementById('vcAutoSendDelay').value) || 2;
+            voiceCallData.settings.carryWechatContext = document.getElementById('vcCarryContext').classList.contains('on');
+            voiceCallData.settings.contextCount = parseInt(document.getElementById('vcContextCount').value) || 30;
+            voiceCallData.settings.voiceId = document.getElementById('vcVoiceId').value.trim();
+            saveVoiceCallData();
+            closePage('voiceCallSettingsPage');
+        }
+
+        // ---- 通话记录（日历）----
+        function openVoiceCallRecords() {
+            vcCalendarYear = new Date().getFullYear();
+            vcCalendarMonth = new Date().getMonth();
+            vcSelectedDate = null;
+            renderVcCalendar();
+            document.getElementById('vcRecordList').innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">选择日期查看通话记录</div>';
+            openPage('voiceCallRecordsPage');
+        }
+
+        function vcCalendarPrevMonth() {
+            vcCalendarMonth--;
+            if (vcCalendarMonth < 0) { vcCalendarMonth = 11; vcCalendarYear--; }
+            renderVcCalendar();
+        }
+
+        function vcCalendarNextMonth() {
+            vcCalendarMonth++;
+            if (vcCalendarMonth > 11) { vcCalendarMonth = 0; vcCalendarYear++; }
+            renderVcCalendar();
+        }
+
+        function renderVcCalendar() {
+            document.getElementById('vcCalendarTitle').textContent = `${vcCalendarYear}年${vcCalendarMonth + 1}月`;
+            const daysEl = document.getElementById('vcCalendarDays');
+
+            const firstDay = new Date(vcCalendarYear, vcCalendarMonth, 1);
+            const lastDay = new Date(vcCalendarYear, vcCalendarMonth + 1, 0);
+            const startWeekday = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            // 统计每天的记录数
+            const recordCountByDay = {};
+            voiceCallData.records.forEach(r => {
+                const d = new Date(r.startTime);
+                if (d.getFullYear() === vcCalendarYear && d.getMonth() === vcCalendarMonth) {
+                    const day = d.getDate();
+                    recordCountByDay[day] = (recordCountByDay[day] || 0) + 1;
+                }
+            });
+
+            let html = '';
+            // 上月填充
+            const prevDays = new Date(vcCalendarYear, vcCalendarMonth, 0).getDate();
+            for (let i = startWeekday - 1; i >= 0; i--) {
+                html += `<div class="vc-calendar-day other-month">${prevDays - i}</div>`;
+            }
+
+            // 当月
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateObj = new Date(vcCalendarYear, vcCalendarMonth, day);
+                dateObj.setHours(0,0,0,0);
+                const isFuture = dateObj > today;
+                const isToday = dateObj.getTime() === today.getTime();
+                const count = recordCountByDay[day] || 0;
+                const dateStr = `${vcCalendarYear}-${vcCalendarMonth}-${day}`;
+                const isSelected = dateStr === vcSelectedDate;
+
+                let cls = 'vc-calendar-day';
+                if (isToday) cls += ' today';
+                if (isSelected) cls += ' selected';
+                if (count > 0) cls += ' has-records';
+                if (isFuture) cls += ' future';
+
+                const dots = count > 0
+                    ? `<div class="vc-calendar-dots">${Array(Math.min(count, 3)).fill('<div class="vc-calendar-dot"></div>').join('')}</div>`
+                    : '';
+
+                const click = isFuture ? '' : `onclick="selectVcDate('${dateStr}')"`;
+                html += `<div class="${cls}" ${click}>${day}${dots}</div>`;
+            }
+
+            // 下月填充
+            const totalCells = startWeekday + daysInMonth;
+            const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+            for (let i = 1; i <= remaining; i++) {
+                html += `<div class="vc-calendar-day other-month">${i}</div>`;
+            }
+
+            daysEl.innerHTML = html;
+        }
+
+        function selectVcDate(dateStr) {
+            vcSelectedDate = dateStr;
+            renderVcCalendar();
+
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const dayStart = new Date(y, m, d);
+            const dayEnd = new Date(y, m, d + 1);
+
+            const dayRecords = voiceCallData.records.filter(r => {
+                const t = new Date(r.startTime);
+                return t >= dayStart && t < dayEnd;
+            });
+
+            const listEl = document.getElementById('vcRecordList');
+            if (dayRecords.length === 0) {
+                listEl.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">当天无通话记录</div>';
+                return;
+            }
+
+            listEl.innerHTML = dayRecords.map(r => {
+                const t = new Date(r.startTime);
+                const timeStr = `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`;
+                const durM = Math.floor(r.duration / 60);
+                const durS = r.duration % 60;
+                const durStr = durM > 0 ? `${durM}分${durS}秒` : `${durS}秒`;
+                return `<div class="vc-record-card" onclick="openVcRecordDetail('${r.id}')">
+                    <div class="vc-record-info">
+                        <span class="vc-record-assistant">${r.assistantName}</span>
+                        <span class="vc-record-time">${timeStr}</span>
+                    </div>
+                    <div class="vc-record-duration">通话 ${durStr}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // ---- 记录详情 ----
+        function openVcRecordDetail(recordId) {
+            // 找到当天所有记录
+            if (vcSelectedDate) {
+                const [y, m, d] = vcSelectedDate.split('-').map(Number);
+                const dayStart = new Date(y, m, d);
+                const dayEnd = new Date(y, m, d + 1);
+                vcDetailRecords = voiceCallData.records.filter(r => {
+                    const t = new Date(r.startTime);
+                    return t >= dayStart && t < dayEnd;
+                });
+                vcDetailIndex = vcDetailRecords.findIndex(r => r.id === recordId);
+                if (vcDetailIndex < 0) vcDetailIndex = 0;
+            } else {
+                vcDetailRecords = [voiceCallData.records.find(r => r.id === recordId)].filter(Boolean);
+                vcDetailIndex = 0;
+            }
+            renderVcRecordDetail();
+            openPage('voiceCallDetailPage');
+        }
+
+        function renderVcRecordDetail() {
+            const record = vcDetailRecords[vcDetailIndex];
+            if (!record) return;
+
+            const t = new Date(record.startTime);
+            const dateStr = `${t.getFullYear()}年${t.getMonth()+1}月${t.getDate()}日`;
+            const timeStr = `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')}`;
+            const durM = Math.floor(record.duration / 60);
+            const durS = record.duration % 60;
+            const durStr = durM > 0 ? `${durM}分${durS}秒` : `${durS}秒`;
+
+            document.getElementById('vcDetailHeader').innerHTML = `
+                <div class="vc-detail-date">${dateStr} ${timeStr}</div>
+                <div class="vc-detail-meta">通话时长 ${durStr}</div>
+                <div class="vc-detail-assistant">${record.assistantName}</div>
+            `;
+
+            // 多条记录导航
+            const nav = document.getElementById('vcDetailNav');
+            if (vcDetailRecords.length > 1) {
+                nav.style.display = 'flex';
+                document.getElementById('vcDetailNavText').textContent = `${vcDetailIndex + 1}/${vcDetailRecords.length}`;
+                document.getElementById('vcDetailPrev').disabled = vcDetailIndex <= 0;
+                document.getElementById('vcDetailNext').disabled = vcDetailIndex >= vcDetailRecords.length - 1;
+            } else {
+                nav.style.display = 'none';
+            }
+
+            // 渲染消息
+            const userName = '我';
+            const assistantName = record.assistantName;
+            document.getElementById('vcDetailMessages').innerHTML = record.messages.map((m, i) => {
+                const isUser = m.role === 'user';
+                const cls = isUser ? 'vc-detail-msg-user' : 'vc-detail-msg-assistant';
+                const name = isUser ? userName : assistantName;
+                const playBtn = (!isUser && m.hasAudio)
+                    ? `<button class="vc-detail-play-btn" onclick="vcPlayRecordAudio('${m.audioKey}', this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>`
+                    : '';
+                return `<div class="vc-detail-msg ${cls}">
+                    <div class="vc-detail-msg-name">${name}</div>
+                    <div class="vc-detail-msg-bubble">${m.content}${playBtn}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function vcDetailPrevRecord() {
+            if (vcDetailIndex > 0) { vcDetailIndex--; renderVcRecordDetail(); }
+        }
+
+        function vcDetailNextRecord() {
+            if (vcDetailIndex < vcDetailRecords.length - 1) { vcDetailIndex++; renderVcRecordDetail(); }
+        }
+
+        // 播放保存的录音
+        async function vcPlayRecordAudio(audioKey, btnEl) {
+            try {
+                const blob = await loadVoiceCallAudio(audioKey);
+                if (!blob) { alert('音频数据未找到'); return; }
+                const url = URL.createObjectURL(blob);
+                if (currentTtsAudio) { currentTtsAudio.pause(); currentTtsAudio = null; }
+                const audio = new Audio(url);
+                currentTtsAudio = audio;
+                btnEl.style.color = '#e53935';
+                audio.onended = () => { btnEl.style.color = '#4caf50'; URL.revokeObjectURL(url); currentTtsAudio = null; };
+                audio.onerror = () => { btnEl.style.color = '#4caf50'; URL.revokeObjectURL(url); currentTtsAudio = null; };
+                audio.play();
+            } catch(e) {
+                console.error('播放录音失败:', e);
+                alert('播放失败');
+            }
+        }
 
         // 初始化
         init();
