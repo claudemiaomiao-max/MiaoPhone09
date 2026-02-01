@@ -13911,9 +13911,25 @@ ${dialogueText}
         }
 
         // ---- 开始通话 ----
+        // 预解锁的Audio对象，用于绕过Safari自动播放限制
+        let vcUnlockedAudio = null;
+
         function startVoiceCall() {
             closeVcDialModal();
             const assistant = vcState.assistant;
+
+            // 在用户交互事件中预解锁Audio（Safari要求音频播放必须由用户手势触发）
+            // 播放一段极短的静音来"解锁"，后续就可以自动播放了
+            try {
+                vcUnlockedAudio = new Audio('data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAAAAA==');
+                vcUnlockedAudio.play().then(() => {
+                    console.log('音频播放权限已解锁');
+                }).catch(e => {
+                    console.warn('音频解锁失败:', e);
+                });
+            } catch(e) {
+                console.warn('创建解锁Audio失败:', e);
+            }
 
             // 显示拨号动画
             const dialAvatar = document.getElementById('vcDialingAvatar');
@@ -14401,11 +14417,30 @@ ${dialogueText}
                     currentTtsAudio.pause();
                     currentTtsAudio = null;
                 }
-                const audio = new Audio(audioUrl);
+                // 优先复用已解锁的Audio对象（绕过Safari自动播放限制）
+                let audio;
+                if (vcUnlockedAudio) {
+                    audio = vcUnlockedAudio;
+                    audio.src = audioUrl;
+                } else {
+                    audio = new Audio(audioUrl);
+                }
                 currentTtsAudio = audio;
                 audio.onended = () => { currentTtsAudio = null; resolve(); };
-                audio.onerror = (e) => { currentTtsAudio = null; reject(e); };
-                audio.play().catch(reject);
+                audio.onerror = (e) => {
+                    console.warn('播放失败:', e);
+                    currentTtsAudio = null;
+                    reject(e);
+                };
+                audio.play().catch(e => {
+                    console.warn('play()失败，尝试用新Audio:', e);
+                    // fallback: 如果复用的也失败了，尝试新建
+                    const audio2 = new Audio(audioUrl);
+                    currentTtsAudio = audio2;
+                    audio2.onended = () => { currentTtsAudio = null; resolve(); };
+                    audio2.onerror = () => { currentTtsAudio = null; reject(e); };
+                    audio2.play().catch(reject);
+                });
             });
         }
 
