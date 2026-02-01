@@ -14378,10 +14378,12 @@ ${dialogueText}
 
             if (!response.ok) throw new Error('TTS HTTP ' + response.status);
             const data = await response.json();
-            const audioUrl = data.data?.audio_url;
-            if (!audioUrl) throw new Error('无音频URL');
-
-            // 缓存URL用于保存
+            const audioUrl = data?.data?.audio;
+			if (!audioUrl) {
+				const errMsg = data?.base_resp?.status_msg || '未拿到audio字段';
+				throw new Error(errMsg);
+				}
+		// 缓存URL用于保存
             const lastMsg = vcState.messages[vcState.messages.length - 1];
             if (lastMsg) lastMsg._audioUrl = audioUrl;
 
