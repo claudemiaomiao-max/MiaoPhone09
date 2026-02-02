@@ -6760,6 +6760,7 @@
                 const saved = await loadFromIndexedDB('appData');
                 if (saved) {
                     appData = { ...appData, ...saved };
+                    migrateTtsSettings();
                     return;
                 }
             }
@@ -6767,7 +6768,17 @@
             const saved = localStorage.getItem('miaomiao_chat_v5');
             if (saved) {
                 appData = { ...appData, ...JSON.parse(saved) };
+                migrateTtsSettings();
             }
+        }
+
+        // 确保 ttsSettings 有新字段（旧数据兼容）
+        function migrateTtsSettings() {
+            const tts = appData.ttsSettings;
+            if (!tts) return;
+            if (!tts.engine) tts.engine = 'minimax';
+            if (tts.edgeWorkerUrl === undefined) tts.edgeWorkerUrl = '';
+            if (tts.edgeWorkerKey === undefined) tts.edgeWorkerKey = '';
         }
 
         // ==================== 页面导航 ====================
@@ -10871,7 +10882,7 @@ ${memoryText}`;
             }
             
             if (!isTtsConfigured()) {
-                alert('请先在主设置中配置语音引擎');
+                alert('请先在主设置中配置语音引擎（当前引擎: ' + (appData.ttsSettings.engine || '未设置') + '）');
                 return;
             }
 
@@ -10879,6 +10890,7 @@ ${memoryText}`;
             const voiceId = settings.voiceId || defaultVoiceId;
             const text = msg.content;
             const emotion = msg.emotion || 'neutral';  // 从消息中获取情绪
+            console.log('playVoiceMessage TTS引擎:', appData.ttsSettings.engine, 'voiceId:', voiceId);
             
             // 显示loading，隐藏图标
             if (loadingEl) loadingEl.classList.add('show');
@@ -10919,11 +10931,27 @@ ${memoryText}`;
         // 音频是否已解锁（移动端需要用户交互后才能播放音频）
         let audioUnlocked = false;
 
+        // 静音音频（用于在用户手势中预解锁Audio元素）
+        const SILENT_AUDIO_SRC = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwmHAAAAAAD/+9DEAAAIAANIAAAAgAADSAAAAATEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//tQxBkAAADSAAAAAAAAANIAAAAA//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8=';
+
+        // 预解锁Audio元素（在用户手势的同步调用栈中调用）
+        // Safari要求audio.play()在用户手势中，异步fetch后手势上下文会丢失
+        // 所以在点击时立即创建并播放静音音频来"激活"这个元素，
+        // 之后对同一元素改src再play，Safari会允许
+        function preUnlockAudioElement() {
+            const audio = new Audio(SILENT_AUDIO_SRC);
+            audio.volume = 0.01;
+            audio.play().then(() => {
+                audio.pause();
+                audio.volume = 1;
+            }).catch(() => {});
+            return audio;
+        }
+
         // 解锁音频（在首次用户交互时调用）
         function unlockAudio() {
             if (audioUnlocked) return;
-            // 创建并播放一个静音音频来解锁
-            const silentAudio = new Audio('data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYoRwmHAAAAAAD/+9DEAAAIAANIAAAAgAADSAAAAATEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//tQxBkAAADSAAAAAAAAANIAAAAA//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8=');
+            const silentAudio = new Audio(SILENT_AUDIO_SRC);
             silentAudio.volume = 0.01;
             silentAudio.play().then(() => {
                 audioUnlocked = true;
@@ -11034,17 +11062,30 @@ ${memoryText}`;
                 headers['Authorization'] = 'Bearer ' + tts.edgeWorkerKey;
             }
 
-            const response = await fetch(url, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    text,
-                    voice: voiceId,
-                    rate: params.rate,
-                    pitch: params.pitch,
-                    volume: params.volume
-                })
-            });
+            console.log('Edge TTS 请求:', url, voiceId);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+            let response;
+            try {
+                response = await fetch(url, {
+                    method: 'POST',
+                    headers,
+                    signal: controller.signal,
+                    body: JSON.stringify({
+                        text,
+                        voice: voiceId,
+                        rate: params.rate,
+                        pitch: params.pitch,
+                        volume: params.volume
+                    })
+                });
+            } catch(e) {
+                clearTimeout(timeoutId);
+                if (e.name === 'AbortError') throw new Error('Edge TTS 请求超时 (15s)');
+                throw new Error('Edge TTS 网络错误: ' + e.message);
+            }
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 let errMsg = 'Edge TTS 请求失败: HTTP ' + response.status;
@@ -11056,6 +11097,7 @@ ${memoryText}`;
             }
 
             const blob = await response.blob();
+            console.log('Edge TTS 收到音频:', blob.size, 'bytes');
             const blobUrl = URL.createObjectURL(blob);
             ttsCache.set(cacheKey, blobUrl);
             return { url: blobUrl, cacheKey };
@@ -11065,6 +11107,10 @@ ${memoryText}`;
         async function playTtsAudio(text, voiceId, el, emotion = 'neutral') {
             const tts = appData.ttsSettings;
 
+            // 在用户手势调用栈中预解锁Audio元素（必须在任何await之前）
+            // Safari要求play()在用户手势中，async fetch之后手势上下文会丢失
+            const unlockedAudio = preUnlockAudioElement();
+
             // Edge TTS 路径
             if (tts.engine === 'edge') {
                 if (!tts.edgeWorkerUrl) return;
@@ -11073,8 +11119,9 @@ ${memoryText}`;
                 if (el) el.style.opacity = '0.5';
                 try {
                     const { url: audioUrl } = await playEdgeTts(text, voiceId, emotion);
-                    if (currentTtsAudio) { currentTtsAudio.pause(); currentTtsAudio = null; }
-                    currentTtsAudio = new Audio(audioUrl);
+                    if (currentTtsAudio && currentTtsAudio !== unlockedAudio) { currentTtsAudio.pause(); currentTtsAudio = null; }
+                    unlockedAudio.src = audioUrl;
+                    currentTtsAudio = unlockedAudio;
                     await currentTtsAudio.play();
                 } catch (e) {
                     console.error('Edge TTS播放失败:', e);
@@ -11097,17 +11144,18 @@ ${memoryText}`;
             const processedText = addNaturalPauses(text);
             // 计算情绪参数
             const voiceParams = calculateVoiceParams(emotion);
-            
+
             const cacheKey = `${voiceId}|${tts.model}|${emotion}|${text}`;
-            
+
             // 先检查缓存
             if (ttsCache.has(cacheKey)) {
                 const cachedUrl = ttsCache.get(cacheKey);
-                if (currentTtsAudio) {
+                if (currentTtsAudio && currentTtsAudio !== unlockedAudio) {
                     currentTtsAudio.pause();
                     currentTtsAudio = null;
                 }
-                currentTtsAudio = new Audio(cachedUrl);
+                unlockedAudio.src = cachedUrl;
+                currentTtsAudio = unlockedAudio;
                 try {
                     await currentTtsAudio.play();
                 } catch (e) {
@@ -11115,10 +11163,10 @@ ${memoryText}`;
                 }
                 return;
             }
-            
+
             // 显示加载状态
             if (el) el.style.opacity = '0.5';
-            
+
             try {
                 const response = await fetch(`https://${tts.domain}/v1/t2a_v2?GroupId=${tts.groupId}`, {
                     method: 'POST',
@@ -11136,7 +11184,7 @@ ${memoryText}`;
                             speed: voiceParams.speed,
                             vol: voiceParams.vol,
                             pitch: voiceParams.pitch,
-                            emotion: emotion  // 传递实际的emotion值
+                            emotion: emotion
                         },
                         audio_setting: {
                             sample_rate: 32000,
@@ -11152,7 +11200,7 @@ ${memoryText}`;
                 }
 
                 const data = await response.json();
-                
+
                 // 检查是否拿到音频URL
                 const audioUrl = data?.data?.audio;
                 if (!audioUrl) {
@@ -11164,21 +11212,21 @@ ${memoryText}`;
                 ttsCache.set(cacheKey, audioUrl);
 
                 // 停掉上一个音频
-                if (currentTtsAudio) {
+                if (currentTtsAudio && currentTtsAudio !== unlockedAudio) {
                     currentTtsAudio.pause();
                     currentTtsAudio.src = '';
                     currentTtsAudio = null;
                 }
 
-                // 播放新音频
-                currentTtsAudio = new Audio(audioUrl);
-                currentTtsAudio.preload = 'auto';
-                
+                // 用预解锁的Audio元素播放（避免Safari NotAllowedError）
+                unlockedAudio.src = audioUrl;
+                unlockedAudio.preload = 'auto';
+                currentTtsAudio = unlockedAudio;
+
                 await currentTtsAudio.play();
 
             } catch (error) {
-                console.error('TTS播放失败:', error);
-                alert('语音播放失败: ' + error.message);
+                console.error('语音播放失败:', error);
             } finally {
                 if (el) el.style.opacity = '1';
             }
@@ -11187,6 +11235,27 @@ ${memoryText}`;
         // 带回调的TTS播放函数（支持情绪参数）
         async function playTtsAudioWithCallback(text, voiceId, onStart, onEnd, emotion = 'neutral', preUnlockedAudio = null) {
             const tts = appData.ttsSettings;
+            console.log('TTS引擎:', tts.engine, '| voiceId:', voiceId);
+
+            // 在用户手势调用栈中预解锁Audio元素（必须在任何await之前）
+            if (!preUnlockedAudio) {
+                preUnlockedAudio = preUnlockAudioElement();
+            }
+
+            // 安全播放函数
+            async function safePlay(audio) {
+                try {
+                    await audio.play();
+                } catch (e) {
+                    if (e.name === 'NotAllowedError') {
+                        console.warn('首次播放被阻止，尝试重试...');
+                        await new Promise(r => setTimeout(r, 100));
+                        await audio.play();
+                    } else {
+                        throw e;
+                    }
+                }
+            }
 
             // Edge TTS 路径
             if (tts.engine === 'edge') {
@@ -11195,7 +11264,7 @@ ${memoryText}`;
                 resetAudioRoute();
                 await new Promise(r => setTimeout(r, 100));
 
-                const { url: audioUrl, cacheKey } = await playEdgeTts(text, voiceId, emotion);
+                const { url: audioUrl } = await playEdgeTts(text, voiceId, emotion);
 
                 if (currentTtsAudio && currentTtsAudio !== preUnlockedAudio) {
                     currentTtsAudio.pause();
@@ -11203,23 +11272,9 @@ ${memoryText}`;
                     currentTtsAudio = null;
                 }
 
-                async function safePlay(audio) {
-                    try { await audio.play(); } catch (e) {
-                        if (e.name === 'NotAllowedError') {
-                            console.warn('首次播放被阻止，尝试重试...');
-                            await new Promise(r => setTimeout(r, 100));
-                            await audio.play();
-                        } else { throw e; }
-                    }
-                }
-
-                if (preUnlockedAudio) {
-                    preUnlockedAudio.src = audioUrl;
-                    currentTtsAudio = preUnlockedAudio;
-                } else {
-                    currentTtsAudio = new Audio(audioUrl);
-                }
-                currentTtsAudio.preload = 'auto';
+                preUnlockedAudio.src = audioUrl;
+                preUnlockedAudio.preload = 'auto';
+                currentTtsAudio = preUnlockedAudio;
                 if (onStart) onStart();
                 currentTtsAudio.onended = () => { if (onEnd) onEnd(); };
                 await safePlay(currentTtsAudio);
@@ -11242,42 +11297,22 @@ ${memoryText}`;
             const voiceParams = calculateVoiceParams(emotion);
 
             const cacheKey = `${voiceId}|${tts.model}|${emotion}|${text}`;
-            
-            // 安全播放函数（处理移动端首次播放限制）
-            async function safePlay(audio) {
-                try {
-                    await audio.play();
-                } catch (e) {
-                    if (e.name === 'NotAllowedError') {
-                        // 移动端首次播放被阻止，等待100ms后重试
-                        console.warn('首次播放被阻止，尝试重试...');
-                        await new Promise(r => setTimeout(r, 100));
-                        await audio.play();
-                    } else {
-                        throw e;
-                    }
-                }
-            }
 
             // 先检查缓存
             if (ttsCache.has(cacheKey)) {
                 const cachedUrl = ttsCache.get(cacheKey);
-                if (currentTtsAudio) {
+                if (currentTtsAudio && currentTtsAudio !== preUnlockedAudio) {
                     currentTtsAudio.pause();
                     currentTtsAudio = null;
                 }
-                if (preUnlockedAudio) {
-                    preUnlockedAudio.src = cachedUrl;
-                    currentTtsAudio = preUnlockedAudio;
-                } else {
-                    currentTtsAudio = new Audio(cachedUrl);
-                }
+                preUnlockedAudio.src = cachedUrl;
+                currentTtsAudio = preUnlockedAudio;
                 if (onStart) onStart();
                 currentTtsAudio.onended = () => { if (onEnd) onEnd(); };
                 await safePlay(currentTtsAudio);
                 return;
             }
-            
+
             // 请求TTS
             const response = await fetch(`https://${tts.domain}/v1/t2a_v2?GroupId=${tts.groupId}`, {
                 method: 'POST',
@@ -11326,14 +11361,10 @@ ${memoryText}`;
                 currentTtsAudio = null;
             }
 
-            // 播放新音频
-            if (preUnlockedAudio) {
-                preUnlockedAudio.src = audioUrl;
-                currentTtsAudio = preUnlockedAudio;
-            } else {
-                currentTtsAudio = new Audio(audioUrl);
-            }
-            currentTtsAudio.preload = 'auto';
+            // 用预解锁的Audio元素播放（避免Safari NotAllowedError）
+            preUnlockedAudio.src = audioUrl;
+            preUnlockedAudio.preload = 'auto';
+            currentTtsAudio = preUnlockedAudio;
             if (onStart) onStart();
             currentTtsAudio.onended = () => { if (onEnd) onEnd(); };
             await safePlay(currentTtsAudio);
@@ -14494,7 +14525,9 @@ ${dialogueText}
                     const conv = wechatData.conversations?.[vcState.assistantId];
                     const defaultVoiceId = appData.ttsSettings.engine === 'edge' ? 'zh-CN-XiaoxiaoNeural' : 'male-qn-qingse';
                     const voiceId = voiceCallData.settings.voiceId || conv?.settings?.voiceId || defaultVoiceId;
-                    if (isTtsConfigured()) {
+                    const ttsReady = isTtsConfigured();
+                    console.log('语音通话TTS检查:', ttsReady, '引擎:', appData.ttsSettings.engine, 'voiceId:', voiceId);
+                    if (ttsReady) {
                         try {
                             resetAudioRoute();
                             await new Promise(r => setTimeout(r, 100));
