@@ -11035,7 +11035,7 @@ ${memoryText}`;
         }
 
         // 带回调的TTS播放函数（支持情绪参数）
-        async function playTtsAudioWithCallback(text, voiceId, onStart, onEnd, emotion = 'neutral') {
+        async function playTtsAudioWithCallback(text, voiceId, onStart, onEnd, emotion = 'neutral', preUnlockedAudio = null) {
             const tts = appData.ttsSettings;
             if (!tts.groupId || !tts.apiKey) {
                 throw new Error('TTS未配置');
@@ -11076,7 +11076,12 @@ ${memoryText}`;
                     currentTtsAudio.pause();
                     currentTtsAudio = null;
                 }
-                currentTtsAudio = new Audio(cachedUrl);
+                if (preUnlockedAudio) {
+                    preUnlockedAudio.src = cachedUrl;
+                    currentTtsAudio = preUnlockedAudio;
+                } else {
+                    currentTtsAudio = new Audio(cachedUrl);
+                }
                 if (onStart) onStart();
                 currentTtsAudio.onended = () => { if (onEnd) onEnd(); };
                 await safePlay(currentTtsAudio);
@@ -11125,14 +11130,19 @@ ${memoryText}`;
             ttsCache.set(cacheKey, audioUrl);
 
             // 停掉上一个音频
-            if (currentTtsAudio) {
+            if (currentTtsAudio && currentTtsAudio !== preUnlockedAudio) {
                 currentTtsAudio.pause();
                 currentTtsAudio.src = '';
                 currentTtsAudio = null;
             }
 
             // 播放新音频
-            currentTtsAudio = new Audio(audioUrl);
+            if (preUnlockedAudio) {
+                preUnlockedAudio.src = audioUrl;
+                currentTtsAudio = preUnlockedAudio;
+            } else {
+                currentTtsAudio = new Audio(audioUrl);
+            }
             currentTtsAudio.preload = 'auto';
             if (onStart) onStart();
             currentTtsAudio.onended = () => { if (onEnd) onEnd(); };
@@ -14364,7 +14374,7 @@ ${dialogueText}
             return results;
         }
 
-        // TTS播放 - 直接复用现有的playTtsAudioWithCallback
+        // TTS播放 - 复用现有的playTtsAudioWithCallback，传入预解锁Audio绕过Safari限制
         async function vcPlayTts(text, voiceId, emotion) {
             return new Promise((resolve, reject) => {
                 playTtsAudioWithCallback(text, voiceId,
@@ -14383,7 +14393,8 @@ ${dialogueText}
                         console.log('语音通话TTS播放完毕');
                         resolve();
                     },
-                    emotion
+                    emotion,
+                    vcUnlockedAudio  // 传入预解锁的Audio对象，绕过Safari自动播放限制
                 ).catch(e => {
                     console.warn('TTS播放失败:', e);
                     reject(e);
