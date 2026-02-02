@@ -5247,7 +5247,7 @@
                                 </div>
                                 <div>
                                     <div class="settings-item-text">语音设置</div>
-                                    <div class="settings-item-desc">MiniMax TTS 配置</div>
+                                    <div class="settings-item-desc">TTS 引擎配置</div>
                                 </div>
                             </div>
                             <div class="settings-item-right">
@@ -5969,9 +5969,22 @@
                         <span class="wechat-settings-label">启用语音合成 (TTS)</span>
                         <div class="switch" id="wechatTtsEnabled" onclick="this.classList.toggle('on')"></div>
                     </div>
-                    <div class="wechat-settings-item">
+                    <div class="wechat-settings-item" id="wechatVoiceIdRow">
                         <span class="wechat-settings-label">语音 ID</span>
                         <input type="text" class="wechat-settings-input" id="wechatVoiceId" placeholder="moss_audio_xxx..." style="width: 140px; font-size: 12px;">
+                    </div>
+                    <div id="wechatEdgeVoiceRow" style="display: none;">
+                        <div class="wechat-settings-item">
+                            <span class="wechat-settings-label">性别</span>
+                            <select class="wechat-settings-input" id="wechatEdgeGender" onchange="updateWechatEdgeVoiceOptions()" style="width: 80px; font-size: 12px;">
+                                <option value="female">女声</option>
+                                <option value="male">男声</option>
+                            </select>
+                        </div>
+                        <div class="wechat-settings-item">
+                            <span class="wechat-settings-label">音色</span>
+                            <select class="wechat-settings-input" id="wechatEdgeVoice" style="width: 160px; font-size: 12px;"></select>
+                        </div>
                     </div>
                 </div>
                 <!-- 长期记忆自动总结设置 -->
@@ -6241,40 +6254,59 @@
             </div>
         </div>
 
-        <!-- MiniMax TTS设置弹窗 -->
+        <!-- TTS设置弹窗 -->
         <div class="modal" id="ttsSettingsModal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <span class="modal-title">语音设置 (MiniMax TTS)</span>
+                    <span class="modal-title">语音设置</span>
                     <button class="modal-close" onclick="hideModal('ttsSettingsModal')">×</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label">Group ID</label>
-                        <input type="text" class="form-input" id="ttsGroupId" placeholder="200584711829...">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">API Key</label>
-                        <input type="password" class="form-input" id="ttsApiKey" placeholder="输入API Key">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">模型</label>
-                        <select class="form-select" id="ttsModel">
-                            <option value="speech-01-turbo">Speech-01 Turbo (快速版)</option>
-                            <option value="speech-01-hd">Speech-01 HD (高清版)</option>
-                            <option value="speech-02-turbo">Speech-02 Turbo</option>
-                            <option value="speech-02-hd" selected>Speech-02 HD</option>
-                            <option value="speech-2.5-hd">Speech-2.5 HD (高清)</option>
-                            <option value="speech-2.6-turbo">Speech-2.6 Turbo</option>
-                            <option value="speech-2.6-hd">Speech-2.6 HD</option>
+                        <label class="form-label">TTS 引擎</label>
+                        <select class="form-select" id="ttsEngine" onchange="toggleTtsEngineFields()">
+                            <option value="minimax">MiniMax (付费)</option>
+                            <option value="edge">Edge TTS (免费)</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">接口域名</label>
-                        <select class="form-select" id="ttsDomain">
-                            <option value="api.minimax.chat">🇨🇳 国内 (api.minimax.chat)</option>
-                            <option value="api.minimaxi.chat">🌍 海外 (api.minimaxi.chat)</option>
-                        </select>
+                    <div id="ttsMinimaxFields">
+                        <div class="form-group">
+                            <label class="form-label">Group ID</label>
+                            <input type="text" class="form-input" id="ttsGroupId" placeholder="200584711829...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">API Key</label>
+                            <input type="password" class="form-input" id="ttsApiKey" placeholder="输入API Key">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">模型</label>
+                            <select class="form-select" id="ttsModel">
+                                <option value="speech-01-turbo">Speech-01 Turbo (快速版)</option>
+                                <option value="speech-01-hd">Speech-01 HD (高清版)</option>
+                                <option value="speech-02-turbo">Speech-02 Turbo</option>
+                                <option value="speech-02-hd" selected>Speech-02 HD</option>
+                                <option value="speech-2.5-hd">Speech-2.5 HD (高清)</option>
+                                <option value="speech-2.6-turbo">Speech-2.6 Turbo</option>
+                                <option value="speech-2.6-hd">Speech-2.6 HD</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">接口域名</label>
+                            <select class="form-select" id="ttsDomain">
+                                <option value="api.minimax.chat">国内 (api.minimax.chat)</option>
+                                <option value="api.minimaxi.chat">海外 (api.minimaxi.chat)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="ttsEdgeFields" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">Worker 地址</label>
+                            <input type="text" class="form-input" id="ttsEdgeWorkerUrl" placeholder="https://your-worker.workers.dev">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">鉴权密钥 (可选)</label>
+                            <input type="password" class="form-input" id="ttsEdgeWorkerKey" placeholder="留空则不鉴权">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -6325,9 +6357,22 @@
                     <span class="vc-settings-label">上下文条数</span>
                     <input type="number" class="vc-settings-input" id="vcContextCount" min="5" max="100" value="30">
                 </div>
-                <div class="vc-settings-item">
+                <div class="vc-settings-item" id="vcVoiceIdRow">
                     <span class="vc-settings-label">语音 ID</span>
                     <input type="text" class="vc-settings-input" id="vcVoiceId" placeholder="male-qn-qingse" style="width: 160px;">
+                </div>
+                <div id="vcEdgeVoiceRow" style="display: none;">
+                    <div class="vc-settings-item">
+                        <span class="vc-settings-label">性别</span>
+                        <select class="vc-settings-input" id="vcEdgeGender" onchange="updateVcEdgeVoiceOptions()" style="width: 80px;">
+                            <option value="female">女声</option>
+                            <option value="male">男声</option>
+                        </select>
+                    </div>
+                    <div class="vc-settings-item">
+                        <span class="vc-settings-label">音色</span>
+                        <select class="vc-settings-input" id="vcEdgeVoice" style="width: 160px;"></select>
+                    </div>
                 </div>
             </div>
             <div style="padding: 16px;">
@@ -6473,10 +6518,13 @@
                 thinkingLevel: 'medium' // off, auto, low, medium, high
             },
             ttsSettings: {
+                engine: 'minimax',       // 'minimax' | 'edge'
                 groupId: '',
                 apiKey: '',
                 model: 'speech-02-hd',
-                domain: 'api.minimax.chat'
+                domain: 'api.minimax.chat',
+                edgeWorkerUrl: '',
+                edgeWorkerKey: ''
             }
         };
 
@@ -10504,21 +10552,22 @@ ${memoryText}`;
         }
 
         function playWechatVoice(el, text) {
-            // 调用MiniMax TTS播放语音
+            // 调用TTS播放语音
             const conv = wechatData.conversations[wechatData.currentAssistantId];
             const settings = conv?.settings || {};
-            
+
             if (!settings.ttsEnabled) {
                 alert('未开启语音合成\n\n文字内容: ' + text);
                 return;
             }
-            
-            if (!appData.ttsSettings.groupId || !appData.ttsSettings.apiKey) {
-                alert('请先在设置中配置MiniMax TTS\n\n文字内容: ' + text);
+
+            if (!isTtsConfigured()) {
+                alert('请先在设置中配置语音引擎\n\n文字内容: ' + text);
                 return;
             }
-            
-            const voiceId = settings.voiceId || 'male-qn-qingse';
+
+            const defaultVoiceId = appData.ttsSettings.engine === 'edge' ? 'zh-CN-XiaoxiaoNeural' : 'male-qn-qingse';
+            const voiceId = settings.voiceId || defaultVoiceId;
             playTtsAudio(text, voiceId, el);
         }
 
@@ -10821,12 +10870,13 @@ ${memoryText}`;
                 return;
             }
             
-            if (!appData.ttsSettings.groupId || !appData.ttsSettings.apiKey) {
-                alert('请先在主设置中配置MiniMax TTS');
+            if (!isTtsConfigured()) {
+                alert('请先在主设置中配置语音引擎');
                 return;
             }
-            
-            const voiceId = settings.voiceId || 'male-qn-qingse';
+
+            const defaultVoiceId = appData.ttsSettings.engine === 'edge' ? 'zh-CN-XiaoxiaoNeural' : 'male-qn-qingse';
+            const voiceId = settings.voiceId || defaultVoiceId;
             const text = msg.content;
             const emotion = msg.emotion || 'neutral';  // 从消息中获取情绪
             
@@ -10886,6 +10936,33 @@ ${memoryText}`;
         document.addEventListener('touchstart', unlockAudio, { once: true });
 
         // ==================== 语音活人感增强 ====================
+
+        // Edge TTS 音色列表
+        const EDGE_TTS_VOICES = {
+            female: [
+                { id: 'zh-CN-XiaoxiaoNeural', name: '晓晓 (温暖)' },
+                { id: 'zh-CN-XiaoyiNeural', name: '晓伊 (活泼)' }
+            ],
+            male: [
+                { id: 'zh-CN-YunxiNeural', name: '云希 (少年)' },
+                { id: 'zh-CN-YunjianNeural', name: '云健 (沉稳)' },
+                { id: 'zh-CN-YunyangNeural', name: '云扬 (新闻)' },
+                { id: 'zh-CN-YunxiaNeural', name: '云夏 (童声)' }
+            ]
+        };
+
+        // Edge TTS 情绪参数映射（SSML prosody 格式）
+        const EDGE_EMOTION_PARAMS = {
+            happy:     { rate: '+12%',  pitch: '+3Hz',  volume: '+10%' },
+            sad:       { rate: '-8%',   pitch: '-3Hz',  volume: '-15%' },
+            angry:     { rate: '+15%',  pitch: '+0Hz',  volume: '+20%' },
+            neutral:   { rate: '+0%',   pitch: '+0Hz',  volume: '+0%' },
+            tender:    { rate: '-3%',   pitch: '+0Hz',  volume: '-10%' },
+            playful:   { rate: '+12%',  pitch: '+3Hz',  volume: '+10%' },
+            surprised: { rate: '+8%',   pitch: '+5Hz',  volume: '+10%' },
+            fearful:   { rate: '+12%',  pitch: '+3Hz',  volume: '-5%' }
+        };
+
         // 情绪参数映射（绝对值，emotion固定传neutral保持声线一致）
         // 注意：MiniMax的pitch必须是整数！
         const EMOTION_PARAMS = {
@@ -10939,9 +11016,76 @@ ${memoryText}`;
             return result;
         }
 
+        // Edge TTS：调用 CF Worker 获取 MP3 blob URL
+        async function playEdgeTts(text, voiceId, emotion = 'neutral') {
+            const tts = appData.ttsSettings;
+            if (!tts.edgeWorkerUrl) throw new Error('Edge TTS Worker 地址未配置');
+
+            const params = EDGE_EMOTION_PARAMS[emotion] || EDGE_EMOTION_PARAMS.neutral;
+            const cacheKey = `edge|${voiceId}|${emotion}|${text}`;
+
+            if (ttsCache.has(cacheKey)) {
+                return { url: ttsCache.get(cacheKey), cacheKey };
+            }
+
+            const url = tts.edgeWorkerUrl.replace(/\/+$/, '');
+            const headers = { 'Content-Type': 'application/json' };
+            if (tts.edgeWorkerKey) {
+                headers['Authorization'] = 'Bearer ' + tts.edgeWorkerKey;
+            }
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({
+                    text,
+                    voice: voiceId,
+                    rate: params.rate,
+                    pitch: params.pitch,
+                    volume: params.volume
+                })
+            });
+
+            if (!response.ok) {
+                let errMsg = 'Edge TTS 请求失败: HTTP ' + response.status;
+                try {
+                    const errData = await response.json();
+                    if (errData.error) errMsg = errData.error;
+                } catch(e) {}
+                throw new Error(errMsg);
+            }
+
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            ttsCache.set(cacheKey, blobUrl);
+            return { url: blobUrl, cacheKey };
+        }
+
         // 调用MiniMax TTS API（支持情绪参数）
         async function playTtsAudio(text, voiceId, el, emotion = 'neutral') {
             const tts = appData.ttsSettings;
+
+            // Edge TTS 路径
+            if (tts.engine === 'edge') {
+                if (!tts.edgeWorkerUrl) return;
+                resetAudioRoute();
+                await new Promise(r => setTimeout(r, 100));
+                if (el) el.style.opacity = '0.5';
+                try {
+                    const { url: audioUrl } = await playEdgeTts(text, voiceId, emotion);
+                    if (currentTtsAudio) { currentTtsAudio.pause(); currentTtsAudio = null; }
+                    currentTtsAudio = new Audio(audioUrl);
+                    await currentTtsAudio.play();
+                } catch (e) {
+                    console.error('Edge TTS播放失败:', e);
+                    alert('语音播放失败: ' + e.message);
+                } finally {
+                    if (el) el.style.opacity = '1';
+                }
+                return;
+            }
+
+            // MiniMax 路径
             if (!tts.groupId || !tts.apiKey) return;
 
             // 每次TTS播放前重置音频路由（防止语音识别后外放）
@@ -10949,7 +11093,7 @@ ${memoryText}`;
             // 给音频路由一点时间重置
             await new Promise(r => setTimeout(r, 100));
 
-            // 应用自然停顿
+            // 应用自然停顿（MiniMax专用）
             const processedText = addNaturalPauses(text);
             // 计算情绪参数
             const voiceParams = calculateVoiceParams(emotion);
@@ -11043,6 +11187,46 @@ ${memoryText}`;
         // 带回调的TTS播放函数（支持情绪参数）
         async function playTtsAudioWithCallback(text, voiceId, onStart, onEnd, emotion = 'neutral', preUnlockedAudio = null) {
             const tts = appData.ttsSettings;
+
+            // Edge TTS 路径
+            if (tts.engine === 'edge') {
+                if (!tts.edgeWorkerUrl) throw new Error('Edge TTS Worker 地址未配置');
+
+                resetAudioRoute();
+                await new Promise(r => setTimeout(r, 100));
+
+                const { url: audioUrl, cacheKey } = await playEdgeTts(text, voiceId, emotion);
+
+                if (currentTtsAudio && currentTtsAudio !== preUnlockedAudio) {
+                    currentTtsAudio.pause();
+                    currentTtsAudio.src = '';
+                    currentTtsAudio = null;
+                }
+
+                async function safePlay(audio) {
+                    try { await audio.play(); } catch (e) {
+                        if (e.name === 'NotAllowedError') {
+                            console.warn('首次播放被阻止，尝试重试...');
+                            await new Promise(r => setTimeout(r, 100));
+                            await audio.play();
+                        } else { throw e; }
+                    }
+                }
+
+                if (preUnlockedAudio) {
+                    preUnlockedAudio.src = audioUrl;
+                    currentTtsAudio = preUnlockedAudio;
+                } else {
+                    currentTtsAudio = new Audio(audioUrl);
+                }
+                currentTtsAudio.preload = 'auto';
+                if (onStart) onStart();
+                currentTtsAudio.onended = () => { if (onEnd) onEnd(); };
+                await safePlay(currentTtsAudio);
+                return;
+            }
+
+            // MiniMax 路径
             if (!tts.groupId || !tts.apiKey) {
                 throw new Error('TTS未配置');
             }
@@ -11052,11 +11236,11 @@ ${memoryText}`;
             // 给音频路由一点时间重置
             await new Promise(r => setTimeout(r, 100));
 
-            // 应用自然停顿
+            // 应用自然停顿（MiniMax专用）
             const processedText = addNaturalPauses(text);
             // 计算情绪参数
             const voiceParams = calculateVoiceParams(emotion);
-            
+
             const cacheKey = `${voiceId}|${tts.model}|${emotion}|${text}`;
             
             // 安全播放函数（处理移动端首次播放限制）
@@ -12679,33 +12863,93 @@ ${chatContext}
         });
 
         // TTS设置相关函数
+        function toggleTtsEngineFields() {
+            const engine = document.getElementById('ttsEngine').value;
+            document.getElementById('ttsMinimaxFields').style.display = engine === 'minimax' ? '' : 'none';
+            document.getElementById('ttsEdgeFields').style.display = engine === 'edge' ? '' : 'none';
+        }
+
         function openTtsSettings() {
             const tts = appData.ttsSettings || {};
+            document.getElementById('ttsEngine').value = tts.engine || 'minimax';
             document.getElementById('ttsGroupId').value = tts.groupId || '';
             document.getElementById('ttsApiKey').value = tts.apiKey || '';
             document.getElementById('ttsModel').value = tts.model || 'speech-02-hd';
             document.getElementById('ttsDomain').value = tts.domain || 'api.minimax.chat';
+            document.getElementById('ttsEdgeWorkerUrl').value = tts.edgeWorkerUrl || '';
+            document.getElementById('ttsEdgeWorkerKey').value = tts.edgeWorkerKey || '';
+            toggleTtsEngineFields();
             showModal('ttsSettingsModal');
         }
 
         function saveTtsSettings() {
             appData.ttsSettings = {
+                engine: document.getElementById('ttsEngine').value,
                 groupId: document.getElementById('ttsGroupId').value.trim(),
                 apiKey: document.getElementById('ttsApiKey').value.trim(),
                 model: document.getElementById('ttsModel').value,
-                domain: document.getElementById('ttsDomain').value
+                domain: document.getElementById('ttsDomain').value,
+                edgeWorkerUrl: document.getElementById('ttsEdgeWorkerUrl').value.trim(),
+                edgeWorkerKey: document.getElementById('ttsEdgeWorkerKey').value.trim()
             };
             saveData();
             updateTtsStatus();
             hideModal('ttsSettingsModal');
         }
 
+        function isTtsConfigured() {
+            const tts = appData.ttsSettings;
+            if (!tts) return false;
+            if (tts.engine === 'edge') return !!tts.edgeWorkerUrl;
+            return !!(tts.groupId && tts.apiKey);
+        }
+
         function updateTtsStatus() {
             const tts = appData.ttsSettings;
             const statusEl = document.getElementById('ttsStatus');
             if (statusEl) {
-                statusEl.textContent = (tts && tts.groupId && tts.apiKey) ? '已配置' : '未配置';
+                statusEl.textContent = isTtsConfigured() ? '已配置' : '未配置';
             }
+        }
+
+        // Edge TTS 音色下拉框填充（通用）
+        function populateEdgeVoiceSelect(selectId, genderId, currentVoiceId) {
+            const gender = document.getElementById(genderId).value;
+            const select = document.getElementById(selectId);
+            const voices = EDGE_TTS_VOICES[gender] || [];
+            select.innerHTML = voices.map(v =>
+                `<option value="${v.id}" ${v.id === currentVoiceId ? 'selected' : ''}>${v.name}</option>`
+            ).join('');
+        }
+
+        // 根据 voiceId 判断性别
+        function getEdgeVoiceGender(voiceId) {
+            if (EDGE_TTS_VOICES.male.some(v => v.id === voiceId)) return 'male';
+            return 'female';
+        }
+
+        // 微信设置 Edge 音色联动
+        function updateWechatEdgeVoiceOptions() {
+            populateEdgeVoiceSelect('wechatEdgeVoice', 'wechatEdgeGender');
+        }
+
+        // 语音通话设置 Edge 音色联动
+        function updateVcEdgeVoiceOptions() {
+            populateEdgeVoiceSelect('vcEdgeVoice', 'vcEdgeGender');
+        }
+
+        // 根据引擎切换音色 UI 显隐
+        function toggleVoiceIdFields() {
+            const isEdge = appData.ttsSettings.engine === 'edge';
+            const wechatVoiceIdRow = document.getElementById('wechatVoiceIdRow');
+            const wechatEdgeRow = document.getElementById('wechatEdgeVoiceRow');
+            if (wechatVoiceIdRow) wechatVoiceIdRow.style.display = isEdge ? 'none' : '';
+            if (wechatEdgeRow) wechatEdgeRow.style.display = isEdge ? '' : 'none';
+
+            const vcVoiceIdRow = document.getElementById('vcVoiceIdRow');
+            const vcEdgeRow = document.getElementById('vcEdgeVoiceRow');
+            if (vcVoiceIdRow) vcVoiceIdRow.style.display = isEdge ? 'none' : '';
+            if (vcEdgeRow) vcEdgeRow.style.display = isEdge ? '' : 'none';
         }
 
         // 聊天设置
@@ -12725,6 +12969,14 @@ ${chatContext}
             document.getElementById('wechatOfflineMode').classList.toggle('on', settings.offlineMode || false);
             document.getElementById('wechatTtsEnabled').classList.toggle('on', settings.ttsEnabled || false);
             document.getElementById('wechatVoiceId').value = settings.voiceId || '';
+
+            // Edge TTS 音色 UI
+            if (appData.ttsSettings.engine === 'edge') {
+                const currentVoice = settings.voiceId || 'zh-CN-XiaoxiaoNeural';
+                document.getElementById('wechatEdgeGender').value = getEdgeVoiceGender(currentVoice);
+                populateEdgeVoiceSelect('wechatEdgeVoice', 'wechatEdgeGender', currentVoice);
+            }
+            toggleVoiceIdFields();
 
             // 主动发消息设置
             document.getElementById('wechatProactive').classList.toggle('on', settings.proactiveEnabled || false);
@@ -12791,7 +13043,9 @@ ${chatContext}
                     voiceMode: document.getElementById('wechatVoiceMode').classList.contains('on'),
                     offlineMode: document.getElementById('wechatOfflineMode').classList.contains('on'),
                     ttsEnabled: document.getElementById('wechatTtsEnabled').classList.contains('on'),
-                    voiceId: document.getElementById('wechatVoiceId').value.trim(),
+                    voiceId: appData.ttsSettings.engine === 'edge'
+                        ? (document.getElementById('wechatEdgeVoice').value || 'zh-CN-XiaoxiaoNeural')
+                        : document.getElementById('wechatVoiceId').value.trim(),
                     autoSummaryEnabled: document.getElementById('wechatAutoSummaryEnabled').classList.contains('on'),
                     autoSummaryInterval: parseInt(document.getElementById('wechatAutoSummaryInterval').value) || 50,
                     proactiveEnabled: document.getElementById('wechatProactive').classList.contains('on'),
@@ -14238,9 +14492,9 @@ ${dialogueText}
 
                     // TTS自动播放（优先用语音通话设置的voiceId，其次微信助手设置，最后默认）
                     const conv = wechatData.conversations?.[vcState.assistantId];
-                    const voiceId = voiceCallData.settings.voiceId || conv?.settings?.voiceId || 'male-qn-qingse';
-                    const tts = appData.ttsSettings;
-                    if (tts.groupId && tts.apiKey) {
+                    const defaultVoiceId = appData.ttsSettings.engine === 'edge' ? 'zh-CN-XiaoxiaoNeural' : 'male-qn-qingse';
+                    const voiceId = voiceCallData.settings.voiceId || conv?.settings?.voiceId || defaultVoiceId;
+                    if (isTtsConfigured()) {
                         try {
                             resetAudioRoute();
                             await new Promise(r => setTimeout(r, 100));
@@ -14400,7 +14654,9 @@ ${dialogueText}
                 playTtsAudioWithCallback(text, voiceId,
                     () => {
                         // onStart: 记录当前播放的audioUrl用于保存
-                        const cacheKey = `${voiceId}|${appData.ttsSettings.model}|${emotion}|${text}`;
+                        const cacheKey = appData.ttsSettings.engine === 'edge'
+                            ? `edge|${voiceId}|${emotion}|${text}`
+                            : `${voiceId}|${appData.ttsSettings.model}|${emotion}|${text}`;
                         const cachedUrl = ttsCache.get(cacheKey);
                         if (cachedUrl) {
                             const lastMsg = vcState.messages[vcState.messages.length - 1];
@@ -14524,6 +14780,14 @@ ${dialogueText}
 
             document.getElementById('vcVoiceId').value = s.voiceId || '';
 
+            // Edge TTS 音色 UI
+            if (appData.ttsSettings.engine === 'edge') {
+                const currentVoice = s.voiceId || 'zh-CN-XiaoxiaoNeural';
+                document.getElementById('vcEdgeGender').value = getEdgeVoiceGender(currentVoice);
+                populateEdgeVoiceSelect('vcEdgeVoice', 'vcEdgeGender', currentVoice);
+            }
+            toggleVoiceIdFields();
+
             openPage('voiceCallSettingsPage');
         }
 
@@ -14542,7 +14806,9 @@ ${dialogueText}
             voiceCallData.settings.autoSendDelay = parseInt(document.getElementById('vcAutoSendDelay').value) || 2;
             voiceCallData.settings.carryWechatContext = document.getElementById('vcCarryContext').classList.contains('on');
             voiceCallData.settings.contextCount = parseInt(document.getElementById('vcContextCount').value) || 30;
-            voiceCallData.settings.voiceId = document.getElementById('vcVoiceId').value.trim();
+            voiceCallData.settings.voiceId = appData.ttsSettings.engine === 'edge'
+                ? (document.getElementById('vcEdgeVoice').value || 'zh-CN-XiaoxiaoNeural')
+                : document.getElementById('vcVoiceId').value.trim();
             saveVoiceCallData();
             closePage('voiceCallSettingsPage');
         }
