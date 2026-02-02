@@ -4800,7 +4800,7 @@
         }
         .vc-input-row {
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             gap: 8px;
             margin-bottom: 10px;
         }
@@ -4810,8 +4810,14 @@
             border: 1px solid var(--border);
             border-radius: 20px;
             font-size: 15px;
+            line-height: 1.4;
             background: var(--bg-primary);
             outline: none;
+            resize: none;
+            min-height: 20px;
+            max-height: 84px;
+            overflow-y: auto;
+            font-family: inherit;
         }
         .vc-send-btn {
             width: 36px;
@@ -6364,7 +6370,7 @@
                 </div>
                 <div class="vc-bottom-area">
                     <div class="vc-input-row">
-                        <input type="text" class="vc-input" id="vcInput" placeholder="语音识别中...">
+                        <textarea class="vc-input" id="vcInput" placeholder="语音识别中..." rows="1"></textarea>
                         <button class="vc-send-btn" id="vcSendBtn" onclick="vcManualSend()" style="display: none;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         </button>
@@ -13975,6 +13981,17 @@ ${dialogueText}
                 startVcRecognition();
                 startVcWaveform();
             }, 2500);
+
+            // 输入框自动伸缩（textarea）
+            const vcInputEl = document.getElementById('vcInput');
+            vcInputEl.addEventListener('input', vcAutoResize);
+        }
+
+        // 输入框自动调整高度（1-4行）
+        function vcAutoResize() {
+            const el = document.getElementById('vcInput');
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 84) + 'px';
         }
 
         // ---- 通话计时器 ----
@@ -14083,6 +14100,7 @@ ${dialogueText}
 
                 const display = vcState.pendingText + interim;
                 document.getElementById('vcInput').value = display;
+                vcAutoResize();
 
                 // 自动发送：有最终文本时重置计时器
                 if (voiceCallData.settings.autoSend && finalText) {
@@ -14092,6 +14110,7 @@ ${dialogueText}
                             vcSendUserMessage(vcState.pendingText.trim());
                             vcState.pendingText = '';
                             document.getElementById('vcInput').value = '';
+                            vcAutoResize();
                         }
                     }, (voiceCallData.settings.autoSendDelay || 2) * 1000);
                 }
@@ -14143,6 +14162,7 @@ ${dialogueText}
             vcState.pendingText = '';
             vcState.processedCount = 0;
             input.value = '';
+            vcAutoResize();
             vcSendUserMessage(text);
         }
 
