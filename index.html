@@ -2824,7 +2824,7 @@
 
         .wechat-msg {
             display: flex;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
             align-items: flex-start;
         }
 
@@ -2852,6 +2852,10 @@
 
         .wechat-msg.user .wechat-msg-avatar {
             background: #7bb978;
+        }
+
+        .wechat-msg-avatar:has(img) {
+            background: transparent;
         }
 
         .wechat-msg-body {
@@ -9200,7 +9204,6 @@
             const assistantAvatarHtml = getCachedAssistantAvatarHtml(assistant);
 
             let html = '';
-            let lastDate = null;
 
             // 如果还有更多历史消息，显示加载更多按钮
             if (hasMore) {
@@ -9210,13 +9213,24 @@
             }
 
             // 渲染可见的消息
-            visibleMessages.forEach(msg => {
-                const msgDate = new Date(msg.timestamp).toDateString();
-                if (msgDate !== lastDate) {
-                    html += `<div class="wechat-time-divider"><span>${formatWechatDate(msg.timestamp)}</span></div>`;
-                    lastDate = msgDate;
+            let prevTimestamp = null;
+            visibleMessages.forEach((msg, idx) => {
+                // 时间分隔条：第一条消息或间隔超过10分钟
+                if (msg.timestamp) {
+                    const msgTime = new Date(msg.timestamp).getTime();
+                    if (!prevTimestamp || msgTime - prevTimestamp > 10 * 60 * 1000) {
+                        html += `<div class="wechat-time-divider"><span>${formatWechatDate(msg.timestamp)}</span></div>`;
+                    }
+                    prevTimestamp = msgTime;
                 }
-                html += renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml);
+
+                // 每轮最后一条才显示时间戳：下一条不同role，或间隔>10分钟（会有分隔条），或是最后一条
+                const nextMsg = visibleMessages[idx + 1];
+                const hasTimeDividerAfter = nextMsg && nextMsg.timestamp && msg.timestamp &&
+                    (new Date(nextMsg.timestamp).getTime() - new Date(msg.timestamp).getTime() > 10 * 60 * 1000);
+                const showTimestamp = !nextMsg || nextMsg.role !== msg.role || hasTimeDividerAfter;
+
+                html += renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, false, showTimestamp);
             });
 
             // 渲染暂存的消息
@@ -9256,7 +9270,7 @@
             return renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, isPending);
         }
 
-        function renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, isPending = false) {
+        function renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, isPending = false, showTimestamp = true) {
             const isUser = msg.role === 'user';
             const bubbleClass = isPending ? 'style="opacity: 0.7;"' : '';
             const isSelected = wechatMultiSelectMode && wechatSelectedMessages.has(msg.id);
@@ -9264,6 +9278,9 @@
 
             // 多选复选框
             const selectCheckbox = '<div class="select-checkbox"></div>';
+
+            // 时间戳HTML（只在每轮最后一条显示）
+            const timeHtml = (ts) => showTimestamp ? `<div class="wechat-msg-time">${formatTime(ts)}</div>` : '';
 
             // 拍一拍消息（支持长按删除）
             if (msg.type === 'pat_message' || msg.type === 'system') {
@@ -9296,7 +9313,7 @@
                                 ${msg.note ? `<div class="wechat-transfer-note">${escapeHtml(msg.note)}</div>` : ''}
                                 <div class="wechat-transfer-status">${statusText}${isReceivable ? ' (点击处理)' : ''}</div>
                             </div>
-                            <div class="wechat-msg-time">${displayTime}</div>
+                            ${showTimestamp ? `<div class="wechat-msg-time">${displayTime}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -9325,7 +9342,7 @@
                                 <div class="wechat-transfer-amount">¥${msg.amount?.toFixed(2) || '0.00'}</div>
                                 <div class="wechat-transfer-status">${isAccepted ? '已存入余额' : '已退回对方'}</div>
                             </div>
-                            <div class="wechat-msg-time">${displayTime}</div>
+                            ${showTimestamp ? `<div class="wechat-msg-time">${displayTime}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -9354,7 +9371,7 @@
                                     </div>
                                 </div>
                                 <div class="wechat-voice-text" style="display: block;">${escapeHtml(msg.content || '')}</div>
-                                <div class="wechat-msg-time">${formatTime(msg.timestamp)}</div>
+                                ${timeHtml(msg.timestamp)}
                             </div>
                         </div>
                     `;
@@ -9377,7 +9394,7 @@
                                 <span class="wechat-voice-convert" onclick="event.stopPropagation(); convertVoiceToText('${msg.id}')">转文字</span>
                             </div>
                             <div class="wechat-voice-text" id="voice-text-${msg.id}">${escapeHtml(msg.content || '')}</div>
-                            <div class="wechat-msg-time">${formatTime(msg.timestamp)}</div>
+                            ${timeHtml(msg.timestamp)}
                         </div>
                     </div>
                 `;
@@ -9404,7 +9421,7 @@
                             <div class="wechat-msg-image" ${clickHandler}>
                                 ${imageContent}
                             </div>
-                            <div class="wechat-msg-time">${formatTime(msg.timestamp)}</div>
+                            ${timeHtml(msg.timestamp)}
                         </div>
                     </div>
                 `;
@@ -9429,7 +9446,7 @@
                             ${quoteHtml}
                             ${formatMessageContent(msg.content, false)}
                         </div>
-                        <div class="wechat-msg-time">${formatTime(msg.timestamp)}</div>
+                        ${timeHtml(msg.timestamp)}
                     </div>
                 </div>
             `;
@@ -9437,17 +9454,35 @@
 
         function formatWechatDate(isoString) {
             const date = new Date(isoString);
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
+            const now = new Date();
+            const timeStr = `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 
-            if (date.toDateString() === today.toDateString()) {
-                return '今天';
-            } else if (date.toDateString() === yesterday.toDateString()) {
-                return '昨天';
-            } else {
-                return `${date.getMonth() + 1}月${date.getDate()}日`;
+            // 今天：只显示时间
+            if (date.toDateString() === now.toDateString()) {
+                return timeStr;
             }
+
+            // 昨天
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (date.toDateString() === yesterday.toDateString()) {
+                return `昨天 ${timeStr}`;
+            }
+
+            // 本周内（2-6天前）：星期X HH:MM
+            const daysDiff = Math.floor((now.getTime() - date.getTime()) / (24 * 60 * 60 * 1000));
+            if (daysDiff < 7) {
+                const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                return `${weekdays[date.getDay()]} ${timeStr}`;
+            }
+
+            // 同年
+            if (date.getFullYear() === now.getFullYear()) {
+                return `${date.getMonth() + 1}月${date.getDate()}日 ${timeStr}`;
+            }
+
+            // 跨年
+            return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${timeStr}`;
         }
 
         // ========== 加号展开面板功能 ==========
