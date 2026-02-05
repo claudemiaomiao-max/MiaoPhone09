@@ -11,7 +11,59 @@
     <title>妙妙的聊天小窝</title>
     <!-- 移动端调试工具 eruda，点击右下角齿轮图标可打开控制台 -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    <script>
+    eruda.init();
+    // 限制 eruda 图标只能在 safe area 内拖动
+    (function() {
+        const entry = document.querySelector('.eruda-entry-btn');
+        if (!entry) return;
+
+        // 获取 safe area insets
+        const getSafeArea = () => ({
+            top: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat') || 0) ||
+                 (window.navigator.standalone ? 47 : 0), // iOS standalone 模式默认 47px
+            bottom: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || 0) ||
+                    (window.navigator.standalone ? 34 : 0), // iOS home indicator 默认 34px
+            left: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sal') || 0),
+            right: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sar') || 0)
+        });
+
+        // 限制位置在 safe area 内
+        const clampPosition = () => {
+            const safe = getSafeArea();
+            const rect = entry.getBoundingClientRect();
+            const btnSize = rect.width || 40;
+
+            let x = parseInt(entry.style.left) || (window.innerWidth - btnSize - 10);
+            let y = parseInt(entry.style.top) || 10;
+
+            // 限制范围
+            const minX = safe.left + 5;
+            const maxX = window.innerWidth - safe.right - btnSize - 5;
+            const minY = safe.top + 5;
+            const maxY = window.innerHeight - safe.bottom - btnSize - 5;
+
+            let needUpdate = false;
+            if (y < minY) { y = minY; needUpdate = true; }
+            if (y > maxY) { y = maxY; needUpdate = true; }
+            if (x < minX) { x = minX; needUpdate = true; }
+            if (x > maxX) { x = maxX; needUpdate = true; }
+
+            if (needUpdate) {
+                entry.style.top = y + 'px';
+                entry.style.left = x + 'px';
+            }
+        };
+
+        // 监听拖拽结束
+        entry.addEventListener('touchend', () => setTimeout(clampPosition, 50));
+        entry.addEventListener('mouseup', () => setTimeout(clampPosition, 50));
+
+        // 初始位置修正（延迟执行确保 eruda 完成初始化）
+        setTimeout(clampPosition, 500);
+        setTimeout(clampPosition, 1000);
+    })();
+    </script>
     <script>
     // PWA standalone 模式检测（iOS 用 navigator.standalone，其他用 matchMedia）
     if (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) {
