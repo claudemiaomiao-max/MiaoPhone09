@@ -2824,7 +2824,7 @@
 
         .wechat-msg {
             display: flex;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
             align-items: flex-start;
         }
 
@@ -7349,7 +7349,7 @@
 
             // 只显示模型名，不重复显示id
             document.getElementById('modelListContent').innerHTML = mergedModels.map(m => `
-                <div class="model-item ${savedIds.includes(m.id) ? 'selected' : ''}" onclick="toggleModelSelection(this, '${m.id}', '${(m.name || m.id).replace(/'/g, "\\'")}')">
+                <div class="model-item ${savedIds.includes(m.id) ? 'selected' : ''}" data-model-id="${m.id}" onclick="toggleModelSelection(this)">
                     <div class="model-item-checkbox"></div>
                     <div class="model-item-info">
                         <div class="model-item-name">${m.name || m.id}</div>
@@ -7358,7 +7358,7 @@
             `).join('');
         }
 
-        function toggleModelSelection(el, id, name) {
+        function toggleModelSelection(el) {
             el.classList.toggle('selected');
         }
 
@@ -7368,8 +7368,9 @@
 
             const selectedItems = document.querySelectorAll('#modelListContent .model-item.selected');
             provider.models = Array.from(selectedItems).map(el => {
+                const id = el.dataset.modelId;  // 从 data-model-id 读取真实模型ID
                 const name = el.querySelector('.model-item-name').textContent;
-                return { id: name, name };
+                return { id, name };
             });
 
             saveData();
