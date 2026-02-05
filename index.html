@@ -1325,6 +1325,102 @@
             word-break: break-word;
         }
 
+        /* 模型分组样式 */
+        .model-search-box {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--bg-primary);
+            z-index: 1;
+        }
+
+        .model-search-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .model-search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .model-group {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .model-group:last-child {
+            border-bottom: none;
+        }
+
+        .model-group-header {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            cursor: pointer;
+            user-select: none;
+            background: var(--bg-secondary);
+            position: sticky;
+            top: 54px;
+            z-index: 1;
+        }
+
+        .model-group-header:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .model-group-arrow {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            transition: transform 0.2s;
+            color: var(--text-muted);
+        }
+
+        .model-group.collapsed .model-group-arrow {
+            transform: rotate(-90deg);
+        }
+
+        .model-group-name {
+            flex: 1;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .model-group-count {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+
+        .model-group-add-all {
+            padding: 4px 10px;
+            font-size: 12px;
+            color: var(--accent);
+            background: none;
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .model-group-add-all:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .model-group-content {
+            padding: 0 8px 8px;
+        }
+
+        .model-group.collapsed .model-group-content {
+            display: none;
+        }
+
         /* ==================== 妙妙API聊天界面 ==================== */
         .chat-page {
             background: var(--bg-primary);
@@ -6187,7 +6283,7 @@
                         <button class="btn btn-secondary" style="flex: 1;" onclick="fetchModels()">获取模型</button>
                         <button class="btn btn-primary" style="flex: 1;" onclick="saveSelectedModels()">保存所选</button>
                     </div>
-                    <div class="model-list" id="modelListContent" style="padding: 12px 16px;">
+                    <div class="model-list" id="modelListContent" style="padding: 0;">
                         <!-- 动态渲染 -->
                     </div>
                 </div>
@@ -7328,17 +7424,21 @@
             }
         }
 
+        // 全局存储合并后的模型列表，供搜索使用
+        let allMergedModels = [];
+        let modelSavedIds = [];
+
         function renderModelList(savedModels, allModels) {
-            const savedIds = savedModels.map(m => m.id);
-            const mergedModels = [...savedModels];
-            
+            modelSavedIds = savedModels.map(m => m.id);
+            allMergedModels = [...savedModels];
+
             allModels.forEach(m => {
-                if (!savedIds.includes(m.id)) {
-                    mergedModels.push(m);
+                if (!modelSavedIds.includes(m.id)) {
+                    allMergedModels.push(m);
                 }
             });
 
-            if (mergedModels.length === 0) {
+            if (allMergedModels.length === 0) {
                 document.getElementById('modelListContent').innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-text">点击"获取模型"拉取可用模型</div>
@@ -7347,15 +7447,210 @@
                 return;
             }
 
-            // 只显示模型名，不重复显示id
-            document.getElementById('modelListContent').innerHTML = mergedModels.map(m => `
-                <div class="model-item ${savedIds.includes(m.id) ? 'selected' : ''}" data-model-id="${m.id}" onclick="toggleModelSelection(this)">
-                    <div class="model-item-checkbox"></div>
-                    <div class="model-item-info">
-                        <div class="model-item-name">${m.name || m.id}</div>
+            renderGroupedModels(allMergedModels, '');
+        }
+
+        // 根据模型ID获取分组名称
+        function getModelGroup(modelId) {
+            const id = modelId.toLowerCase();
+
+            // 提取厂商前缀
+            const provider = id.split('/')[0] || '';
+            const modelName = id.split('/')[1] || id;
+
+            // Claude系列细分
+            if (provider === 'anthropic' || id.includes('claude')) {
+                if (id.includes('opus')) return 'Claude Opus';
+                if (id.includes('sonnet')) return 'Claude Sonnet';
+                if (id.includes('haiku')) return 'Claude Haiku';
+                if (id.includes('3.5') || id.includes('3-5')) return 'Claude 3.5';
+                if (id.includes('claude-3') || id.includes('claude3')) return 'Claude 3';
+                return 'Claude';
+            }
+
+            // OpenAI系列细分
+            if (provider === 'openai' || id.includes('gpt')) {
+                if (id.includes('gpt-4o') || id.includes('chatgpt-4o')) return 'GPT-4o';
+                if (id.includes('gpt-4-turbo')) return 'GPT-4 Turbo';
+                if (id.includes('gpt-4')) return 'GPT-4';
+                if (id.includes('gpt-3.5')) return 'GPT-3.5';
+                if (id.includes('o1') || id.includes('o3')) return 'OpenAI o系列';
+                return 'OpenAI';
+            }
+
+            // Google系列
+            if (provider === 'google' || id.includes('gemini')) {
+                if (id.includes('gemini-2')) return 'Gemini 2';
+                if (id.includes('gemini-1.5') || id.includes('gemini-pro')) return 'Gemini 1.5';
+                if (id.includes('gemini-1') || id.includes('gemini-ultra')) return 'Gemini 1';
+                return 'Google Gemini';
+            }
+
+            // DeepSeek
+            if (provider === 'deepseek' || id.includes('deepseek')) {
+                return 'DeepSeek';
+            }
+
+            // Meta Llama
+            if (provider === 'meta-llama' || provider === 'meta' || id.includes('llama')) {
+                if (id.includes('llama-3.3')) return 'Llama 3.3';
+                if (id.includes('llama-3.2')) return 'Llama 3.2';
+                if (id.includes('llama-3.1')) return 'Llama 3.1';
+                if (id.includes('llama-3')) return 'Llama 3';
+                return 'Meta Llama';
+            }
+
+            // Mistral
+            if (provider === 'mistralai' || id.includes('mistral') || id.includes('mixtral')) {
+                return 'Mistral';
+            }
+
+            // Qwen
+            if (provider === 'qwen' || id.includes('qwen')) {
+                return 'Qwen 通义';
+            }
+
+            // Cohere
+            if (provider === 'cohere' || id.includes('command')) {
+                return 'Cohere';
+            }
+
+            // xAI Grok
+            if (provider === 'x-ai' || id.includes('grok')) {
+                return 'xAI Grok';
+            }
+
+            // 其他按厂商分组
+            if (provider) {
+                return provider.charAt(0).toUpperCase() + provider.slice(1);
+            }
+
+            return '其他';
+        }
+
+        // 渲染分组模型列表
+        function renderGroupedModels(models, searchKeyword) {
+            const keyword = searchKeyword.toLowerCase().trim();
+
+            // 过滤模型
+            const filteredModels = keyword
+                ? models.filter(m => {
+                    const name = (m.name || '').toLowerCase();
+                    const id = (m.id || '').toLowerCase();
+                    return name.includes(keyword) || id.includes(keyword);
+                })
+                : models;
+
+            if (filteredModels.length === 0) {
+                document.getElementById('modelListContent').innerHTML = `
+                    <div class="model-search-box">
+                        <input type="text" class="model-search-input" placeholder="输入模型名称筛选..."
+                               value="${searchKeyword}" oninput="filterModels(this.value)">
                     </div>
+                    <div class="empty-state" style="padding: 40px;">
+                        <div class="empty-state-text">没有找到匹配的模型</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 按分组整理模型
+            const groups = {};
+            filteredModels.forEach(m => {
+                const groupName = getModelGroup(m.id);
+                if (!groups[groupName]) {
+                    groups[groupName] = [];
+                }
+                groups[groupName].push(m);
+            });
+
+            // 分组排序（常用的放前面）
+            const groupOrder = [
+                'Claude Opus', 'Claude Sonnet', 'Claude Haiku', 'Claude 3.5', 'Claude 3', 'Claude',
+                'GPT-4o', 'GPT-4 Turbo', 'GPT-4', 'GPT-3.5', 'OpenAI o系列', 'OpenAI',
+                'Gemini 2', 'Gemini 1.5', 'Gemini 1', 'Google Gemini',
+                'DeepSeek',
+                'Qwen 通义',
+                'xAI Grok',
+                'Llama 3.3', 'Llama 3.2', 'Llama 3.1', 'Llama 3', 'Meta Llama',
+                'Mistral',
+                'Cohere'
+            ];
+
+            const sortedGroups = Object.keys(groups).sort((a, b) => {
+                const aIdx = groupOrder.indexOf(a);
+                const bIdx = groupOrder.indexOf(b);
+                if (aIdx === -1 && bIdx === -1) return a.localeCompare(b);
+                if (aIdx === -1) return 1;
+                if (bIdx === -1) return -1;
+                return aIdx - bIdx;
+            });
+
+            // 渲染HTML
+            let html = `
+                <div class="model-search-box">
+                    <input type="text" class="model-search-input" placeholder="输入模型名称筛选..."
+                           value="${searchKeyword}" oninput="filterModels(this.value)">
                 </div>
-            `).join('');
+            `;
+
+            sortedGroups.forEach(groupName => {
+                const groupModels = groups[groupName];
+                const selectedCount = groupModels.filter(m => modelSavedIds.includes(m.id)).length;
+
+                html += `
+                    <div class="model-group" data-group="${groupName}">
+                        <div class="model-group-header" onclick="toggleModelGroup(this)">
+                            <svg class="model-group-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                            <span class="model-group-name">${groupName}</span>
+                            <span class="model-group-count">${selectedCount > 0 ? selectedCount + '/' : ''}${groupModels.length}</span>
+                            <button class="model-group-add-all" onclick="event.stopPropagation(); selectAllInGroup('${groupName}')">全选</button>
+                        </div>
+                        <div class="model-group-content">
+                            ${groupModels.map(m => `
+                                <div class="model-item ${modelSavedIds.includes(m.id) ? 'selected' : ''}"
+                                     data-model-id="${m.id}" onclick="toggleModelSelection(this)">
+                                    <div class="model-item-checkbox"></div>
+                                    <div class="model-item-info">
+                                        <div class="model-item-name">${m.name || m.id}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('modelListContent').innerHTML = html;
+        }
+
+        // 搜索过滤模型
+        function filterModels(keyword) {
+            renderGroupedModels(allMergedModels, keyword);
+        }
+
+        // 展开/折叠分组
+        function toggleModelGroup(headerEl) {
+            headerEl.parentElement.classList.toggle('collapsed');
+        }
+
+        // 全选分组内的模型
+        function selectAllInGroup(groupName) {
+            const groupEl = document.querySelector(`.model-group[data-group="${groupName}"]`);
+            if (!groupEl) return;
+
+            const items = groupEl.querySelectorAll('.model-item');
+            const allSelected = Array.from(items).every(el => el.classList.contains('selected'));
+
+            items.forEach(el => {
+                if (allSelected) {
+                    el.classList.remove('selected');
+                } else {
+                    el.classList.add('selected');
+                }
+            });
         }
 
         function toggleModelSelection(el) {
