@@ -10244,13 +10244,15 @@
 
             const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
 
-            // 使用全局默认模型
+            // 获取模型：助手默认模型 > 全局默认模型
+            const assistantModel = assistant?.providerId && assistant?.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
-            if (!globalModel) {
+            const modelValue = assistantModel || globalModel;
+            if (!modelValue) {
                 alert('请先在设置中选择默认模型');
                 return;
             }
-            const [providerId, modelId] = globalModel.split('||');
+            const [providerId, modelId] = modelValue.split('||');
             const provider = appData.providers.find(p => p.id === providerId);
 
             if (!provider) {
@@ -12676,14 +12678,16 @@ ${memoryText}`;
             const assistant = appData.assistants.find(a => a.id === assistantId);
             if (!assistant) return;
 
-            // 检查API配置
+            // 获取模型：助手默认模型 > 全局默认模型
+            const assistantModel = assistant.providerId && assistant.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
-            if (!globalModel) {
+            const modelValue = assistantModel || globalModel;
+            if (!modelValue) {
                 alert('请先在设置中选择默认模型');
                 return;
             }
 
-            const [providerId, modelId] = globalModel.split('||');
+            const [providerId, modelId] = modelValue.split('||');
             const provider = appData.providers.find(p => p.id === providerId);
             if (!provider) {
                 alert('找不到对应的供应商配置');
@@ -12928,14 +12932,16 @@ ${memoryText}`;
             const assistant = appData.assistants.find(a => a.id === assistantId);
             if (!assistant) return;
 
-            // 检查API配置
+            // 获取模型：助手默认模型 > 全局默认模型
+            const assistantModel = assistant.providerId && assistant.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
-            if (!globalModel) {
+            const modelValue = assistantModel || globalModel;
+            if (!modelValue) {
                 alert('请先在设置中选择默认模型');
                 return;
             }
 
-            const [providerId, modelId] = globalModel.split('||');
+            const [providerId, modelId] = modelValue.split('||');
             const provider = appData.providers.find(p => p.id === providerId);
             if (!provider) {
                 alert('找不到对应的供应商配置');
@@ -13304,10 +13310,13 @@ ${chatContext}
             const assistant = appData.assistants.find(a => a.id === assistantId);
             if (!assistant) return;
 
+            // 获取模型：助手默认模型 > 全局默认模型
+            const assistantModel = assistant.providerId && assistant.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
-            if (!globalModel) return;
+            const modelValue = assistantModel || globalModel;
+            if (!modelValue) return;
 
-            const [providerId, modelId] = globalModel.split('||');
+            const [providerId, modelId] = modelValue.split('||');
             const provider = appData.providers.find(p => p.id === providerId);
             if (!provider) return;
 
@@ -14945,10 +14954,13 @@ ${dialogueText}
             messagesEl.scrollTop = messagesEl.scrollHeight;
 
             try {
-                // 获取模型配置
+                // 获取模型配置：助手默认模型 > 全局默认模型
+                const assistant = vcState.assistant;
+                const assistantModel = assistant?.providerId && assistant?.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
                 const globalModel = appData.settings.defaultModel;
-                if (!globalModel) throw new Error('请先在设置中选择默认模型');
-                const [providerId, modelId] = globalModel.split('||');
+                const modelValue = assistantModel || globalModel;
+                if (!modelValue) throw new Error('请先在设置中选择默认模型');
+                const [providerId, modelId] = modelValue.split('||');
                 const provider = appData.providers.find(p => p.id === providerId);
                 if (!provider) throw new Error('找不到供应商配置');
 
