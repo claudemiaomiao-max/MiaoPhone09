@@ -7737,6 +7737,7 @@
                     <button class="tab active" onclick="switchAssistantTab(this, 'basic')">基础设置</button>
                     <button class="tab" onclick="switchAssistantTab(this, 'prompt')">提示词</button>
                     <button class="tab" onclick="switchAssistantTab(this, 'memory')">记忆</button>
+                    <button class="tab" onclick="switchAssistantTab(this, 'model')">模型</button>
                 </div>
 
                 <div id="assistantTabBasic">
@@ -7825,6 +7826,26 @@
                     </div>
                 </div>
 
+                <div id="assistantTabModel" style="display: none;">
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <span>聊天模型</span>
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; margin-left: auto;" onclick="clearAssistantModel()">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px;"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                重置
+                            </button>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                            为该助手设置专用模型（未设置时使用全局默认）
+                        </div>
+                        <input type="hidden" id="editAssistantProviderId" value="${data.providerId || ''}">
+                        <input type="hidden" id="editAssistantModelId" value="${data.modelId || ''}">
+                        <div id="assistantModelSelector">
+                            ${renderAssistantModelSelector(data.providerId, data.modelId)}
+                        </div>
+                    </div>
+                </div>
+
                 ${editingAssistantId ? `
                     <div style="padding: 16px 0;">
                         <button class="btn btn-block" style="background: #fee; color: #d32f2f;" onclick="deleteAssistant('${editingAssistantId}')">删除助手</button>
@@ -7840,6 +7861,117 @@
             document.getElementById('assistantTabBasic').style.display = tab === 'basic' ? 'block' : 'none';
             document.getElementById('assistantTabPrompt').style.display = tab === 'prompt' ? 'block' : 'none';
             document.getElementById('assistantTabMemory').style.display = tab === 'memory' ? 'block' : 'none';
+            document.getElementById('assistantTabModel').style.display = tab === 'model' ? 'block' : 'none';
+        }
+
+        // 渲染助手模型选择器
+        function renderAssistantModelSelector(selectedProviderId, selectedModelId) {
+            const allModels = [];
+            appData.providers.forEach(p => {
+                (p.models || []).forEach(m => {
+                    allModels.push({ ...m, providerId: p.id, providerName: p.name });
+                });
+            });
+
+            if (allModels.length === 0) {
+                return `<div class="empty-state" style="padding: 20px;"><div class="empty-state-text">请先在设置中添加供应商和模型</div></div>`;
+            }
+
+            // 按厂商分组
+            const groups = {};
+            allModels.forEach(m => {
+                const groupName = getModelGroup(m.id);
+                if (!groups[groupName]) {
+                    groups[groupName] = [];
+                }
+                groups[groupName].push(m);
+            });
+
+            // 排序分组
+            const groupOrder = [
+                'Claude Opus', 'Claude Sonnet', 'Claude Haiku', 'Claude 3.5', 'Claude 3', 'Claude',
+                'GPT-4o', 'GPT-4 Turbo', 'GPT-4', 'GPT-3.5', 'OpenAI o系列', 'OpenAI',
+                'Gemini 2', 'Gemini 1.5', 'Gemini 1', 'Google Gemini',
+                'DeepSeek', 'Qwen 通义', 'xAI Grok',
+                'Llama 3.3', 'Llama 3.2', 'Llama 3.1', 'Llama 3', 'Meta Llama',
+                'Mistral', 'Cohere'
+            ];
+
+            const sortedGroups = Object.keys(groups).sort((a, b) => {
+                const aIdx = groupOrder.indexOf(a);
+                const bIdx = groupOrder.indexOf(b);
+                if (aIdx === -1 && bIdx === -1) return a.localeCompare(b);
+                if (aIdx === -1) return 1;
+                if (bIdx === -1) return -1;
+                return aIdx - bIdx;
+            });
+
+            let html = `<div class="model-list" style="max-height: 350px;">`;
+
+            // 当前选中的模型显示
+            if (selectedProviderId && selectedModelId) {
+                const selectedModel = allModels.find(m => m.providerId === selectedProviderId && m.id === selectedModelId);
+                if (selectedModel) {
+                    html += `
+                        <div style="padding: 12px; background: var(--accent-light); border-radius: 8px; margin-bottom: 12px;">
+                            <div style="font-size: 12px; color: var(--accent-dark); margin-bottom: 4px;">当前选择</div>
+                            <div style="font-weight: 500;">${selectedModel.name || selectedModel.id}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">${selectedModel.providerName}</div>
+                        </div>
+                    `;
+                }
+            } else {
+                html += `
+                    <div style="padding: 12px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 12px;">
+                        <div style="font-size: 12px; color: var(--text-muted);">当前选择</div>
+                        <div style="color: var(--text-muted);">使用全局默认模型</div>
+                    </div>
+                `;
+            }
+
+            sortedGroups.forEach(groupName => {
+                const groupModels = groups[groupName];
+                html += `
+                    <div class="model-group" data-group="${groupName}">
+                        <div class="model-group-header" onclick="toggleModelGroup(this)">
+                            <svg class="model-group-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                            <span class="model-group-name">${groupName}</span>
+                            <span class="model-group-count">${groupModels.length}</span>
+                        </div>
+                        <div class="model-group-content">
+                            ${groupModels.map(m => `
+                                <div class="model-item ${m.providerId === selectedProviderId && m.id === selectedModelId ? 'selected' : ''}"
+                                     onclick="selectAssistantModel('${m.providerId}', '${m.id}', '${(m.name || m.id).replace(/'/g, "\\'")}')">
+                                    <div class="model-item-checkbox"></div>
+                                    <div class="model-item-info">
+                                        <div class="model-item-name">${m.name || m.id}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            return html;
+        }
+
+        // 选择助手模型
+        function selectAssistantModel(providerId, modelId, modelName) {
+            document.getElementById('editAssistantProviderId').value = providerId;
+            document.getElementById('editAssistantModelId').value = modelId;
+            // 刷新选择器显示
+            document.getElementById('assistantModelSelector').innerHTML = renderAssistantModelSelector(providerId, modelId);
+        }
+
+        // 清除助手模型设置（使用全局默认）
+        function clearAssistantModel() {
+            document.getElementById('editAssistantProviderId').value = '';
+            document.getElementById('editAssistantModelId').value = '';
+            document.getElementById('assistantModelSelector').innerHTML = renderAssistantModelSelector('', '');
         }
 
         function addMemoryItem() {
@@ -7876,15 +8008,16 @@
                 return;
             }
 
-            // 保留已有的模型设置（如果有），否则留空（使用全局默认）
-            const existingAssistant = editingAssistantId ? appData.assistants.find(a => a.id === editingAssistantId) : null;
+            // 从表单读取模型设置
+            const providerId = document.getElementById('editAssistantProviderId').value;
+            const modelId = document.getElementById('editAssistantModelId').value;
 
             const assistantData = {
                 id: editingAssistantId || 'assistant_' + Date.now(),
                 name,
                 avatar,
-                providerId: existingAssistant?.providerId || '',
-                modelId: existingAssistant?.modelId || '',
+                providerId: providerId || '',
+                modelId: modelId || '',
                 systemPrompt: prompt,
                 temperature: temp,
                 topP,
@@ -7992,9 +8125,11 @@
             const conv = appData.conversations.find(c => c.id === appData.currentConversationId);
             document.getElementById('chatTitle').textContent = conv ? conv.title : '新对话';
 
-            // 更新模型选择显示：对话临时模型 > 全局默认模型
+            // 更新模型选择显示：对话临时模型 > 助手默认模型 > 全局默认模型
+            const assistant = appData.assistants.find(a => a.id === appData.currentAssistantId);
+            const assistantModel = assistant?.providerId && assistant?.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
-            const currentModel = conv?.tempModel || globalModel || '';
+            const currentModel = conv?.tempModel || assistantModel || globalModel || '';
 
             if (currentModel) {
                 const [providerId, modelId] = currentModel.split('||');
@@ -8422,11 +8557,12 @@
 
             const assistant = appData.assistants.find(a => a.id === appData.currentAssistantId);
 
-            // 获取当前使用的模型：对话临时模型 > 全局默认模型 > 助手模型
+            // 获取当前使用的模型：对话临时模型 > 助手默认模型 > 全局默认模型
             const conv = appData.conversations.find(c => c.id === appData.currentConversationId);
             const tempModel = conv?.tempModel; // 对话内临时切换的模型
+            const assistantModel = assistant.providerId && assistant.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
-            const modelValue = tempModel || globalModel || (assistant.providerId && assistant.modelId ? `${assistant.providerId}||${assistant.modelId}` : '');
+            const modelValue = tempModel || assistantModel || globalModel;
 
             if (!modelValue) {
                 alert('请先在设置中选择默认模型');
@@ -8772,10 +8908,12 @@
                 return;
             }
 
-            // 获取当前使用的模型：对话临时模型 > 全局默认模型
+            // 获取当前使用的模型：对话临时模型 > 助手默认模型 > 全局默认模型
             const conv = appData.conversations.find(c => c.id === appData.currentConversationId);
+            const assistant = appData.assistants.find(a => a.id === appData.currentAssistantId);
+            const assistantModel = assistant?.providerId && assistant?.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
-            const currentModel = conv?.tempModel || globalModel || '';
+            const currentModel = conv?.tempModel || assistantModel || globalModel || '';
             const [, currentModelId] = currentModel ? currentModel.split('||') : ['', ''];
 
             // 只显示模型名，换行显示长名称
