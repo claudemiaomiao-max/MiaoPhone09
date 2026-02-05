@@ -13,55 +13,59 @@
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>
     eruda.init();
-    // 限制 eruda 图标只能在 safe area 内拖动
+    // 限制 eruda 图标在 safe area 内
     (function() {
-        const entry = document.querySelector('.eruda-entry-btn');
-        if (!entry) return;
+        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+        if (!isStandalone) return; // 非全屏模式不限制
 
-        // 获取 safe area insets
-        const getSafeArea = () => ({
-            top: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat') || 0) ||
-                 (window.navigator.standalone ? 47 : 0), // iOS standalone 模式默认 47px
-            bottom: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sab') || 0) ||
-                    (window.navigator.standalone ? 34 : 0), // iOS home indicator 默认 34px
-            left: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sal') || 0),
-            right: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sar') || 0)
-        });
+        const safeTop = 50;    // 顶部安全距离（避开刘海和状态栏）
+        const safeBottom = 40; // 底部安全距离（避开 home indicator）
+        const safeLeft = 5;
+        const safeRight = 5;
 
-        // 限制位置在 safe area 内
-        const clampPosition = () => {
-            const safe = getSafeArea();
-            const rect = entry.getBoundingClientRect();
-            const btnSize = rect.width || 40;
+        function clampErudaPosition() {
+            const btn = document.querySelector('.eruda-entry-btn');
+            if (!btn) return;
 
-            let x = parseInt(entry.style.left) || (window.innerWidth - btnSize - 10);
-            let y = parseInt(entry.style.top) || 10;
+            const rect = btn.getBoundingClientRect();
+            const btnW = rect.width || 40;
+            const btnH = rect.height || 40;
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
 
-            // 限制范围
-            const minX = safe.left + 5;
-            const maxX = window.innerWidth - safe.right - btnSize - 5;
-            const minY = safe.top + 5;
-            const maxY = window.innerHeight - safe.bottom - btnSize - 5;
+            let x = rect.left;
+            let y = rect.top;
+            let changed = false;
 
-            let needUpdate = false;
-            if (y < minY) { y = minY; needUpdate = true; }
-            if (y > maxY) { y = maxY; needUpdate = true; }
-            if (x < minX) { x = minX; needUpdate = true; }
-            if (x > maxX) { x = maxX; needUpdate = true; }
+            if (y < safeTop) { y = safeTop; changed = true; }
+            if (y > winH - safeBottom - btnH) { y = winH - safeBottom - btnH; changed = true; }
+            if (x < safeLeft) { x = safeLeft; changed = true; }
+            if (x > winW - safeRight - btnW) { x = winW - safeRight - btnW; changed = true; }
 
-            if (needUpdate) {
-                entry.style.top = y + 'px';
-                entry.style.left = x + 'px';
+            if (changed) {
+                btn.style.left = x + 'px';
+                btn.style.top = y + 'px';
             }
-        };
+        }
 
-        // 监听拖拽结束
-        entry.addEventListener('touchend', () => setTimeout(clampPosition, 50));
-        entry.addEventListener('mouseup', () => setTimeout(clampPosition, 50));
+        // 用 MutationObserver 监听 style 变化
+        function setupObserver() {
+            const btn = document.querySelector('.eruda-entry-btn');
+            if (!btn) {
+                setTimeout(setupObserver, 200);
+                return;
+            }
 
-        // 初始位置修正（延迟执行确保 eruda 完成初始化）
-        setTimeout(clampPosition, 500);
-        setTimeout(clampPosition, 1000);
+            const observer = new MutationObserver(() => {
+                setTimeout(clampErudaPosition, 10);
+            });
+            observer.observe(btn, { attributes: true, attributeFilter: ['style'] });
+
+            // 初始修正
+            clampErudaPosition();
+        }
+
+        setTimeout(setupObserver, 300);
     })();
     </script>
     <script>
