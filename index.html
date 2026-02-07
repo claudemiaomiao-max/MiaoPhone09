@@ -5695,6 +5695,9 @@
                 </div>
                 <div class="chat-input-wrapper">
                     <div class="chat-input-box">
+                        <button class="wechat-voice-btn" onclick="startApiVoiceInput()" title="语音输入">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        </button>
                         <textarea id="chatInput" placeholder="输入消息..." rows="1"></textarea>
                         <button class="chat-upload-btn" onclick="showUploadOptions('api')" title="添加文件">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -7821,7 +7824,7 @@
                         <div class="form-group">
                             <label class="form-label">Temperature</label>
                             <div class="slider-container">
-                                <input type="range" class="slider" id="editAssistantTemp" min="0" max="2" step="0.1" value="${data.temperature || 1}" oninput="document.getElementById('tempValue').textContent=this.value">
+                                <input type="range" class="slider" id="editAssistantTemp" min="0" max="2" step="0.5" value="${data.temperature || 1}" oninput="document.getElementById('tempValue').textContent=this.value">
                                 <span class="slider-value" id="tempValue">${data.temperature || 1}</span>
                             </div>
                         </div>
@@ -8499,33 +8502,49 @@
             if (msgIndex === -1) return;
 
             const assistant = appData.assistants.find(a => a.id === appData.currentAssistantId);
-            const provider = appData.providers.find(p => p.id === assistant?.providerId);
+
+            // 复用 sendMessage 的模型解析逻辑：tempModel > assistantModel > globalModel
+            const conv = appData.conversations.find(c => c.id === appData.currentConversationId);
+            const tempModel = conv?.tempModel;
+            const assistantModel = assistant?.providerId && assistant?.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
+            const globalModel = appData.settings.defaultModel;
+            const modelValue = tempModel || assistantModel || globalModel;
+
+            if (!modelValue) {
+                alert('请先在设置中选择默认模型');
+                return;
+            }
+
+            const [providerId, modelId] = modelValue.split('||');
+            const provider = appData.providers.find(p => p.id === providerId);
             if (!provider) {
                 alert('找不到对应的供应商配置');
                 return;
             }
 
+            const effectiveAssistant = { ...assistant, providerId, modelId };
+
             const aiMsg = messages[msgIndex];
-            
+
             // 保存旧版本
             if (!aiMsg.versions) {
                 aiMsg.versions = [aiMsg.content];
                 aiMsg.currentVersion = 0;
             }
-            
+
             // 标记为正在流式输出，清空当前内容
             aiMsg.isStreaming = true;
             aiMsg.content = '';
             aiMsg.reasoningText = '';
             aiMsg.thinkingDuration = '';
-            
+
             renderMessages();
             document.getElementById('chatSendBtn').disabled = true;
 
             try {
                 // 构建历史消息（不包括当前AI消息）
                 const historyMessages = messages.slice(0, msgIndex);
-                
+
                 // 构建请求消息
                 const requestMessages = [];
                 let systemContent = assistant.systemPrompt || '';
@@ -8540,7 +8559,7 @@
                     requestMessages.push({ role: m.role, content: m.content });
                 }
 
-                const requestBody = buildRequestBody(assistant, requestMessages);
+                const requestBody = buildRequestBody(effectiveAssistant, requestMessages);
 
                 const response = await fetch(provider.baseUrl + provider.apiPath, {
                     method: 'POST',
@@ -11104,8 +11123,8 @@ ${memoryText}`;
                 return;
             }
 
-            const defaultVoiceId = appData.ttsSettings.engine === 'edge' ? 'zh-CN-XiaoxiaoNeural' : 'male-qn-qingse';
-            const voiceId = settings.voiceId || defaultVoiceId;
+            const isEdge = appData.ttsSettings.engine === 'edge';
+            const voiceId = isEdge ? (settings.edgeVoiceId || 'zh-CN-XiaoxiaoNeural') : (settings.voiceId || 'male-qn-qingse');
             playTtsAudio(text, voiceId, el);
         }
 
@@ -11114,9 +11133,20 @@ ${memoryText}`;
         let voiceInputText = '';
         let voiceProcessedCount = 0;  // 已处理的识别结果数量
         let voiceUserEdited = false;  // 用户是否手动编辑过
+        let voiceInputTarget = 'wechat';  // 'wechat' | 'api'
+
+        function startApiVoiceInput() {
+            voiceInputTarget = 'api';
+            startVoiceInputCommon();
+        }
 
         function startWechatVoiceInput() {
             closeWechatPlusPanel();
+            voiceInputTarget = 'wechat';
+            startVoiceInputCommon();
+        }
+
+        function startVoiceInputCommon() {
 
             // 检查浏览器支持
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -11273,25 +11303,29 @@ ${memoryText}`;
             // 重置音频路由（修复语音识别后TTS外放问题）
             resetAudioRoute();
 
-            // 创建用户语音消息
-            const voiceMsg = {
-                id: 'wmsg_' + Date.now(),
-                role: 'user',
-                type: 'voice_message',
-                content: text,
-                timestamp: new Date().toISOString()
-            };
-
-            // 添加到待发送
-            wechatData.pendingMessages.push(voiceMsg);
-
             // 关闭弹窗
             voiceInputText = '';
             document.getElementById('voiceInputPreview').value = '';
             document.getElementById('voiceInputModal').classList.remove('show');
 
-            // 刷新显示
-            renderWechatMessages();
+            if (voiceInputTarget === 'api') {
+                // API模式：把文字填入输入框
+                const chatInput = document.getElementById('chatInput');
+                chatInput.value = (chatInput.value ? chatInput.value + '\n' : '') + text;
+                chatInput.dispatchEvent(new Event('input'));
+                chatInput.focus();
+            } else {
+                // 微信模式：创建语音消息并发送
+                const voiceMsg = {
+                    id: 'wmsg_' + Date.now(),
+                    role: 'user',
+                    type: 'voice_message',
+                    content: text,
+                    timestamp: new Date().toISOString()
+                };
+                wechatData.pendingMessages.push(voiceMsg);
+                renderWechatMessages();
+            }
         }
 
         // 用户手动编辑语音预览文本时的处理
@@ -11413,8 +11447,8 @@ ${memoryText}`;
                 return;
             }
 
-            const defaultVoiceId = appData.ttsSettings.engine === 'edge' ? 'zh-CN-XiaoxiaoNeural' : 'male-qn-qingse';
-            const voiceId = settings.voiceId || defaultVoiceId;
+            const isEdge = appData.ttsSettings.engine === 'edge';
+            const voiceId = isEdge ? (settings.edgeVoiceId || 'zh-CN-XiaoxiaoNeural') : (settings.voiceId || 'male-qn-qingse');
             const text = msg.content;
             const emotion = msg.emotion || 'neutral';  // 从消息中获取情绪
             console.log('playVoiceMessage TTS引擎:', appData.ttsSettings.engine, 'voiceId:', voiceId);
@@ -13537,7 +13571,7 @@ ${chatContext}
 
             // Edge TTS 音色 UI
             if (appData.ttsSettings.engine === 'edge') {
-                const currentVoice = settings.voiceId || 'zh-CN-XiaoxiaoNeural';
+                const currentVoice = settings.edgeVoiceId || 'zh-CN-XiaoxiaoNeural';
                 document.getElementById('wechatEdgeGender').value = getEdgeVoiceGender(currentVoice);
                 populateEdgeVoiceSelect('wechatEdgeVoice', 'wechatEdgeGender', currentVoice);
             }
@@ -13608,9 +13642,8 @@ ${chatContext}
                     voiceMode: document.getElementById('wechatVoiceMode').classList.contains('on'),
                     offlineMode: document.getElementById('wechatOfflineMode').classList.contains('on'),
                     ttsEnabled: document.getElementById('wechatTtsEnabled').classList.contains('on'),
-                    voiceId: appData.ttsSettings.engine === 'edge'
-                        ? (document.getElementById('wechatEdgeVoice').value || 'zh-CN-XiaoxiaoNeural')
-                        : document.getElementById('wechatVoiceId').value.trim(),
+                    voiceId: document.getElementById('wechatVoiceId').value.trim(),
+                    edgeVoiceId: document.getElementById('wechatEdgeVoice').value || 'zh-CN-XiaoxiaoNeural',
                     autoSummaryEnabled: document.getElementById('wechatAutoSummaryEnabled').classList.contains('on'),
                     autoSummaryInterval: parseInt(document.getElementById('wechatAutoSummaryInterval').value) || 50,
                     proactiveEnabled: document.getElementById('wechatProactive').classList.contains('on'),
@@ -15060,8 +15093,10 @@ ${dialogueText}
 
                     // TTS自动播放（优先用语音通话设置的voiceId，其次微信助手设置，最后默认）
                     const conv = wechatData.conversations?.[vcState.assistantId];
-                    const defaultVoiceId = appData.ttsSettings.engine === 'edge' ? 'zh-CN-XiaoxiaoNeural' : 'male-qn-qingse';
-                    const voiceId = voiceCallData.settings.voiceId || conv?.settings?.voiceId || defaultVoiceId;
+                    const isEdge = appData.ttsSettings.engine === 'edge';
+                    const voiceId = isEdge
+                        ? (voiceCallData.settings.edgeVoiceId || conv?.settings?.edgeVoiceId || 'zh-CN-XiaoxiaoNeural')
+                        : (voiceCallData.settings.voiceId || conv?.settings?.voiceId || 'male-qn-qingse');
                     const ttsReady = isTtsConfigured();
                     console.log('语音通话TTS检查:', ttsReady, '引擎:', appData.ttsSettings.engine, 'voiceId:', voiceId);
                     if (ttsReady) {
@@ -15352,7 +15387,7 @@ ${dialogueText}
 
             // Edge TTS 音色 UI
             if (appData.ttsSettings.engine === 'edge') {
-                const currentVoice = s.voiceId || 'zh-CN-XiaoxiaoNeural';
+                const currentVoice = s.edgeVoiceId || 'zh-CN-XiaoxiaoNeural';
                 document.getElementById('vcEdgeGender').value = getEdgeVoiceGender(currentVoice);
                 populateEdgeVoiceSelect('vcEdgeVoice', 'vcEdgeGender', currentVoice);
             }
@@ -15376,9 +15411,8 @@ ${dialogueText}
             voiceCallData.settings.autoSendDelay = parseInt(document.getElementById('vcAutoSendDelay').value) || 2;
             voiceCallData.settings.carryWechatContext = document.getElementById('vcCarryContext').classList.contains('on');
             voiceCallData.settings.contextCount = parseInt(document.getElementById('vcContextCount').value) || 30;
-            voiceCallData.settings.voiceId = appData.ttsSettings.engine === 'edge'
-                ? (document.getElementById('vcEdgeVoice').value || 'zh-CN-XiaoxiaoNeural')
-                : document.getElementById('vcVoiceId').value.trim();
+            voiceCallData.settings.voiceId = document.getElementById('vcVoiceId').value.trim();
+            voiceCallData.settings.edgeVoiceId = document.getElementById('vcEdgeVoice').value || 'zh-CN-XiaoxiaoNeural';
             saveVoiceCallData();
             closePage('voiceCallSettingsPage');
         }
