@@ -8919,6 +8919,9 @@
             if (level !== 'off' && level !== 'auto' && thinkingTokens > 0) {
                 requestBody.max_thinking_tokens = thinkingTokens;
                 requestBody.reasoning = { max_tokens: thinkingTokens };
+                requestBody.reasoning_effort = level === 'low' ? 'low' : level === 'high' ? 'high' : 'medium';
+                requestBody.thinking = { type: 'enabled', budget_tokens: thinkingTokens };
+                requestBody.include_reasoning = true;
             }
 
             return requestBody;
