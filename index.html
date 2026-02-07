@@ -7824,7 +7824,7 @@
                         <div class="form-group">
                             <label class="form-label">Temperature</label>
                             <div class="slider-container">
-                                <input type="range" class="slider" id="editAssistantTemp" min="0" max="2" step="0.5" value="${data.temperature || 1}" oninput="document.getElementById('tempValue').textContent=this.value">
+                                <input type="range" class="slider" id="editAssistantTemp" min="0" max="2" step="0.05" value="${data.temperature || 1}" oninput="document.getElementById('tempValue').textContent=this.value">
                                 <span class="slider-value" id="tempValue">${data.temperature || 1}</span>
                             </div>
                         </div>
@@ -8289,7 +8289,10 @@
             }
 
             container.innerHTML = messages.map(m => renderMessage(m)).join('');
-            container.scrollTop = container.scrollHeight;
+            if (!renderMessages._keepScroll) {
+                container.scrollTop = container.scrollHeight;
+            }
+            renderMessages._keepScroll = false;
         }
 
         function renderMessage(msg) {
@@ -8492,7 +8495,11 @@
                 msg.currentVersion = newVersion;
                 msg.content = msg.versions[newVersion];
                 saveData();
+                const container = document.getElementById('chatMessages');
+                const scrollPos = container ? container.scrollTop : 0;
+                renderMessages._keepScroll = true;
                 renderMessages();
+                if (container) container.scrollTop = scrollPos;
             }
         }
 
@@ -8913,6 +8920,7 @@
                 requestBody.max_thinking_tokens = thinkingTokens;
             }
 
+            console.log('[DEBUG] buildRequestBody:', JSON.stringify({ model: requestBody.model, max_thinking_tokens: requestBody.max_thinking_tokens, thinkingLevel: level }));
             return requestBody;
         }
 
@@ -8941,6 +8949,13 @@
                             const delta = json.choices?.[0]?.delta;
 
                             if (delta) {
+                                // DEBUG: 记录前3个delta的完整结构
+                                if (!aiMsg._debugCount) aiMsg._debugCount = 0;
+                                if (aiMsg._debugCount < 3) {
+                                    console.log('[DEBUG] delta keys:', Object.keys(delta), 'full delta:', JSON.stringify(delta).substring(0, 200));
+                                    aiMsg._debugCount++;
+                                }
+
                                 if (delta.reasoning_content) {
                                     if (!isThinking) {
                                         isThinking = true;
@@ -11180,7 +11195,6 @@ ${memoryText}`;
                         const result = event.results[i];
                         if (result.isFinal) {
                             let text = result[0].transcript;
-                            text = addChinesePunctuation(text);
                             newFinalText += text;
                             voiceProcessedCount = i + 1;
                         }
@@ -11200,9 +11214,7 @@ ${memoryText}`;
                 for (let i = 0; i < event.results.length; i++) {
                     const result = event.results[i];
                     if (result.isFinal) {
-                        // 对每个final结果单独添加标点
                         let text = result[0].transcript;
-                        text = addChinesePunctuation(text);
                         finalParts.push(text);
                         voiceProcessedCount = i + 1;
                     } else {
