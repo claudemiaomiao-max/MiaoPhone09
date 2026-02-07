@@ -2927,6 +2927,9 @@
         .wechat-list-meta {
             text-align: right;
             flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
         }
 
         .wechat-list-time {
@@ -3444,6 +3447,14 @@
         }
         .wechat-voice-btn:active {
             color: #06ae56;
+        }
+        .wechat-voice-btn.recording {
+            color: #ff4444;
+            animation: voicePulse 1s ease-in-out infinite;
+        }
+        @keyframes voicePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
         }
 
         /* 弹窗样式 */
@@ -7006,6 +7017,10 @@
         function closePage(pageId) {
             document.getElementById(pageId).classList.remove('active');
             updateSettingsCounts();
+            // 离开聊天页面时停止语音识别
+            if ((pageId === 'chatPage' || pageId === 'wechatChatPage') && voiceRecognition) {
+                stopVoiceInputCommon();
+            }
         }
 
         function openSettings() {
@@ -7086,7 +7101,16 @@
 
         function exitToDesktop() {
             toggleChatSidebar();
-            setTimeout(() => closePage('chatPage'), 200);
+            const page = document.getElementById('chatPage');
+            // 关掉滑动动画，改为淡出
+            page.style.transition = 'opacity 0.25s ease, visibility 0s 0.25s';
+            page.style.opacity = '0';
+            setTimeout(() => {
+                page.classList.remove('active');
+                page.style.transition = '';
+                page.style.opacity = '';
+                updateSettingsCounts();
+            }, 260);
         }
 
         function showComingSoon() {
@@ -10369,11 +10393,13 @@
 
             // 如果输入框有内容，添加文本消息到暂存（包含引用信息）
             if (content) {
+                // Aa前缀快捷语音消息：以Aa开头则作为语音消息发送
+                const isVoiceShortcut = content.startsWith('Aa') && content.length > 2;
                 const msg = {
                     id: 'wmsg_' + Date.now(),
                     role: 'user',
-                    type: 'text',
-                    content: content,
+                    type: isVoiceShortcut ? 'voice_message' : 'text',
+                    content: isVoiceShortcut ? content.slice(2) : content,
                     timestamp: new Date().toISOString()
                 };
                 // 如果有引用消息，添加引用信息
@@ -11211,111 +11237,113 @@ ${memoryText}`;
 
         // 用户语音输入相关
         let voiceRecognition = null;
-        let voiceInputText = '';
-        let voiceProcessedCount = 0;  // 已处理的识别结果数量
-        let voiceUserEdited = false;  // 用户是否手动编辑过
+        let voicePendingText = '';
+        let voiceProcessedCount = 0;
         let voiceInputTarget = 'wechat';  // 'wechat' | 'api'
 
+        function getVoiceTargetInput() {
+            return voiceInputTarget === 'api'
+                ? document.getElementById('chatInput')
+                : document.getElementById('wechatInput');
+        }
+
+        function getVoiceTargetBtn() {
+            return voiceInputTarget === 'api'
+                ? document.querySelector('#chatPage .wechat-voice-btn')
+                : document.querySelector('#wechatChatPage .wechat-voice-btn');
+        }
+
         function startApiVoiceInput() {
+            if (voiceRecognition) {
+                stopVoiceInputCommon();
+                return;
+            }
             voiceInputTarget = 'api';
             startVoiceInputCommon();
         }
 
         function startWechatVoiceInput() {
+            if (voiceRecognition) {
+                stopVoiceInputCommon();
+                return;
+            }
             closeWechatPlusPanel();
             voiceInputTarget = 'wechat';
             startVoiceInputCommon();
         }
 
         function startVoiceInputCommon() {
-
-            // 检查浏览器支持
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 alert('您的浏览器不支持语音识别功能，请使用Chrome或Edge浏览器');
                 return;
             }
 
-            // 初始化语音识别
             voiceRecognition = new SpeechRecognition();
             voiceRecognition.lang = 'zh-CN';
             voiceRecognition.continuous = true;
             voiceRecognition.interimResults = true;
 
-            // 重置状态
-            voiceInputText = '';
+            // 重置状态，保留输入框已有内容
             voiceProcessedCount = 0;
-            voiceUserEdited = false;
-            document.getElementById('voiceInputPreview').value = '';
-            document.getElementById('voiceInputText').textContent = '正在聆听...';
-            document.getElementById('voiceInputIndicator').classList.remove('error');
-            document.getElementById('voiceInputSendBtn').disabled = true;
-            document.getElementById('voiceInputModal').classList.add('show');
+            const input = getVoiceTargetInput();
+            voicePendingText = input.value || '';
+
+            // 录音中视觉反馈
+            const btn = getVoiceTargetBtn();
+            if (btn) btn.classList.add('recording');
 
             voiceRecognition.onresult = (event) => {
-                // 如果用户正在编辑，不覆盖
-                if (voiceUserEdited) {
-                    // 只处理新的final结果，追加到用户编辑的内容后
-                    let newFinalText = '';
-                    for (let i = voiceProcessedCount; i < event.results.length; i++) {
-                        const result = event.results[i];
-                        if (result.isFinal) {
-                            let text = result[0].transcript;
-                            newFinalText += text;
-                            voiceProcessedCount = i + 1;
-                        }
-                    }
-                    if (newFinalText) {
-                        const preview = document.getElementById('voiceInputPreview');
-                        preview.value = preview.value + newFinalText;
-                        document.getElementById('voiceInputSendBtn').disabled = !preview.value.trim();
-                    }
-                    return;
-                }
-
-                // 正常模式：收集所有结果
-                let finalParts = [];
-                let interimText = '';
-
-                for (let i = 0; i < event.results.length; i++) {
-                    const result = event.results[i];
-                    if (result.isFinal) {
-                        let text = result[0].transcript;
-                        finalParts.push(text);
+                let interim = '';
+                let finalText = '';
+                for (let i = voiceProcessedCount; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalText += event.results[i][0].transcript;
                         voiceProcessedCount = i + 1;
                     } else {
-                        interimText += result[0].transcript;
+                        interim += event.results[i][0].transcript;
                     }
                 }
 
-                const finalText = finalParts.join('');
-                voiceInputText = finalText;
-                const displayText = finalText + (interimText ? interimText : '');
-                document.getElementById('voiceInputPreview').value = displayText;
-                document.getElementById('voiceInputSendBtn').disabled = !finalText.trim() && !interimText.trim();
+                if (finalText) {
+                    voicePendingText += finalText;
+                }
+
+                const display = voicePendingText + interim;
+                const targetInput = getVoiceTargetInput();
+                targetInput.value = display;
+                // 自动调整高度
+                targetInput.style.height = 'auto';
+                targetInput.style.height = Math.min(targetInput.scrollHeight, 120) + 'px';
             };
 
             voiceRecognition.onerror = (event) => {
-                console.error('语音识别错误:', event.error);
-                // 不要因为aborted就显示错误，可能是正常停止
-                if (event.error === 'aborted') {
-                    return;
-                }
-                document.getElementById('voiceInputIndicator').classList.add('error');
-                if (event.error === 'no-speech') {
-                    document.getElementById('voiceInputText').textContent = '没有检测到语音，请说话';
+                console.warn('语音识别错误:', event.error);
+                if (event.error === 'no-speech' || event.error === 'aborted') {
+                    setTimeout(() => {
+                        if (voiceRecognition) {
+                            try { voiceRecognition.start(); } catch(e) {}
+                        }
+                    }, 500);
                 } else if (event.error === 'not-allowed') {
-                    document.getElementById('voiceInputText').textContent = '请允许麦克风权限';
-                } else {
-                    document.getElementById('voiceInputText').textContent = '识别出错: ' + event.error;
+                    alert('请允许麦克风权限');
+                    stopVoiceInputCommon();
                 }
             };
 
             voiceRecognition.onend = () => {
-                // 识别结束，检查是否需要重启
-                const preview = document.getElementById('voiceInputPreview');
-                if (document.getElementById('voiceInputModal').classList.contains('show') && !preview.value.trim()) {
-                    document.getElementById('voiceInputText').textContent = '聆听已停止，点击下方重新开始';
+                // 自动重启（和语音通话一样的逻辑）
+                const pageId = voiceInputTarget === 'api' ? 'chatPage' : 'wechatChatPage';
+                const page = document.getElementById(pageId);
+                if (voiceRecognition && page && page.classList.contains('active')) {
+                    setTimeout(() => {
+                        if (voiceRecognition) {
+                            try {
+                                voiceProcessedCount = 0;
+                                voiceRecognition.start();
+                            } catch(e) {}
+                        }
+                    }, 300);
                 }
             };
 
@@ -11323,19 +11351,26 @@ ${memoryText}`;
                 voiceRecognition.start();
             } catch (e) {
                 console.error('启动语音识别失败:', e);
-                document.getElementById('voiceInputText').textContent = '启动失败，请重试';
+                stopVoiceInputCommon();
             }
         }
 
-        function cancelVoiceInput() {
+        function stopVoiceInputCommon() {
             if (voiceRecognition) {
+                voiceRecognition.onend = null;
                 voiceRecognition.stop();
                 voiceRecognition = null;
             }
-            voiceInputText = '';
-            document.getElementById('voiceInputModal').classList.remove('show');
-            // 重置音频路由（修复语音识别后TTS外放问题）
+            voicePendingText = '';
+            // 移除录音视觉状态
+            document.querySelectorAll('.wechat-voice-btn.recording').forEach(b => b.classList.remove('recording'));
+            // 重置音频路由
             resetAudioRoute();
+        }
+
+        function cancelVoiceInput() {
+            stopVoiceInputCommon();
+            document.getElementById('voiceInputModal').classList.remove('show');
         }
 
         // 重置音频路由（修复语音识别后TTS外放问题）
@@ -11367,52 +11402,9 @@ ${memoryText}`;
             }
         }
 
-        function sendVoiceInput() {
-            // 从textarea获取用户可能编辑过的文本
-            const text = document.getElementById('voiceInputPreview').value.trim();
-            if (!text) return;
-
-            // 停止识别
-            if (voiceRecognition) {
-                voiceRecognition.stop();
-                voiceRecognition = null;
-            }
-
-            // 重置音频路由（修复语音识别后TTS外放问题）
-            resetAudioRoute();
-
-            // 关闭弹窗
-            voiceInputText = '';
-            document.getElementById('voiceInputPreview').value = '';
-            document.getElementById('voiceInputModal').classList.remove('show');
-
-            if (voiceInputTarget === 'api') {
-                // API模式：把文字填入输入框
-                const chatInput = document.getElementById('chatInput');
-                chatInput.value = (chatInput.value ? chatInput.value + '\n' : '') + text;
-                chatInput.dispatchEvent(new Event('input'));
-                chatInput.focus();
-            } else {
-                // 微信模式：创建语音消息并发送
-                const voiceMsg = {
-                    id: 'wmsg_' + Date.now(),
-                    role: 'user',
-                    type: 'voice_message',
-                    content: text,
-                    timestamp: new Date().toISOString()
-                };
-                wechatData.pendingMessages.push(voiceMsg);
-                renderWechatMessages();
-            }
-        }
-
-        // 用户手动编辑语音预览文本时的处理
-        function onVoicePreviewEdit() {
-            voiceUserEdited = true;  // 标记用户已手动编辑
-            const text = document.getElementById('voiceInputPreview').value.trim();
-            document.getElementById('voiceInputSendBtn').disabled = !text;
-            voiceInputText = text;
-        }
+        // 保留旧函数避免弹窗按钮报错
+        function sendVoiceInput() { cancelVoiceInput(); }
+        function onVoicePreviewEdit() {}
 
         // ==================== 手动语音输入（假语音） ====================
         // 打开手动语音输入弹窗
