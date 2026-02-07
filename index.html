@@ -8915,9 +8915,10 @@
             if (assistant.topP !== undefined) requestBody.top_p = assistant.topP;
             if (assistant.maxTokens > 0) requestBody.max_tokens = assistant.maxTokens;
             
-            // 根据思考级别设置
+            // 根据思考级别设置（兼容多种供应商格式）
             if (level !== 'off' && level !== 'auto' && thinkingTokens > 0) {
                 requestBody.max_thinking_tokens = thinkingTokens;
+                requestBody.reasoning = { max_tokens: thinkingTokens };
             }
 
             return requestBody;
@@ -8948,12 +8949,6 @@
                             const delta = json.choices?.[0]?.delta;
 
                             if (delta) {
-                                // DEBUG: 临时调试
-                                if (!aiMsg._dc) aiMsg._dc = 0;
-                                if (aiMsg._dc < 3) {
-                                    console.log('[DEBUG]', 'rc type:', typeof delta.reasoning_content, 'val:', JSON.stringify(delta.reasoning_content)?.substring(0, 100), 'r type:', typeof delta.reasoning, 'content:', JSON.stringify(delta.content)?.substring(0, 50));
-                                    aiMsg._dc++;
-                                }
                                 const thinkingText = delta.reasoning_content || delta.reasoning;
                                 if (thinkingText) {
                                     if (!isThinking) {
