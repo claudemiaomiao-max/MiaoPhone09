@@ -1635,6 +1635,25 @@
             font-size: 13px;
         }
 
+        .message-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user .message-info {
+            align-items: flex-end;
+        }
+
+        .message.assistant .message-info {
+            align-items: flex-start;
+        }
+
+        .message-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .message-name {
             font-weight: 500;
         }
@@ -7067,7 +7086,7 @@
 
         function exitToDesktop() {
             toggleChatSidebar();
-            closePage('chatPage');
+            setTimeout(() => closePage('chatPage'), 200);
         }
 
         function showComingSoon() {
@@ -8397,8 +8416,10 @@
                 return `
                     <div class="message user">
                         <div class="message-header">
-                            ${userName ? `<span class="message-name">${escapeHtml(userName)}</span>` : ''}
-                            <span class="message-time">${formatTime(msg.timestamp)}</span>
+                            <div class="message-info">
+                                ${userName ? `<span class="message-name">${escapeHtml(userName)}</span>` : ''}
+                                <span class="message-time">${formatTime(msg.timestamp)}</span>
+                            </div>
                             <div class="message-avatar">
                                 ${userAvatarHtml}
                             </div>
@@ -8440,9 +8461,10 @@
                             <div class="message-avatar">
                                 ${assistant?.avatar ? `<img src="${assistant.avatar}" alt="">` : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
                             </div>
-                            <span class="message-name">${assistant?.name || 'AI'}</span>
-                            <span class="message-time">${formatTime(msg.timestamp)}</span>
-                            ${msg.totalTokens && !msg.isStreaming ? `<span class="message-tokens">${msg.totalTokens} tokens</span>` : ''}
+                            <div class="message-info">
+                                <span class="message-name">${assistant?.name || 'AI'}</span>
+                                <div class="message-meta"><span class="message-time">${formatTime(msg.timestamp)}</span>${msg.totalTokens && !msg.isStreaming ? `<span class="message-tokens">${msg.totalTokens} tokens</span>` : ''}</div>
+                            </div>
                         </div>
                         <div class="message-body">
                             ${thinkingHtml}
@@ -9510,6 +9532,13 @@
             return `${y}-${m}-${d} ${h}:${min}:${sec}`;
         }
 
+        function formatTimeShort(isoString) {
+            const date = new Date(isoString);
+            const h = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            return `${h}:${min}`;
+        }
+
         // ==================== 微信模式 ====================
         let wechatData = {
             currentAssistantId: null,
@@ -9600,7 +9629,7 @@
                     ? conv.messages[conv.messages.length - 1] 
                     : null;
                 const preview = lastMsg ? (lastMsg.content || '').substring(0, 20) : '暂无消息';
-                const time = lastMsg ? formatTime(lastMsg.timestamp) : '';
+                const time = lastMsg ? formatTimeShort(lastMsg.timestamp) : '';
                 
                 return `
                     <div class="wechat-list-item" onclick="openWechatChat('${a.id}')">
@@ -9841,7 +9870,7 @@
             const selectCheckbox = '<div class="select-checkbox"></div>';
 
             // 时间戳HTML（只在每轮最后一条显示）
-            const timeHtml = (ts) => showTimestamp ? `<div class="wechat-msg-time">${formatTime(ts)}</div>` : '';
+            const timeHtml = (ts) => showTimestamp ? `<div class="wechat-msg-time">${formatTimeShort(ts)}</div>` : '';
 
             // 拍一拍消息（支持长按删除）
             if (msg.type === 'pat_message' || msg.type === 'system') {
@@ -9854,8 +9883,8 @@
                                    msg.status === 'declined' ? '已退还' : '待确认';
                 const isSentByUser = msg.role === 'user' || msg.senderName === '我';
                 const displayTime = typeof msg.timestamp === 'number'
-                    ? formatTime(new Date(msg.timestamp).toISOString())
-                    : formatTime(msg.timestamp);
+                    ? formatTimeShort(new Date(msg.timestamp).toISOString())
+                    : formatTimeShort(msg.timestamp);
                 // 用户收到的待确认转账可点击
                 const isReceivable = !isSentByUser && msg.status === 'pending' && !isPending;
                 const clickableClass = isReceivable ? ' clickable' : '';
@@ -9888,8 +9917,8 @@
                 const icon = isAccepted ? '💚' : '💔';
                 const statusClass = isAccepted ? 'accepted' : 'declined';
                 const displayTime = typeof msg.timestamp === 'number'
-                    ? formatTime(new Date(msg.timestamp).toISOString())
-                    : formatTime(msg.timestamp);
+                    ? formatTimeShort(new Date(msg.timestamp).toISOString())
+                    : formatTimeShort(msg.timestamp);
 
                 return `
                     <div class="wechat-msg ${isFromUser ? 'user' : 'assistant'}${selectedClass}" ${bubbleClass} data-msg-id="${msg.id}">
