@@ -1560,8 +1560,27 @@
             gap: 10px;
         }
 
+        .message.assistant {
+            flex-direction: column;
+            gap: 4px;
+        }
+
         .message.user {
-            flex-direction: row-reverse;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .message.user > .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .message.user > .message-header .message-avatar {
+            width: 32px;
+            height: 32px;
         }
 
         .message-avatar {
@@ -1594,6 +1613,18 @@
 
         .message.assistant .message-body {
             max-width: 100%;
+        }
+
+        .message.assistant > .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .message.assistant > .message-header .message-avatar {
+            width: 32px;
+            height: 32px;
         }
 
         .message-header {
@@ -1787,6 +1818,12 @@
             gap: 4px;
             margin-top: 8px;
             align-items: center;
+        }
+
+        .message.user .message-body {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
         }
 
         .message.user .message-actions {
@@ -8188,7 +8225,7 @@
             const assistant = appData.assistants.find(a => a.id === appData.currentAssistantId);
             const assistantModel = assistant?.providerId && assistant?.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
-            const currentModel = conv?.tempModel || assistantModel || globalModel || '';
+            const currentModel = appData.settings.apiTempModel || assistantModel || globalModel || '';
 
             if (currentModel) {
                 const [providerId, modelId] = currentModel.split('||');
@@ -8359,14 +8396,14 @@
 
                 return `
                     <div class="message user">
-                        <div class="message-avatar">
-                            ${userAvatarHtml}
+                        <div class="message-header">
+                            ${userName ? `<span class="message-name">${escapeHtml(userName)}</span>` : ''}
+                            <span class="message-time">${formatTime(msg.timestamp)}</span>
+                            <div class="message-avatar">
+                                ${userAvatarHtml}
+                            </div>
                         </div>
                         <div class="message-body">
-                            <div class="message-header">
-                                <span class="message-time">${formatTime(msg.timestamp)}</span>
-                                ${userName ? `<span class="message-name">${escapeHtml(userName)}</span>` : ''}
-                            </div>
                             ${attachmentsHtml}
                             <div class="message-bubble">${formatMessageContent(currentContent, false)}</div>
                             <div class="message-actions">
@@ -8399,15 +8436,15 @@
                 
                 return `
                     <div class="message assistant">
-                        <div class="message-avatar">
-                            ${assistant?.avatar ? `<img src="${assistant.avatar}" alt="">` : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
+                        <div class="message-header">
+                            <div class="message-avatar">
+                                ${assistant?.avatar ? `<img src="${assistant.avatar}" alt="">` : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
+                            </div>
+                            <span class="message-name">${assistant?.name || 'AI'}</span>
+                            <span class="message-time">${formatTime(msg.timestamp)}</span>
+                            ${msg.totalTokens && !msg.isStreaming ? `<span class="message-tokens">${msg.totalTokens} tokens</span>` : ''}
                         </div>
                         <div class="message-body">
-                            <div class="message-header">
-                                <span class="message-name">${assistant?.name || 'AI'}</span>
-                                <span class="message-time">${formatTime(msg.timestamp)}</span>
-                                ${msg.totalTokens && !msg.isStreaming ? `<span class="message-tokens">${msg.totalTokens} tokens</span>` : ''}
-                            </div>
                             ${thinkingHtml}
                             <div class="message-content">${showTypingIndicator ? '<div class="typing-indicator"><span></span><span></span><span></span></div>' : formatMessageContent(displayContent)}</div>
                             <div class="message-actions">
@@ -8512,7 +8549,7 @@
 
             // 复用 sendMessage 的模型解析逻辑：tempModel > assistantModel > globalModel
             const conv = appData.conversations.find(c => c.id === appData.currentConversationId);
-            const tempModel = conv?.tempModel;
+            const tempModel = appData.settings.apiTempModel;
             const assistantModel = assistant?.providerId && assistant?.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
             const modelValue = tempModel || assistantModel || globalModel;
@@ -8641,7 +8678,7 @@
 
             // 获取当前使用的模型：对话临时模型 > 助手默认模型 > 全局默认模型
             const conv = appData.conversations.find(c => c.id === appData.currentConversationId);
-            const tempModel = conv?.tempModel; // 对话内临时切换的模型
+            const tempModel = appData.settings.apiTempModel; // API模式全局临时模型
             const assistantModel = assistant.providerId && assistant.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
             const modelValue = tempModel || assistantModel || globalModel;
@@ -9000,7 +9037,7 @@
             const assistant = appData.assistants.find(a => a.id === appData.currentAssistantId);
             const assistantModel = assistant?.providerId && assistant?.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
             const globalModel = appData.settings.defaultModel;
-            const currentModel = conv?.tempModel || assistantModel || globalModel || '';
+            const currentModel = appData.settings.apiTempModel || assistantModel || globalModel || '';
             const [, currentModelId] = currentModel ? currentModel.split('||') : ['', ''];
 
             // 只显示模型名，换行显示长名称
@@ -9016,14 +9053,11 @@
             showModal('modelSelectModal');
         }
 
-        // 对话内临时切换模型（仅对当前对话生效）
+        // API模式全局临时模型切换（优先于助手默认模型，但不修改助手设置）
         function quickSelectModel(providerId, modelId) {
-            const conv = appData.conversations.find(c => c.id === appData.currentConversationId);
-            if (conv) {
-                conv.tempModel = `${providerId}||${modelId}`;
-                saveData();
-                updateChatHeader();
-            }
+            appData.settings.apiTempModel = `${providerId}||${modelId}`;
+            saveData();
+            updateChatHeader();
             hideModal('modelSelectModal');
         }
 
@@ -9467,7 +9501,13 @@
 
         function formatTime(isoString) {
             const date = new Date(isoString);
-            return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            const h = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            const sec = String(date.getSeconds()).padStart(2, '0');
+            return `${y}-${m}-${d} ${h}:${min}:${sec}`;
         }
 
         // ==================== 微信模式 ====================
