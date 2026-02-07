@@ -8920,7 +8920,6 @@
                 requestBody.max_thinking_tokens = thinkingTokens;
             }
 
-            console.log('[DEBUG] buildRequestBody:', JSON.stringify({ model: requestBody.model, max_thinking_tokens: requestBody.max_thinking_tokens, thinkingLevel: level }));
             return requestBody;
         }
 
@@ -8949,19 +8948,13 @@
                             const delta = json.choices?.[0]?.delta;
 
                             if (delta) {
-                                // DEBUG: 记录前3个delta的完整结构
-                                if (!aiMsg._debugCount) aiMsg._debugCount = 0;
-                                if (aiMsg._debugCount < 3) {
-                                    console.log('[DEBUG] delta keys:', Object.keys(delta), 'full delta:', JSON.stringify(delta).substring(0, 200));
-                                    aiMsg._debugCount++;
-                                }
-
-                                if (delta.reasoning_content) {
+                                const thinkingText = delta.reasoning_content || delta.reasoning;
+                                if (thinkingText) {
                                     if (!isThinking) {
                                         isThinking = true;
                                         thinkingStartTime = Date.now();
                                     }
-                                    aiMsg.reasoningText += delta.reasoning_content;
+                                    aiMsg.reasoningText += thinkingText;
                                 }
 
                                 if (delta.content) {
