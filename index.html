@@ -6514,6 +6514,8 @@
                                 <option value="speech-2.5-hd">Speech-2.5 HD (高清)</option>
                                 <option value="speech-2.6-turbo">Speech-2.6 Turbo</option>
                                 <option value="speech-2.6-hd">Speech-2.6 HD</option>
+                                <option value="speech-2.8-turbo">Speech-2.8 Turbo</option>
+                                <option value="speech-2.8-hd">Speech-2.8 HD</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -10581,7 +10583,7 @@ JSON数组的【第一个元素】必须是思维链对象：
   {"type":"text","content":"描写内容"}
 - **voice_message**：你实际开口说出的话（配合emotion字段）
   {"type":"voice_message","content":"说话内容","emotion":"情绪"}
-  emotion必填：happy/sad/angry/tender/playful/surprised/neutral
+  emotion必填：happy/sad/angry/fearful/disgusted/surprised/calm
 
 ## 线下模式规则
 1. 每次回复【必须】同时包含text和voice_message
@@ -10602,10 +10604,9 @@ JSON数组的【第一个元素】必须是思维链对象：
 - 波浪号（～）：拖音，撒娇/俏皮感
 - 感叹号（！）：强调
 
-### 口语化技巧（可根据角色人设和语境灵活使用）
-- 语气词示例：嗯……（思考）、哎/唉（叹气）、呃/额（卡顿犹豫）、哦～（恍然大悟）、嘿/诶（轻快打招呼）、嘛/呀/啦/呢（句尾软化）、哈哈/嘻嘻（笑声）
-- 轻微重复和自我修正：如"我刚刚是想说，不对，是这个意思"
-- 重复词/回声句强调情绪：如"好好好，知道了知道了"、"行行行"、"啊对对对"、"等等等等"
+### 口语化技巧
+- 语气自然口语化，适当使用语气词（嗯、哎、呃、哦、嘿、呀、啦等）
+- 自然的重复和自我修正，像真人说话有呼吸感
 
 ## 输出结构
 [
@@ -10631,7 +10632,7 @@ JSON数组的【第一个元素】必须是思维链对象：
 ## 第二步：语音发言
 在思维链之后，输出语音消息（你现在是在微信里发语音聊天）：
 {"type":"voice_message","content":"语音内容","emotion":"情绪"}
-- emotion必填：happy/sad/angry/tender/playful/surprised/neutral
+- emotion必填：happy/sad/angry/fearful/disgusted/surprised/calm
 - 可以发多条语音，口语化的前提下尽量使用完整长句
 
 ## 完整示例
@@ -10651,10 +10652,9 @@ JSON数组的【第一个元素】必须是思维链对象：
 - 波浪号（～）：拖音，撒娇/俏皮感
 - 感叹号（！）：强调
 
-### 口语化技巧（可根据角色人设和语境灵活使用）
-- 语气词示例：嗯……（思考）、哎/唉（叹气）、呃/额（卡顿犹豫）、哦～（恍然大悟）、嘿/诶（轻快打招呼）、嘛/呀/啦/呢（句尾软化）、哈哈/嘻嘻（笑声）
-- 轻微重复和自我修正：如"我刚刚是想说，不对，是这个意思"
-- 重复词/回声句强调情绪：如"好好好，知道了知道了"、"行行行"、"啊对对对"、"等等等等"
+### 口语化技巧
+- 语气自然口语化，适当使用语气词（嗯、哎、呃、哦、嘿、呀、啦等）
+- 自然的重复和自我修正，像真人说话有呼吸感
 
 ## 特殊动作（适时使用，勿滥用）
 - 拍一拍：{"type":"pat","suffix":"的小脑袋"}
@@ -10678,7 +10678,7 @@ JSON数组的【第一个元素】必须是思维链对象：
 在思维链之后，输出你的实际回复，每条消息一个对象：
 {"type":"text","content":"文字内容"} 或 {"type":"voice_message","content":"语音内容","emotion":"情绪"}
 - text: 文字消息，像微信打字一样自然
-- voice_message: 语音消息，需要口语化，emotion必填(happy/sad/angry/tender/playful/surprised/neutral)
+- voice_message: 语音消息，需要口语化，emotion必填(happy/sad/angry/fearful/disgusted/surprised/calm)
 
 ## 完整示例
 [
@@ -10698,10 +10698,9 @@ JSON数组的【第一个元素】必须是思维链对象：
 - 波浪号（～）：拖音，撒娇/俏皮感
 - 感叹号（！）：强调
 
-### 口语化技巧（可根据角色人设和语境灵活使用）
-- 语气词示例：嗯……（思考）、哎/唉（叹气）、呃/额（卡顿犹豫）、哦～（恍然大悟）、嘿/诶（轻快打招呼）、嘛/呀/啦/呢（句尾软化）、哈哈/嘻嘻（笑声）
-- 轻微重复和自我修正：如"我刚刚是想说，不对，是这个意思"
-- 重复词/回声句强调情绪：如"好好好，知道了知道了"、"行行行"、"啊对对对"、"等等等等"
+### 口语化技巧
+- 语气自然口语化，适当使用语气词（嗯、哎、呃、哦、嘿、呀、啦等）
+- 自然的重复和自我修正，像真人说话有呼吸感
 
 ## 特殊动作（适时使用，勿滥用）
 - 拍一拍：{"type":"pat","suffix":"的小脑袋"}
@@ -11624,34 +11623,43 @@ ${memoryText}`;
             happy:     { rate: '+12%',  pitch: '+3Hz',  volume: '+10%' },
             sad:       { rate: '-8%',   pitch: '-3Hz',  volume: '-15%' },
             angry:     { rate: '+15%',  pitch: '+0Hz',  volume: '+20%' },
+            fearful:   { rate: '+12%',  pitch: '+3Hz',  volume: '-5%' },
+            disgusted: { rate: '+5%',   pitch: '-2Hz',  volume: '+5%' },
+            surprised: { rate: '+8%',   pitch: '+5Hz',  volume: '+10%' },
+            calm:      { rate: '+0%',   pitch: '+0Hz',  volume: '+0%' },
             neutral:   { rate: '+0%',   pitch: '+0Hz',  volume: '+0%' },
             tender:    { rate: '-3%',   pitch: '+0Hz',  volume: '-10%' },
-            playful:   { rate: '+12%',  pitch: '+3Hz',  volume: '+10%' },
-            surprised: { rate: '+8%',   pitch: '+5Hz',  volume: '+10%' },
-            fearful:   { rate: '+12%',  pitch: '+3Hz',  volume: '-5%' }
+            playful:   { rate: '+12%',  pitch: '+3Hz',  volume: '+10%' }
         };
 
-        // 情绪参数映射（绝对值，emotion固定传neutral保持声线一致）
-        // 注意：MiniMax的pitch必须是整数！
-        const EMOTION_PARAMS = {
-            happy:     { speed: 1.1,  pitch: 1,  vol: 4 },
-            sad:       { speed: 0.95,  pitch: -1, vol: 2 },
-            angry:     { speed: 1.12, pitch: 0,  vol: 5 },
-            fearful:   { speed: 1.1,  pitch: 1,  vol: 3 },
-            surprised: { speed: 1.05, pitch: 1,  vol: 4 },
-            neutral:   { speed: 1.0,  pitch: 0,  vol: 3 },
-            tender:    { speed: 0.98, pitch: 0,  vol: 2 },
-            playful:   { speed: 1.1,  pitch: 1,  vol: 4 }
+        // MiniMax 原生支持的情绪（全版本通用7个）
+        const MINIMAX_EMOTIONS = ['happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised', 'calm'];
+
+        // 旧情绪 → MiniMax原生情绪的 fallback 映射
+        const EMOTION_FALLBACK = {
+            tender: 'calm',
+            playful: 'happy',
+            neutral: 'calm'
         };
 
-        // 获取情绪参数（直接返回绝对值）
-        function calculateVoiceParams(emotion) {
-            const params = EMOTION_PARAMS[emotion] || EMOTION_PARAMS.neutral;
-            return {
-                speed: params.speed,
-                pitch: params.pitch,  // 整数
-                vol: params.vol
-            };
+        // 标准化情绪值（兼容旧上下文）
+        function normalizeEmotion(emotion) {
+            if (!emotion) return 'calm';
+            const e = emotion.toLowerCase();
+            if (MINIMAX_EMOTIONS.includes(e)) return e;
+            return EMOTION_FALLBACK[e] || 'calm';
+        }
+
+        // 检测是否为 2.8 模型（支持拟声词标签）
+        function isSpeech28Model() {
+            const model = appData.ttsSettings.model || '';
+            return model.includes('2.8');
+        }
+
+        // 非2.8模型时去除拟声词标签，避免被朗读出来
+        function stripInterjections(text) {
+            if (isSpeech28Model()) return text;
+            return text.replace(/\((laughs|chuckle|coughs|clear-throat|groans|breath|pant|inhale|exhale|gasps|sniffs|sighs|snorts|burps|lip-smacking|humming|hissing|emm|whistles|sneezes|crying|applause)\)/gi, '');
         }
 
         // 添加自然停顿 - MiniMax专用格式 <#秒数#>
@@ -11780,12 +11788,12 @@ ${memoryText}`;
             // 给音频路由一点时间重置
             await new Promise(r => setTimeout(r, 100));
 
-            // 应用自然停顿（MiniMax专用）
-            const processedText = addNaturalPauses(text);
-            // 计算情绪参数
-            const voiceParams = calculateVoiceParams(emotion);
+            // 标准化情绪 + 去除不兼容的拟声词 + 自然停顿
+            const normalizedEmotion = normalizeEmotion(emotion);
+            const cleanText = stripInterjections(text);
+            const processedText = addNaturalPauses(cleanText);
 
-            const cacheKey = `${voiceId}|${tts.model}|${emotion}|${text}`;
+            const cacheKey = `${voiceId}|${tts.model}|${normalizedEmotion}|${text}`;
 
             // 先检查缓存
             if (ttsCache.has(cacheKey)) {
@@ -11821,10 +11829,10 @@ ${memoryText}`;
                         output_format: "url",
                         voice_setting: {
                             voice_id: voiceId,
-                            speed: voiceParams.speed,
-                            vol: voiceParams.vol,
-                            pitch: voiceParams.pitch,
-                            emotion: emotion
+                            speed: 1.0,
+                            vol: 1.0,
+                            pitch: 0,
+                            emotion: normalizedEmotion
                         },
                         audio_setting: {
                             sample_rate: 32000,
@@ -11931,12 +11939,12 @@ ${memoryText}`;
             // 给音频路由一点时间重置
             await new Promise(r => setTimeout(r, 100));
 
-            // 应用自然停顿（MiniMax专用）
-            const processedText = addNaturalPauses(text);
-            // 计算情绪参数
-            const voiceParams = calculateVoiceParams(emotion);
+            // 标准化情绪 + 去除不兼容的拟声词 + 自然停顿
+            const normalizedEmotion = normalizeEmotion(emotion);
+            const cleanText = stripInterjections(text);
+            const processedText = addNaturalPauses(cleanText);
 
-            const cacheKey = `${voiceId}|${tts.model}|${emotion}|${text}`;
+            const cacheKey = `${voiceId}|${tts.model}|${normalizedEmotion}|${text}`;
 
             // 先检查缓存
             if (ttsCache.has(cacheKey)) {
@@ -11967,10 +11975,10 @@ ${memoryText}`;
                     output_format: "url",
                     voice_setting: {
                         voice_id: voiceId,
-                        speed: voiceParams.speed,
-                        vol: voiceParams.vol,
-                        pitch: voiceParams.pitch,
-                        emotion: "neutral"
+                        speed: 1.0,
+                        vol: 1.0,
+                        pitch: 0,
+                        emotion: normalizedEmotion
                     },
                     audio_setting: {
                         sample_rate: 32000,
@@ -15231,7 +15239,7 @@ ${dialogueText}
 
 ## 第二步：语音回复
 {"type":"voice_message","content":"你说的话","emotion":"情绪"}
-- emotion必填：happy/sad/angry/tender/playful/surprised/neutral
+- emotion必填：happy/sad/angry/fearful/disgusted/surprised/calm
 - 每次回复控制在50-100字以内，像打电话说话一样简洁自然
 - 口语化，就像面对面说话，不要书面语
 
