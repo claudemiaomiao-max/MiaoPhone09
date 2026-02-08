@@ -9502,6 +9502,8 @@
 
         function formatMessageContent(content, useMarkdown = true) {
             if (!content) return '';
+            // 去除拟声词标签，避免显示给用户
+            content = stripInterjectionsAlways(content);
 
             // 使用 marked.js 进行 Markdown 渲染
             if (useMarkdown && typeof marked !== 'undefined') {
@@ -9969,7 +9971,8 @@
             }
 
             if (msg.type === 'voice_message') {
-                const duration = Math.max(1, Math.ceil((msg.content || '').length / 4));
+                const cleanContent = stripInterjectionsAlways(msg.content || '');
+                const duration = Math.max(1, Math.ceil(cleanContent.length / 4));
                 // 根据秒数决定长度样式
                 let voiceLengthClass = 'voice-short';
                 if (duration > 10) voiceLengthClass = 'voice-long';
@@ -9990,7 +9993,7 @@
                                         <span class="wechat-voice-duration">${duration}"</span>
                                     </div>
                                 </div>
-                                <div class="wechat-voice-text" style="display: block;">${escapeHtml(msg.content || '')}</div>
+                                <div class="wechat-voice-text" style="display: block;">${escapeHtml(stripInterjectionsAlways(msg.content || ''))}</div>
                                 ${timeHtml(msg.timestamp)}
                             </div>
                         </div>
@@ -10013,7 +10016,7 @@
                                 </div>
                                 <span class="wechat-voice-convert" onclick="event.stopPropagation(); convertVoiceToText('${msg.id}')">转文字</span>
                             </div>
-                            <div class="wechat-voice-text" id="voice-text-${msg.id}">${escapeHtml(msg.content || '')}</div>
+                            <div class="wechat-voice-text" id="voice-text-${msg.id}">${escapeHtml(stripInterjectionsAlways(msg.content || ''))}</div>
                             ${timeHtml(msg.timestamp)}
                         </div>
                     </div>
@@ -10607,6 +10610,8 @@ JSON数组的【第一个元素】必须是思维链对象：
 ### 口语化技巧
 - 语气自然口语化，适当使用语气词（嗯、哎、呃、哦、嘿、呀、啦等）
 - 自然的重复和自我修正，像真人说话有呼吸感
+- 可在语音内容中适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
+  (laughs) (chuckle) (coughs) (clear-throat) (groans) (breath) (pant) (inhale) (exhale) (gasps) (sniffs) (sighs) (snorts) (burps) (lip-smacking) (humming) (hissing) (emm) (sneezes)
 
 ## 输出结构
 [
@@ -10655,6 +10660,8 @@ JSON数组的【第一个元素】必须是思维链对象：
 ### 口语化技巧
 - 语气自然口语化，适当使用语气词（嗯、哎、呃、哦、嘿、呀、啦等）
 - 自然的重复和自我修正，像真人说话有呼吸感
+- 可在语音内容中适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
+  (laughs) (chuckle) (coughs) (clear-throat) (groans) (breath) (pant) (inhale) (exhale) (gasps) (sniffs) (sighs) (snorts) (burps) (lip-smacking) (humming) (hissing) (emm) (sneezes)
 
 ## 特殊动作（适时使用，勿滥用）
 - 拍一拍：{"type":"pat","suffix":"的小脑袋"}
@@ -10701,6 +10708,8 @@ JSON数组的【第一个元素】必须是思维链对象：
 ### 口语化技巧
 - 语气自然口语化，适当使用语气词（嗯、哎、呃、哦、嘿、呀、啦等）
 - 自然的重复和自我修正，像真人说话有呼吸感
+- 可在语音内容中适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
+  (laughs) (chuckle) (coughs) (clear-throat) (groans) (breath) (pant) (inhale) (exhale) (gasps) (sniffs) (sighs) (snorts) (burps) (lip-smacking) (humming) (hissing) (emm) (sneezes)
 
 ## 特殊动作（适时使用，勿滥用）
 - 拍一拍：{"type":"pat","suffix":"的小脑袋"}
@@ -11659,6 +11668,11 @@ ${memoryText}`;
         // 非2.8模型时去除拟声词标签，避免被朗读出来
         function stripInterjections(text) {
             if (isSpeech28Model()) return text;
+            return stripInterjectionsAlways(text);
+        }
+
+        // 无条件去除拟声词标签（用于显示端，不让用户看到标签）
+        function stripInterjectionsAlways(text) {
             return text.replace(/\((laughs|chuckle|coughs|clear-throat|groans|breath|pant|inhale|exhale|gasps|sniffs|sighs|snorts|burps|lip-smacking|humming|hissing|emm|whistles|sneezes|crying|applause)\)/gi, '');
         }
 
@@ -12339,8 +12353,9 @@ ${memoryText}`;
                 contentPreview = '[图片]';
             } else if (msg.type === 'voice_message') {
                 // 语音消息显示实际内容
-                const voiceContent = msg.content?.substring(0, 50) || '';
-                contentPreview = '[语音] ' + voiceContent + (msg.content?.length > 50 ? '...' : '');
+                const voiceClean = stripInterjectionsAlways(msg.content || '');
+                const voiceContent = voiceClean.substring(0, 50);
+                contentPreview = '[语音] ' + voiceContent + (voiceClean.length > 50 ? '...' : '');
             } else if (msg.type === 'transfer') {
                 contentPreview = `[转账] ¥${msg.amount}`;
             } else if (msg.type === 'transfer_receipt') {
@@ -15255,6 +15270,8 @@ ${dialogueText}
 - 语气词：嗯……、哎、呃、哦～、嘿、嘛/呀/啦/呢
 - 自然的重复和自我修正
 - 像真人说话一样有呼吸感
+- 可适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
+  (laughs) (chuckle) (coughs) (clear-throat) (groans) (breath) (pant) (inhale) (exhale) (gasps) (sniffs) (sighs) (snorts) (burps) (lip-smacking) (humming) (hissing) (emm) (sneezes)
 
 ## 输出结构
 [
