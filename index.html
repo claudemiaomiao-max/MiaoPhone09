@@ -7100,17 +7100,21 @@
         }
 
         function exitToDesktop() {
-            toggleChatSidebar();
+            // 直接关闭侧边栏状态（不走动画）
+            const sidebar = document.getElementById('chatSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('show');
+            // 整个页面一起淡出
             const page = document.getElementById('chatPage');
-            // 关掉滑动动画，改为淡出
-            page.style.transition = 'opacity 0.25s ease, visibility 0s 0.25s';
+            page.style.transition = 'opacity 0.2s ease, visibility 0s 0.2s';
             page.style.opacity = '0';
             setTimeout(() => {
                 page.classList.remove('active');
                 page.style.transition = '';
                 page.style.opacity = '';
                 updateSettingsCounts();
-            }, 260);
+            }, 220);
         }
 
         function showComingSoon() {
@@ -10342,11 +10346,13 @@
 
             // 再添加文字到暂存（包含引用信息）
             if (content) {
+                // Aa前缀快捷语音消息
+                const isVoiceShortcut = content.startsWith('Aa') && content.length > 2;
                 const msg = {
                     id: 'wmsg_' + Date.now(),
                     role: 'user',
-                    type: 'text',
-                    content: content,
+                    type: isVoiceShortcut ? 'voice_message' : 'text',
+                    content: isVoiceShortcut ? content.slice(2) : content,
                     timestamp: new Date().toISOString()
                 };
                 // 如果有引用消息，添加引用信息
@@ -11600,13 +11606,16 @@ ${memoryText}`;
         const EDGE_TTS_VOICES = {
             female: [
                 { id: 'zh-CN-XiaoxiaoNeural', name: '晓晓 (温暖)' },
-                { id: 'zh-CN-XiaoyiNeural', name: '晓伊 (活泼)' }
+                { id: 'zh-CN-XiaoyiNeural', name: '晓伊 (活泼)' },
+                { id: 'zh-TW-HsiaoYuNeural', name: '曉語 (台灣女聲)' },
+                { id: 'zh-TW-HsiaoChenNeural', name: '曉臻 (台灣女聲)' }
             ],
             male: [
                 { id: 'zh-CN-YunxiNeural', name: '云希 (少年)' },
                 { id: 'zh-CN-YunjianNeural', name: '云健 (沉稳)' },
                 { id: 'zh-CN-YunyangNeural', name: '云扬 (新闻)' },
-                { id: 'zh-CN-YunxiaNeural', name: '云夏 (童声)' }
+                { id: 'zh-CN-YunxiaNeural', name: '云夏 (童声)' },
+                { id: 'zh-TW-YunJheNeural', name: '雲哲 (台灣男聲)' }
             ]
         };
 
