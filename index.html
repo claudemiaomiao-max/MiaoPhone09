@@ -6525,6 +6525,15 @@
                                 <option value="api.minimaxi.chat">海外 (api.minimaxi.chat)</option>
                             </select>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label">MiniMax Worker 代理地址</label>
+                            <input type="text" class="form-input" id="ttsMinimaxWorkerUrl" placeholder="https://your-minimax-worker.workers.dev">
+                            <div style="font-size:11px;color:#999;margin-top:4px">解决浏览器跨域限制，部署后填入地址即可</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">MiniMax Worker 鉴权密钥 (可选)</label>
+                            <input type="password" class="form-input" id="ttsMinimaxWorkerKey" placeholder="留空则不鉴权">
+                        </div>
                     </div>
                     <div id="ttsEdgeFields" style="display: none;">
                         <div class="form-group">
@@ -6752,7 +6761,9 @@
                 model: 'speech-02-hd',
                 domain: 'api.minimax.chat',
                 edgeWorkerUrl: '',
-                edgeWorkerKey: ''
+                edgeWorkerKey: '',
+                minimaxWorkerUrl: '',
+                minimaxWorkerKey: ''
             }
         };
 
@@ -11619,35 +11630,58 @@ ${memoryText}`;
             console.log('apiKey:', tts.apiKey ? (tts.apiKey.substring(0, 10) + '...') : '空');
             console.log('model:', tts.model);
 
-            const url = `https://${tts.domain}/v1/t2a_v2?GroupId=${tts.groupId}`;
-            console.log('请求URL:', url);
+            console.log('minimaxWorkerUrl:', tts.minimaxWorkerUrl || '未配置（直连）');
+
+            const testBody = {
+                model: tts.model,
+                text: '测试',
+                stream: false,
+                output_format: 'url',
+                voice_setting: {
+                    voice_id: 'male-qn-qingse',
+                    speed: 1.0,
+                    vol: 1.0,
+                    pitch: 0
+                },
+                audio_setting: {
+                    sample_rate: 32000,
+                    bitrate: 128000,
+                    format: 'mp3',
+                    channel: 1
+                }
+            };
 
             try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + tts.apiKey
-                    },
-                    body: JSON.stringify({
-                        model: tts.model,
-                        text: '测试',
-                        stream: false,
-                        output_format: 'url',
-                        voice_setting: {
-                            voice_id: 'male-qn-qingse',
-                            speed: 1.0,
-                            vol: 1.0,
-                            pitch: 0
+                let response;
+                if (tts.minimaxWorkerUrl) {
+                    const workerUrl = tts.minimaxWorkerUrl.replace(/\/+$/, '');
+                    const workerHeaders = { 'Content-Type': 'application/json' };
+                    if (tts.minimaxWorkerKey) {
+                        workerHeaders['Authorization'] = 'Bearer ' + tts.minimaxWorkerKey;
+                    }
+                    console.log('走Worker代理:', workerUrl);
+                    response = await fetch(workerUrl, {
+                        method: 'POST',
+                        headers: workerHeaders,
+                        body: JSON.stringify({
+                            groupId: tts.groupId,
+                            apiKey: tts.apiKey,
+                            domain: tts.domain,
+                            requestBody: testBody
+                        })
+                    });
+                } else {
+                    const url = `https://${tts.domain}/v1/text_to_speech?GroupId=${tts.groupId}`;
+                    console.log('直连URL:', url);
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + tts.apiKey
                         },
-                        audio_setting: {
-                            sample_rate: 32000,
-                            bitrate: 128000,
-                            format: 'mp3',
-                            channel: 1
-                        }
-                    })
-                });
+                        body: JSON.stringify(testBody)
+                    });
+                }
                 console.log('HTTP状态:', response.status);
                 const data = await response.json();
                 console.log('响应:', JSON.stringify(data).substring(0, 300));
@@ -11885,32 +11919,53 @@ ${memoryText}`;
             if (el) el.style.opacity = '0.5';
 
             try {
-                const response = await fetch(`https://${tts.domain}/v1/t2a_v2?GroupId=${tts.groupId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + tts.apiKey
+                const minimaxBody = {
+                    model: tts.model,
+                    text: processedText,
+                    stream: false,
+                    output_format: "url",
+                    voice_setting: {
+                        voice_id: voiceId,
+                        speed: 1.0,
+                        vol: 1.0,
+                        pitch: 0,
+                        emotion: normalizedEmotion
                     },
-                    body: JSON.stringify({
-                        model: tts.model,
-                        text: processedText,
-                        stream: false,
-                        output_format: "url",
-                        voice_setting: {
-                            voice_id: voiceId,
-                            speed: 1.0,
-                            vol: 1.0,
-                            pitch: 0,
-                            emotion: normalizedEmotion
+                    audio_setting: {
+                        sample_rate: 32000,
+                        bitrate: 128000,
+                        format: 'mp3',
+                        channel: 1
+                    }
+                };
+
+                let response;
+                if (tts.minimaxWorkerUrl) {
+                    const workerUrl = tts.minimaxWorkerUrl.replace(/\/+$/, '');
+                    const workerHeaders = { 'Content-Type': 'application/json' };
+                    if (tts.minimaxWorkerKey) {
+                        workerHeaders['Authorization'] = 'Bearer ' + tts.minimaxWorkerKey;
+                    }
+                    response = await fetch(workerUrl, {
+                        method: 'POST',
+                        headers: workerHeaders,
+                        body: JSON.stringify({
+                            groupId: tts.groupId,
+                            apiKey: tts.apiKey,
+                            domain: tts.domain,
+                            requestBody: minimaxBody
+                        })
+                    });
+                } else {
+                    response = await fetch(`https://${tts.domain}/v1/text_to_speech?GroupId=${tts.groupId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + tts.apiKey
                         },
-                        audio_setting: {
-                            sample_rate: 32000,
-                            bitrate: 128000,
-                            format: 'mp3',
-                            channel: 1
-                        }
-                    })
-                });
+                        body: JSON.stringify(minimaxBody)
+                    });
+                }
 
                 if (!response.ok) {
                     throw new Error('TTS请求失败: HTTP ' + response.status);
@@ -12030,38 +12085,58 @@ ${memoryText}`;
                 return;
             }
 
-            // 请求TTS
-            const ttsUrl = `https://${tts.domain}/v1/t2a_v2?GroupId=${tts.groupId}`;
-            console.log('TTS请求URL:', ttsUrl);
-            console.log('TTS请求body:', JSON.stringify({ model: tts.model, voice_id: voiceId, text: processedText.substring(0, 50) }));
-            const response = await fetch(ttsUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + tts.apiKey
+            // 请求TTS（优先走Worker代理，fallback直连）
+            const minimaxRequestBody = {
+                model: tts.model,
+                text: processedText,
+                stream: false,
+                output_format: "url",
+                voice_setting: {
+                    voice_id: voiceId,
+                    speed: 1.0,
+                    vol: 1.0,
+                    pitch: 0,
+                    emotion: normalizedEmotion
                 },
-                body: JSON.stringify({
-                    model: tts.model,
-                    text: processedText,
-                    stream: false,
-                    output_format: "url",
-                    voice_setting: {
-                        voice_id: voiceId,
-                        speed: 1.0,
-                        vol: 1.0,
-                        pitch: 0,
-                        emotion: normalizedEmotion
-                    },
-                    audio_setting: {
-                        sample_rate: 32000,
-                        bitrate: 128000,
-                        format: 'mp3',
-                        channel: 1
-                    }
-                })
-            });
+                audio_setting: {
+                    sample_rate: 32000,
+                    bitrate: 128000,
+                    format: 'mp3',
+                    channel: 1
+                }
+            };
 
-            console.log('TTS HTTP状态:', response.status, response.statusText);
+            let response;
+            if (tts.minimaxWorkerUrl) {
+                // 走Worker代理
+                const workerUrl = tts.minimaxWorkerUrl.replace(/\/+$/, '');
+                const workerHeaders = { 'Content-Type': 'application/json' };
+                if (tts.minimaxWorkerKey) {
+                    workerHeaders['Authorization'] = 'Bearer ' + tts.minimaxWorkerKey;
+                }
+                response = await fetch(workerUrl, {
+                    method: 'POST',
+                    headers: workerHeaders,
+                    body: JSON.stringify({
+                        groupId: tts.groupId,
+                        apiKey: tts.apiKey,
+                        domain: tts.domain,
+                        requestBody: minimaxRequestBody
+                    })
+                });
+            } else {
+                // 直连MiniMax（可能有CORS限制）
+                const ttsUrl = `https://${tts.domain}/v1/text_to_speech?GroupId=${tts.groupId}`;
+                response = await fetch(ttsUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + tts.apiKey
+                    },
+                    body: JSON.stringify(minimaxRequestBody)
+                });
+            }
+
             if (!response.ok) {
                 const errText = await response.text().catch(() => '无法读取响应体');
                 console.error('TTS请求失败，响应体:', errText);
@@ -13642,6 +13717,8 @@ ${chatContext}
             document.getElementById('ttsDomain').value = tts.domain || 'api.minimax.chat';
             document.getElementById('ttsEdgeWorkerUrl').value = tts.edgeWorkerUrl || '';
             document.getElementById('ttsEdgeWorkerKey').value = tts.edgeWorkerKey || '';
+            document.getElementById('ttsMinimaxWorkerUrl').value = tts.minimaxWorkerUrl || '';
+            document.getElementById('ttsMinimaxWorkerKey').value = tts.minimaxWorkerKey || '';
             toggleTtsEngineFields();
             showModal('ttsSettingsModal');
         }
@@ -13654,7 +13731,9 @@ ${chatContext}
                 model: document.getElementById('ttsModel').value,
                 domain: document.getElementById('ttsDomain').value,
                 edgeWorkerUrl: document.getElementById('ttsEdgeWorkerUrl').value.trim(),
-                edgeWorkerKey: document.getElementById('ttsEdgeWorkerKey').value.trim()
+                edgeWorkerKey: document.getElementById('ttsEdgeWorkerKey').value.trim(),
+                minimaxWorkerUrl: document.getElementById('ttsMinimaxWorkerUrl').value.trim(),
+                minimaxWorkerKey: document.getElementById('ttsMinimaxWorkerKey').value.trim()
             };
             saveData();
             updateTtsStatus();
