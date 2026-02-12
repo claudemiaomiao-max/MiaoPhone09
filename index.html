@@ -12004,7 +12004,7 @@ ${memoryText}`;
                 throw new Error('TTS请求失败: HTTP ' + response.status);
             }
 
-            const data = await response.json();
+            const data = await response.json()console.log('TTS响应:', JSON.stringify(data));
             const audioUrl = data?.data?.audio;
             if (!audioUrl) {
                 throw new Error(data?.base_resp?.status_msg || '未拿到audio字段');
