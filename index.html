@@ -2453,6 +2453,32 @@
             color: #d32f2f;
         }
 
+        .conv-context-menu {
+            position: fixed;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            z-index: 10000;
+            overflow: hidden;
+            min-width: 120px;
+        }
+
+        .conv-context-menu-item {
+            padding: 10px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .conv-context-menu-item:active {
+            background: var(--bg-tertiary);
+        }
+
+        .conv-context-menu-danger {
+            color: #d32f2f;
+        }
+
         /* 底部退出按钮 */
         .sidebar-footer {
             padding: 12px 16px;
@@ -6106,10 +6132,6 @@
                         <div class="switch on" id="wechatTimeAware" onclick="this.classList.toggle('on')"></div>
                     </div>
                     <div class="wechat-settings-item">
-                        <span class="wechat-settings-label">纯语音模式</span>
-                        <div class="switch" id="wechatVoiceMode" onclick="this.classList.toggle('on')"></div>
-                    </div>
-                    <div class="wechat-settings-item">
                         <span class="wechat-settings-label">线下互动模式</span>
                         <div class="switch" id="wechatOfflineMode" onclick="this.classList.toggle('on')"></div>
                     </div>
@@ -7867,7 +7889,6 @@
                 avatar: '',
                 systemPrompt: '',
                 temperature: 1,
-                topP: 1,
                 contextLength: 20,
                 maxTokens: 0,
                 streamOutput: true,
@@ -7923,13 +7944,6 @@
                             <div class="slider-container">
                                 <input type="range" class="slider" id="editAssistantTemp" min="0" max="2" step="0.05" value="${data.temperature || 1}" oninput="document.getElementById('tempValue').textContent=this.value">
                                 <span class="slider-value" id="tempValue">${data.temperature || 1}</span>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Top P</label>
-                            <div class="slider-container">
-                                <input type="range" class="slider" id="editAssistantTopP" min="0" max="1" step="0.1" value="${data.topP || 1}" oninput="document.getElementById('topPValue').textContent=this.value">
-                                <span class="slider-value" id="topPValue">${data.topP || 1}</span>
                             </div>
                         </div>
                         <div class="form-group">
@@ -8152,7 +8166,6 @@
             const avatar = document.getElementById('editAssistantAvatar').value;
             const prompt = document.getElementById('editAssistantPrompt').value;
             const temp = parseFloat(document.getElementById('editAssistantTemp').value);
-            const topP = parseFloat(document.getElementById('editAssistantTopP').value);
             const context = parseInt(document.getElementById('editAssistantContext').value);
             const maxTokens = parseInt(document.getElementById('editAssistantMaxTokens').value);
             const stream = document.getElementById('editAssistantStream').classList.contains('on');
@@ -8176,7 +8189,6 @@
                 modelId: modelId || '',
                 systemPrompt: prompt,
                 temperature: temp,
-                topP,
                 contextLength: context,
                 maxTokens,
                 streamOutput: stream,
@@ -8270,9 +8282,19 @@
 
         function selectAssistant(id) {
             appData.currentAssistantId = id;
+            // 切换到该助手的最近对话，没有则清空
+            const assistantConvs = appData.conversations.filter(c => c.assistantId === id);
+            if (assistantConvs.length > 0) {
+                // 按更新时间排序，选最近的
+                assistantConvs.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+                appData.currentConversationId = assistantConvs[0].id;
+            } else {
+                appData.currentConversationId = null;
+            }
             saveData();
             renderSidebarAssistants();
             renderConversationList();
+            renderMessages();
             updateChatHeader();
             toggleAssistantList();
         }
@@ -8320,6 +8342,23 @@
                     <button class="conversation-delete-btn" onclick="event.stopPropagation(); deleteConversation('${c.id}')">×</button>
                 </div>
             `).join('');
+
+            // 给每个对话项绑定长按事件
+            container.querySelectorAll('.conversation-item').forEach((el, i) => {
+                const convId = assistantConvs[i].id;
+                let pressTimer = null;
+                const startPress = (e) => {
+                    pressTimer = setTimeout(() => {
+                        e.preventDefault();
+                        showConversationMenu(convId, e);
+                    }, 500);
+                };
+                const cancelPress = () => { clearTimeout(pressTimer); };
+                el.addEventListener('touchstart', startPress, { passive: true });
+                el.addEventListener('touchend', cancelPress);
+                el.addEventListener('touchmove', cancelPress);
+                el.addEventListener('contextmenu', (e) => { e.preventDefault(); showConversationMenu(convId, e); });
+            });
         }
 
         function selectConversation(id) {
@@ -8341,6 +8380,44 @@
             saveData();
             renderConversationList();
             renderMessages();
+            updateChatHeader();
+        }
+
+        function showConversationMenu(convId, e) {
+            // 移除已有菜单
+            document.querySelectorAll('.conv-context-menu').forEach(m => m.remove());
+
+            const menu = document.createElement('div');
+            menu.className = 'conv-context-menu';
+            menu.innerHTML = `
+                <div class="conv-context-menu-item" onclick="renameConversation('${convId}'); this.parentElement.remove();">✏️ 重命名</div>
+                <div class="conv-context-menu-item conv-context-menu-danger" onclick="deleteConversation('${convId}'); this.parentElement.remove();">🗑️ 删除</div>
+            `;
+
+            document.body.appendChild(menu);
+
+            // 定位菜单
+            const rect = e.target.closest('.conversation-item').getBoundingClientRect();
+            menu.style.top = Math.min(rect.bottom, window.innerHeight - menu.offsetHeight - 10) + 'px';
+            menu.style.left = Math.min(rect.left + 20, window.innerWidth - menu.offsetWidth - 10) + 'px';
+
+            // 点击其他地方关闭菜单
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu() {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                });
+            }, 10);
+        }
+
+        function renameConversation(id) {
+            const conv = appData.conversations.find(c => c.id === id);
+            if (!conv) return;
+            const newTitle = prompt('重命名对话', conv.title);
+            if (newTitle === null || newTitle.trim() === '') return;
+            conv.title = newTitle.trim();
+            saveData();
+            renderConversationList();
             updateChatHeader();
         }
 
@@ -8655,6 +8732,10 @@
                 // 构建请求消息
                 const requestMessages = [];
                 let systemContent = assistant.systemPrompt || '';
+                const now2 = new Date();
+                const timeStr2 = now2.getFullYear() + '-' + String(now2.getMonth()+1).padStart(2,'0') + '-' + String(now2.getDate()).padStart(2,'0') + ' ' + String(now2.getHours()).padStart(2,'0') + ':' + String(now2.getMinutes()).padStart(2,'0');
+                const weekDays2 = ['日','一','二','三','四','五','六'];
+                systemContent += `\n\n【当前时间】${timeStr2} 星期${weekDays2[now2.getDay()]}`;
                 if (assistant.memoryEnabled && assistant.memories && assistant.memories.length > 0) {
                     systemContent += '\n\n【记忆】\n' + assistant.memories.join('\n');
                 }
@@ -8874,6 +8955,11 @@
 
             // 系统提示词
             let systemContent = assistant.systemPrompt || '';
+            // 注入当前时间
+            const now = new Date();
+            const timeStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+            const weekDays = ['日','一','二','三','四','五','六'];
+            systemContent += `\n\n【当前时间】${timeStr} 星期${weekDays[now.getDay()]}`;
             if (assistant.memoryEnabled && assistant.memories && assistant.memories.length > 0) {
                 systemContent += '\n\n【记忆】\n' + assistant.memories.join('\n');
             }
@@ -9012,7 +9098,6 @@
                 stream: assistant.streamOutput !== false
             };
 
-            if (assistant.topP !== undefined) requestBody.top_p = assistant.topP;
             if (assistant.maxTokens > 0) requestBody.max_tokens = assistant.maxTokens;
             
             // 根据思考级别设置（兼容多种供应商格式）
@@ -9703,7 +9788,6 @@
                     settings: {
                         memoryCount: 20,
                         timeAware: false,
-                        voiceMode: false,
                         offlineMode: false
                     }
                 };
@@ -10619,7 +10703,6 @@ JSON数组的【第一个元素】必须是思维链对象：
 - 感叹号（！）：强调
 
 ### 口语化技巧
-- 语气自然口语化，适当使用语气词（嗯、哎、呃、哦、嘿、呀、啦等）
 - 自然的重复和自我修正，像真人说话有呼吸感
 - 可在语音内容中适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
   (laughs) (chuckle) (coughs) (clear-throat) (groans) (breath) (pant) (inhale) (exhale) (gasps) (sniffs) (sighs) (snorts) (burps) (lip-smacking) (humming) (hissing) (emm) (sneezes)
@@ -10631,53 +10714,6 @@ JSON数组的【第一个元素】必须是思维链对象：
   {"type":"voice_message","content":"...","emotion":"..."},
   {"type":"text","content":"..."}
 ]
-
-【再次强调】你的输出必须是纯JSON数组，以 [ 开头，以 ] 结尾，中间不能有任何其他内容。`;
-            } else if (settings.voiceMode) {
-                // 纯语音模式：所有回复都是语音格式
-                systemPart += `
-
-# 输出格式铁律（最高优先级）
-- 你的回复【必须且只能】是一个JSON数组。
-- 【绝对禁止】在JSON数组之外输出任何文字、解释、思考过程或markdown标记。
-
-## 第一步：思维链（必须执行）
-JSON数组的【第一个元素】必须是思维链对象：
-{"type":"thinking","content":"你的思考过程：分析用户说了什么、当前气氛如何、你打算怎么回应"}
-
-## 第二步：语音发言
-在思维链之后，输出语音消息（你现在是在微信里发语音聊天）：
-{"type":"voice_message","content":"语音内容","emotion":"情绪"}
-- emotion必填：happy/sad/angry/fearful/disgusted/surprised/calm
-- 可以发多条语音，口语化的前提下尽量使用完整长句
-
-## 完整示例
-[
-  {"type":"thinking","content":"用户在问我今天怎么样，语气轻松，我用开心的语气回应"},
-  {"type":"voice_message","content":"还不错呀～今天心情超好的，你呢？","emotion":"happy"}
-]
-
-## 语音消息口语化规范
-语音消息会通过TTS合成播放，请像真人说话一样自然。
-
-### 标点符号控制节奏（重要！TTS会根据标点停顿）
-- 逗号（，）：短停顿
-- 句号（。）：正常停顿
-- 问号（？）：语气上扬，疑问感
-- 省略号（……）：拖长+停顿，表达犹豫/思考
-- 波浪号（～）：拖音，撒娇/俏皮感
-- 感叹号（！）：强调
-
-### 口语化技巧
-- 语气自然口语化，适当使用语气词（嗯、哎、呃、哦、嘿、呀、啦等）
-- 自然的重复和自我修正，像真人说话有呼吸感
-- 可在语音内容中适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
-  (laughs) (chuckle) (coughs) (clear-throat) (groans) (breath) (pant) (inhale) (exhale) (gasps) (sniffs) (sighs) (snorts) (burps) (lip-smacking) (humming) (hissing) (emm) (sneezes)
-
-## 特殊动作（适时使用，勿滥用）
-- 拍一拍：{"type":"pat","suffix":"的小脑袋"}
-- 转账：{"type":"transfer","amount":数字,"note":"备注"}
-- 收/拒转账：{"type":"transfer_receipt","action":"accepted或declined","amount":金额,"originalSender":"发送者"}
 
 【再次强调】你的输出必须是纯JSON数组，以 [ 开头，以 ] 结尾，中间不能有任何其他内容。`;
             } else {
@@ -10717,7 +10753,6 @@ JSON数组的【第一个元素】必须是思维链对象：
 - 感叹号（！）：强调
 
 ### 口语化技巧
-- 语气自然口语化，适当使用语气词（嗯、哎、呃、哦、嘿、呀、啦等）
 - 自然的重复和自我修正，像真人说话有呼吸感
 - 可在语音内容中适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
   (laughs) (chuckle) (coughs) (clear-throat) (groans) (breath) (pant) (inhale) (exhale) (gasps) (sniffs) (sighs) (snorts) (burps) (lip-smacking) (humming) (hissing) (emm) (sneezes)
@@ -11868,8 +11903,9 @@ ${memoryText}`;
                 resetAudioRoute();
                 await new Promise(r => setTimeout(r, 100));
                 if (el) el.style.opacity = '0.5';
+                const edgeText = stripInterjectionsAlways(text);
                 try {
-                    const { url: audioUrl } = await playEdgeTts(text, voiceId, emotion);
+                    const { url: audioUrl } = await playEdgeTts(edgeText, voiceId, emotion);
                     if (currentTtsAudio && currentTtsAudio !== unlockedAudio) { currentTtsAudio.pause(); currentTtsAudio = null; }
                     unlockedAudio.src = audioUrl;
                     currentTtsAudio = unlockedAudio;
@@ -12036,7 +12072,8 @@ ${memoryText}`;
                 resetAudioRoute();
                 await new Promise(r => setTimeout(r, 100));
 
-                const { url: audioUrl } = await playEdgeTts(text, voiceId, emotion);
+                const edgeText = stripInterjectionsAlways(text);
+                const { url: audioUrl } = await playEdgeTts(edgeText, voiceId, emotion);
 
                 if (currentTtsAudio && currentTtsAudio !== preUnlockedAudio) {
                     currentTtsAudio.pause();
@@ -13808,7 +13845,6 @@ ${chatContext}
             // 时间感知总开关（默认开启）
             const timeAwareOn = settings.timeAware !== false;
             document.getElementById('wechatTimeAware').classList.toggle('on', timeAwareOn);
-            document.getElementById('wechatVoiceMode').classList.toggle('on', settings.voiceMode || false);
             document.getElementById('wechatOfflineMode').classList.toggle('on', settings.offlineMode || false);
             document.getElementById('wechatTtsEnabled').classList.toggle('on', settings.ttsEnabled || false);
             document.getElementById('wechatVoiceId').value = settings.voiceId || '';
@@ -13883,7 +13919,6 @@ ${chatContext}
                     ...conv.settings,
                     memoryCount: parseInt(document.getElementById('wechatMemoryCount').value) || 20,
                     timeAware: document.getElementById('wechatTimeAware').classList.contains('on'),
-                    voiceMode: document.getElementById('wechatVoiceMode').classList.contains('on'),
                     offlineMode: document.getElementById('wechatOfflineMode').classList.contains('on'),
                     ttsEnabled: document.getElementById('wechatTtsEnabled').classList.contains('on'),
                     voiceId: document.getElementById('wechatVoiceId').value.trim(),
@@ -14707,11 +14742,18 @@ ${dialogueText}
                 return msg;
             });
 
-            const dataStr = JSON.stringify({
+            const exportObj = {
                 assistant: assistant?.name,
                 exportTime: new Date().toISOString(),
                 messages: messagesWithoutImages
-            }, null, 2);
+            };
+
+            // 导出长期记忆
+            if (conv.settings?.longTermMemory?.length > 0) {
+                exportObj.longTermMemory = conv.settings.longTermMemory;
+            }
+
+            const dataStr = JSON.stringify(exportObj, null, 2);
 
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -14778,7 +14820,7 @@ ${dialogueText}
                     }
                     
                     const mode = confirm('点击"确定"追加到现有记录\n点击"取消"替换现有记录');
-                    
+
                     if (mode) {
                         // 追加模式
                         conv.messages = conv.messages.concat(data.messages);
@@ -14786,10 +14828,25 @@ ${dialogueText}
                         // 替换模式
                         conv.messages = data.messages;
                     }
-                    
+
+                    // 恢复长期记忆
+                    if (data.longTermMemory && Array.isArray(data.longTermMemory)) {
+                        if (!conv.settings) conv.settings = {};
+                        if (mode && conv.settings.longTermMemory?.length > 0) {
+                            // 追加模式：合并去重（按content去重）
+                            const existing = new Set(conv.settings.longTermMemory.map(m => m.content));
+                            const newMemories = data.longTermMemory.filter(m => !existing.has(m.content));
+                            conv.settings.longTermMemory = conv.settings.longTermMemory.concat(newMemories);
+                        } else {
+                            // 替换模式或原本没有记忆
+                            conv.settings.longTermMemory = data.longTermMemory;
+                        }
+                    }
+
                     saveWechatData();
                     renderWechatMessages();
-                    alert(`成功导入 ${data.messages.length} 条消息`);
+                    const memoryInfo = data.longTermMemory?.length ? `，${data.longTermMemory.length} 条长期记忆` : '';
+                    alert(`成功导入 ${data.messages.length} 条消息${memoryInfo}`);
                 } catch (err) {
                     alert('导入失败: ' + err.message);
                 }
@@ -15409,7 +15466,6 @@ ${dialogueText}
 - 感叹号（！）：强调
 
 ## 口语化技巧
-- 语气词：嗯……、哎、呃、哦～、嘿、嘛/呀/啦/呢
 - 自然的重复和自我修正
 - 像真人说话一样有呼吸感
 - 可适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
