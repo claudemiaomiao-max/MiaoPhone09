@@ -1482,6 +1482,11 @@
             background: var(--bg-primary);
         }
 
+        #apiSettingsPage,
+        #assistantMemoryPage {
+            z-index: 300;
+        }
+
         /* 聊天header - 缩短高度 */
         .chat-header {
             padding: 8px 12px;
@@ -1498,6 +1503,9 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
         }
 
         .chat-menu-btn {
@@ -1519,14 +1527,19 @@
 
         .chat-header-info {
             flex: 1;
+            min-width: 0;
         }
 
         .chat-header-title {
             font-size: 15px;
             font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .chat-new-btn {
+            flex-shrink: 0;
             width: 36px;
             height: 36px;
             border: none;
@@ -2504,6 +2517,25 @@
         .sidebar-exit-btn:hover {
             background: var(--accent-light);
             border-color: var(--accent);
+            color: var(--accent-dark);
+        }
+
+        .sidebar-assistant-gear {
+            background: none;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+            color: var(--text-muted);
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .sidebar-assistant-gear:hover,
+        .sidebar-assistant-gear:active {
+            opacity: 1;
             color: var(--accent-dark);
         }
 
@@ -5541,39 +5573,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="settings-section">
-                    <div class="settings-section-title">数据管理</div>
-                    <div class="settings-card">
-                        <div class="settings-item" onclick="exportData()">
-                            <div class="settings-item-left">
-                                <div class="settings-item-icon export">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                </div>
-                                <div>
-                                    <div class="settings-item-text">导出数据</div>
-                                    <div class="settings-item-desc">备份所有配置和聊天记录</div>
-                                </div>
-                            </div>
-                            <div class="settings-item-right">
-                                <span class="icon-arrow"></span>
-                            </div>
-                        </div>
-                        <div class="settings-item" onclick="importData()">
-                            <div class="settings-item-left">
-                                <div class="settings-item-icon export" style="background: #fce4ec; color: #e91e63;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                </div>
-                                <div>
-                                    <div class="settings-item-text">导入数据</div>
-                                    <div class="settings-item-desc">恢复之前的备份</div>
-                                </div>
-                            </div>
-                            <div class="settings-item-right">
-                                <span class="icon-arrow"></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -5710,6 +5709,127 @@
             </div>
         </div>
 
+        <!-- API模式设置页面 -->
+        <div class="page" id="apiSettingsPage">
+            <div class="page-header">
+                <button class="page-back" onclick="closePage('apiSettingsPage')">
+                    <span class="icon-back"></span>
+                </button>
+                <span class="page-title">API模式设置</span>
+                <button class="page-action" onclick="saveApiSettings()" style="color: var(--accent-dark); font-size: 14px; width: auto; padding: 0 12px;">
+                    保存
+                </button>
+            </div>
+            <div class="page-content">
+                <div class="settings-section">
+                    <div class="settings-section-title">对话参数</div>
+                    <div class="settings-card">
+                        <div class="settings-item" style="flex-direction: column; align-items: stretch;">
+                            <div class="settings-item-left" style="margin-bottom: 8px;">
+                                <div class="settings-item-icon" style="background: #e3f2fd; color: #1976d2;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">上下文消息条数</div>
+                                    <div class="settings-item-desc">每次对话携带的历史消息数量</div>
+                                </div>
+                            </div>
+                            <input type="number" class="form-input" id="apiContextLengthInput" min="1" max="100" style="width: 100%;">
+                        </div>
+                        <div class="settings-item" style="cursor: default;">
+                            <div class="settings-item-left">
+                                <div class="settings-item-icon" style="background: #f3e5f5; color: #9c27b0;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">流式输出</div>
+                                    <div class="settings-item-desc">实时逐字显示AI回复</div>
+                                </div>
+                            </div>
+                            <div class="settings-item-right">
+                                <div class="switch" id="apiStreamEnabledSwitch" onclick="this.classList.toggle('on')"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-section-title">数据管理</div>
+                    <div class="settings-card">
+                        <div class="settings-item" onclick="exportData()">
+                            <div class="settings-item-left">
+                                <div class="settings-item-icon export">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">导出数据</div>
+                                    <div class="settings-item-desc">备份所有配置和聊天记录</div>
+                                </div>
+                            </div>
+                            <div class="settings-item-right">
+                                <span class="icon-arrow"></span>
+                            </div>
+                        </div>
+                        <div class="settings-item" onclick="importData()">
+                            <div class="settings-item-left">
+                                <div class="settings-item-icon export" style="background: #fce4ec; color: #e91e63;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">导入数据</div>
+                                    <div class="settings-item-desc">恢复之前的备份</div>
+                                </div>
+                            </div>
+                            <div class="settings-item-right">
+                                <span class="icon-arrow"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 助手记忆管理页面 -->
+        <div class="page" id="assistantMemoryPage">
+            <div class="page-header">
+                <button class="page-back" onclick="closePage('assistantMemoryPage')">
+                    <span class="icon-back"></span>
+                </button>
+                <span class="page-title" id="assistantMemoryTitle">记忆管理</span>
+                <button class="page-action" onclick="saveAssistantMemory()" style="color: var(--accent-dark); font-size: 14px; width: auto; padding: 0 12px;">
+                    保存
+                </button>
+            </div>
+            <div class="page-content">
+                <div class="settings-section">
+                    <div class="settings-card">
+                        <div class="settings-item" style="cursor: default;">
+                            <div class="settings-item-left">
+                                <div class="settings-item-icon" style="background: #fff3e0; color: #f57c00;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="10" y1="22" x2="14" y2="22"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">启用记忆</div>
+                                    <div class="settings-item-desc">仅在API模式生效</div>
+                                </div>
+                            </div>
+                            <div class="settings-item-right">
+                                <div class="switch" id="memoryPanelEnabled" onclick="this.classList.toggle('on')"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div class="settings-section-title" style="margin: 0;">记忆条目</div>
+                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="addMemoryItemToPanel()">+ 添加</button>
+                    </div>
+                    <div id="memoryPanelList">
+                        <!-- 动态渲染 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 妙妙API聊天页面 -->
         <div class="page chat-page" id="chatPage">
             <div class="chat-header">
@@ -5751,6 +5871,10 @@
                     <!-- 动态渲染 -->
                 </div>
                 <div class="sidebar-footer">
+                    <button class="sidebar-exit-btn" onclick="openApiSettings()" style="margin-bottom: 8px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        <span>API模式设置</span>
+                    </button>
                     <button class="sidebar-exit-btn" onclick="exitToDesktop()">
                         <span class="icon-exit"></span>
                         <span>返回桌面</span>
@@ -7040,6 +7164,15 @@
             if (!tts.engine) tts.engine = 'minimax';
             if (tts.edgeWorkerUrl === undefined) tts.edgeWorkerUrl = '';
             if (tts.edgeWorkerKey === undefined) tts.edgeWorkerKey = '';
+
+            // 迁移 API 模式全局设置
+            if (appData.settings.apiContextLength === undefined) {
+                const assistant = appData.assistants.find(a => a.id === appData.currentAssistantId);
+                appData.settings.apiContextLength = assistant?.contextLength || 20;
+            }
+            if (appData.settings.apiStreamEnabled === undefined) {
+                appData.settings.apiStreamEnabled = true;
+            }
         }
 
         // ==================== 页面导航 ====================
@@ -7134,22 +7267,42 @@
             }
         }
 
-        function exitToDesktop() {
-            // 直接关闭侧边栏状态（不走动画）
+        // 瞬间关闭侧边栏（跳过动画）
+        function closeSidebarInstantly() {
             const sidebar = document.getElementById('chatSidebar');
             const backdrop = document.getElementById('sidebarBackdrop');
+            if (!sidebar.classList.contains('open')) return;
+            sidebar.style.transition = 'none';
+            backdrop.style.transition = 'none';
             sidebar.classList.remove('open');
             backdrop.classList.remove('show');
-            // 整个页面一起淡出
-            const page = document.getElementById('chatPage');
-            page.style.transition = 'opacity 0.2s ease, visibility 0s 0.2s';
-            page.style.opacity = '0';
+            // 强制回流后恢复 transition
+            sidebar.offsetHeight;
+            sidebar.style.transition = '';
+            backdrop.style.transition = '';
+        }
+
+        function exitToDesktop() {
+            // 彻底隐藏侧边栏和遮罩，防止右滑时露出
+            const sidebar = document.getElementById('chatSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            sidebar.style.transition = 'none';
+            backdrop.style.transition = 'none';
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('show');
+            sidebar.style.visibility = 'hidden';
+            backdrop.style.visibility = 'hidden';
+            sidebar.offsetHeight;
+
+            closePage('chatPage');
+
+            // 页面关闭动画结束后恢复侧边栏状态
             setTimeout(() => {
-                page.classList.remove('active');
-                page.style.transition = '';
-                page.style.opacity = '';
-                updateSettingsCounts();
-            }, 220);
+                sidebar.style.transition = '';
+                backdrop.style.transition = '';
+                sidebar.style.visibility = '';
+                backdrop.style.visibility = '';
+            }, 350);
         }
 
         function showComingSoon() {
@@ -7889,13 +8042,9 @@
                 avatar: '',
                 systemPrompt: '',
                 temperature: 1,
-                contextLength: 20,
                 maxTokens: 0,
-                streamOutput: true,
                 providerId: '',
-                modelId: '',
-                memories: [],
-                memoryEnabled: false
+                modelId: ''
             });
             openPage('assistantEditPage');
         }
@@ -7913,7 +8062,6 @@
                 <div class="tabs">
                     <button class="tab active" onclick="switchAssistantTab(this, 'basic')">基础设置</button>
                     <button class="tab" onclick="switchAssistantTab(this, 'prompt')">提示词</button>
-                    <button class="tab" onclick="switchAssistantTab(this, 'memory')">记忆</button>
                     <button class="tab" onclick="switchAssistantTab(this, 'model')">模型</button>
                 </div>
 
@@ -7947,16 +8095,8 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">上下文消息条数</label>
-                            <input type="number" class="form-input" id="editAssistantContext" value="${data.contextLength || 20}" min="1" max="100">
-                        </div>
-                        <div class="form-group">
                             <label class="form-label">最大 Token 数 (0为无限制)</label>
                             <input type="number" class="form-input" id="editAssistantMaxTokens" value="${data.maxTokens || 0}" min="0">
-                        </div>
-                        <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
-                            <label class="form-label" style="margin: 0;">流式输出</label>
-                            <div class="switch ${data.streamOutput !== false ? 'on' : ''}" id="editAssistantStream" onclick="this.classList.toggle('on')"></div>
                         </div>
                     </div>
                 </div>
@@ -7966,32 +8106,6 @@
                         <div class="form-group">
                             <label class="form-label">系统提示词</label>
                             <textarea class="form-textarea" id="editAssistantPrompt" rows="15" placeholder="设定助手的人格和行为...">${data.systemPrompt || ''}</textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="assistantTabMemory" style="display: none;">
-                    <div class="form-section">
-                        <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
-                            <label class="form-label" style="margin: 0;">启用记忆</label>
-                            <div class="switch ${data.memoryEnabled ? 'on' : ''}" id="editAssistantMemoryEnabled" onclick="this.classList.toggle('on')"></div>
-                        </div>
-                        <div class="form-group" style="margin-top: 16px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                                <label class="form-label" style="margin: 0;">记忆条目</label>
-                                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="addMemoryItem()">+ 添加</button>
-                            </div>
-                            <div id="memoryList">
-                                ${(data.memories || []).length === 0 ? '<div class="empty-state" style="padding: 20px;"><div class="empty-state-text">暂无记忆</div></div>' : ''}
-                                ${(data.memories || []).map((m, i) => `
-                                    <div class="provider-card" style="margin-bottom: 8px; padding: 12px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                            <textarea class="form-textarea memory-item" style="min-height: 60px; font-size: 13px;" placeholder="记忆内容...">${m}</textarea>
-                                            <button class="btn-icon danger" style="flex-shrink: 0; margin-left: 8px;" onclick="this.parentElement.parentElement.remove()">×</button>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -8030,7 +8144,6 @@
             btn.classList.add('active');
             document.getElementById('assistantTabBasic').style.display = tab === 'basic' ? 'block' : 'none';
             document.getElementById('assistantTabPrompt').style.display = tab === 'prompt' ? 'block' : 'none';
-            document.getElementById('assistantTabMemory').style.display = tab === 'memory' ? 'block' : 'none';
             document.getElementById('assistantTabModel').style.display = tab === 'model' ? 'block' : 'none';
         }
 
@@ -8144,33 +8257,12 @@
             document.getElementById('assistantModelSelector').innerHTML = renderAssistantModelSelector('', '');
         }
 
-        function addMemoryItem() {
-            const list = document.getElementById('memoryList');
-            const emptyState = list.querySelector('.empty-state');
-            if (emptyState) emptyState.remove();
-
-            const item = document.createElement('div');
-            item.className = 'provider-card';
-            item.style.cssText = 'margin-bottom: 8px; padding: 12px;';
-            item.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <textarea class="form-textarea memory-item" style="min-height: 60px; font-size: 13px;" placeholder="记忆内容..."></textarea>
-                    <button class="btn-icon danger" style="flex-shrink: 0; margin-left: 8px;" onclick="this.parentElement.parentElement.remove()">×</button>
-                </div>
-            `;
-            list.appendChild(item);
-        }
-
         function saveAssistant() {
             const name = document.getElementById('editAssistantName').value.trim();
             const avatar = document.getElementById('editAssistantAvatar').value;
             const prompt = document.getElementById('editAssistantPrompt').value;
             const temp = parseFloat(document.getElementById('editAssistantTemp').value);
-            const context = parseInt(document.getElementById('editAssistantContext').value);
             const maxTokens = parseInt(document.getElementById('editAssistantMaxTokens').value);
-            const stream = document.getElementById('editAssistantStream').classList.contains('on');
-            const memoryEnabled = document.getElementById('editAssistantMemoryEnabled').classList.contains('on');
-            const memories = Array.from(document.querySelectorAll('.memory-item')).map(t => t.value.trim()).filter(v => v);
 
             if (!name) {
                 alert('请输入助手名称');
@@ -8189,11 +8281,7 @@
                 modelId: modelId || '',
                 systemPrompt: prompt,
                 temperature: temp,
-                contextLength: context,
-                maxTokens,
-                streamOutput: stream,
-                memoryEnabled,
-                memories
+                maxTokens
             };
 
             if (editingAssistantId) {
@@ -8224,6 +8312,108 @@
             renderAssistantList();
         }
 
+        // ==================== API模式设置 ====================
+        function openApiSettings() {
+            // 数据迁移：首次使用时从助手级别迁移
+            if (appData.settings.apiContextLength === undefined) {
+                const assistant = appData.assistants.find(a => a.id === appData.currentAssistantId);
+                appData.settings.apiContextLength = assistant?.contextLength || 20;
+            }
+            if (appData.settings.apiStreamEnabled === undefined) {
+                appData.settings.apiStreamEnabled = true;
+            }
+
+            // 关掉侧边栏再打开设置页
+            closeSidebarInstantly();
+
+            document.getElementById('apiContextLengthInput').value = appData.settings.apiContextLength;
+            const sw = document.getElementById('apiStreamEnabledSwitch');
+            if (appData.settings.apiStreamEnabled) {
+                sw.classList.add('on');
+            } else {
+                sw.classList.remove('on');
+            }
+            openPage('apiSettingsPage');
+        }
+
+        function saveApiSettings() {
+            appData.settings.apiContextLength = parseInt(document.getElementById('apiContextLengthInput').value) || 20;
+            appData.settings.apiStreamEnabled = document.getElementById('apiStreamEnabledSwitch').classList.contains('on');
+            saveData();
+            closePage('apiSettingsPage');
+        }
+
+        // ==================== 助手记忆管理 ====================
+        let editingMemoryAssistantId = null;
+
+        function openAssistantMemoryPanel(id) {
+            editingMemoryAssistantId = id;
+            const assistant = appData.assistants.find(a => a.id === id);
+            if (!assistant) return;
+
+            // 关掉侧边栏再打开记忆页
+            closeSidebarInstantly();
+
+            document.getElementById('assistantMemoryTitle').textContent = assistant.name + ' - 记忆';
+
+            const sw = document.getElementById('memoryPanelEnabled');
+            if (assistant.memoryEnabled) {
+                sw.classList.add('on');
+            } else {
+                sw.classList.remove('on');
+            }
+
+            renderMemoryPanelList(assistant.memories || []);
+            openPage('assistantMemoryPage');
+        }
+
+        function renderMemoryPanelList(memories) {
+            const container = document.getElementById('memoryPanelList');
+            if (memories.length === 0) {
+                container.innerHTML = '<div class="empty-state" style="padding: 20px;"><div class="empty-state-text">暂无记忆</div></div>';
+                return;
+            }
+            container.innerHTML = memories.map((m, i) => `
+                <div class="provider-card" style="margin-bottom: 8px; padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <textarea class="form-textarea memory-panel-item" style="min-height: 60px; font-size: 13px;" placeholder="记忆内容...">${m}</textarea>
+                        <button class="btn-icon danger" style="flex-shrink: 0; margin-left: 8px;" onclick="this.parentElement.parentElement.remove()">×</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addMemoryItemToPanel() {
+            const list = document.getElementById('memoryPanelList');
+            const emptyState = list.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            const item = document.createElement('div');
+            item.className = 'provider-card';
+            item.style.cssText = 'margin-bottom: 8px; padding: 12px;';
+            item.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <textarea class="form-textarea memory-panel-item" style="min-height: 60px; font-size: 13px;" placeholder="记忆内容..."></textarea>
+                    <button class="btn-icon danger" style="flex-shrink: 0; margin-left: 8px;" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+            list.appendChild(item);
+        }
+
+        function saveAssistantMemory() {
+            if (!editingMemoryAssistantId) return;
+            const index = appData.assistants.findIndex(a => a.id === editingMemoryAssistantId);
+            if (index === -1) return;
+
+            const memoryEnabled = document.getElementById('memoryPanelEnabled').classList.contains('on');
+            const memories = Array.from(document.querySelectorAll('.memory-panel-item')).map(t => t.value.trim()).filter(v => v);
+
+            appData.assistants[index].memoryEnabled = memoryEnabled;
+            appData.assistants[index].memories = memories;
+            saveData();
+            closePage('assistantMemoryPage');
+        }
+
         // ==================== 聊天功能 ====================
         function toggleChatSidebar() {
             const sidebar = document.getElementById('chatSidebar');
@@ -8246,7 +8436,10 @@
                     <div class="sidebar-assistant-item-avatar">
                         ${a.avatar ? `<img src="${a.avatar}" alt="">` : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
                     </div>
-                    <span style="font-size: 13px;">${a.name}</span>
+                    <span style="font-size: 13px; flex: 1;">${a.name}</span>
+                    <button class="sidebar-assistant-gear" onclick="event.stopPropagation(); openAssistantMemoryPanel('${a.id}')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </button>
                 </div>
             `).join('');
 
@@ -8742,7 +8935,7 @@
                 if (systemContent) {
                     requestMessages.push({ role: 'system', content: systemContent });
                 }
-                const contextLength = assistant.contextLength || 20;
+                const contextLength = appData.settings.apiContextLength || 20;
                 for (const m of historyMessages.slice(-contextLength)) {
                     requestMessages.push({ role: m.role, content: m.content });
                 }
@@ -8763,7 +8956,7 @@
                     throw new Error(`HTTP ${response.status}: ${errorText}`);
                 }
 
-                if (!assistant.streamOutput) {
+                if (appData.settings.apiStreamEnabled === false) {
                     const data = await response.json();
                     aiMsg.content = data.choices[0].message.content;
                     if (data.usage) aiMsg.totalTokens = data.usage.total_tokens;
@@ -8939,7 +9132,7 @@
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
 
-            if (!assistant.streamOutput) {
+            if (appData.settings.apiStreamEnabled === false) {
                 const data = await response.json();
                 aiMsg.content = data.choices[0].message.content;
                 if (data.usage) aiMsg.totalTokens = data.usage.total_tokens;
@@ -8981,7 +9174,7 @@
 
             // 历史消息
             const history = appData.messages[appData.currentConversationId].slice(0, -1);
-            const contextLength = assistant.contextLength || 20;
+            const contextLength = appData.settings.apiContextLength || 20;
             const historySlice = history.slice(-contextLength);
 
             // 第一遍：统计所有图片，确定哪些消息的图片可以保留
@@ -9095,7 +9288,7 @@
                 model: assistant.modelId,
                 messages: messages,
                 temperature: assistant.temperature || 1,
-                stream: assistant.streamOutput !== false
+                stream: appData.settings.apiStreamEnabled !== false
             };
 
             if (assistant.maxTokens > 0) requestBody.max_tokens = assistant.maxTokens;
