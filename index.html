@@ -11608,6 +11608,61 @@ ${memoryText}`;
         document.addEventListener('click', unlockAudio, { once: true });
         document.addEventListener('touchstart', unlockAudio, { once: true });
 
+        // ==================== TTS调试工具 ====================
+        // 在eruda控制台输入 testTTS() 即可测试
+        window.testTTS = async function() {
+            const tts = appData.ttsSettings;
+            console.log('=== TTS调试开始 ===');
+            console.log('engine:', tts.engine);
+            console.log('domain:', tts.domain);
+            console.log('groupId:', tts.groupId);
+            console.log('apiKey:', tts.apiKey ? (tts.apiKey.substring(0, 10) + '...') : '空');
+            console.log('model:', tts.model);
+
+            const url = `https://${tts.domain}/v1/t2a_v2?GroupId=${tts.groupId}`;
+            console.log('请求URL:', url);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + tts.apiKey
+                    },
+                    body: JSON.stringify({
+                        model: tts.model,
+                        text: '测试',
+                        stream: false,
+                        output_format: 'url',
+                        voice_setting: {
+                            voice_id: 'male-qn-qingse',
+                            speed: 1.0,
+                            vol: 1.0,
+                            pitch: 0
+                        },
+                        audio_setting: {
+                            sample_rate: 32000,
+                            bitrate: 128000,
+                            format: 'mp3',
+                            channel: 1
+                        }
+                    })
+                });
+                console.log('HTTP状态:', response.status);
+                const data = await response.json();
+                console.log('响应:', JSON.stringify(data).substring(0, 300));
+                if (data?.data?.audio) {
+                    console.log('✅ 成功拿到音频URL');
+                    new Audio(data.data.audio).play();
+                } else {
+                    console.log('❌ 没有音频URL，错误:', data?.base_resp?.status_msg);
+                }
+            } catch (e) {
+                console.error('❌ fetch失败:', e.name, e.message);
+            }
+            console.log('=== TTS调试结束 ===');
+        };
+
         // ==================== 语音活人感增强 ====================
 
         // Edge TTS 音色列表
@@ -11976,7 +12031,10 @@ ${memoryText}`;
             }
 
             // 请求TTS
-            const response = await fetch(`https://${tts.domain}/v1/t2a_v2?GroupId=${tts.groupId}`, {
+            const ttsUrl = `https://${tts.domain}/v1/t2a_v2?GroupId=${tts.groupId}`;
+            console.log('TTS请求URL:', ttsUrl);
+            console.log('TTS请求body:', JSON.stringify({ model: tts.model, voice_id: voiceId, text: processedText.substring(0, 50) }));
+            const response = await fetch(ttsUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
