@@ -7479,9 +7479,8 @@
             backdrop.style.transition = 'none';
             sidebar.classList.remove('open');
             backdrop.classList.remove('show');
-            sidebar.style.visibility = 'hidden';
-            backdrop.style.visibility = 'hidden';
-            sidebar.offsetHeight;
+            sidebar.style.display = 'none';
+            backdrop.style.display = 'none';
 
             closePage('chatPage');
 
@@ -7489,8 +7488,8 @@
             setTimeout(() => {
                 sidebar.style.transition = '';
                 backdrop.style.transition = '';
-                sidebar.style.visibility = '';
-                backdrop.style.visibility = '';
+                sidebar.style.display = '';
+                backdrop.style.display = '';
             }, 350);
         }
 
