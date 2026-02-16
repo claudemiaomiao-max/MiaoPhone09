@@ -3095,6 +3095,9 @@
             display: flex;
             margin-bottom: 12px;
             align-items: flex-start;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         .wechat-msg.user {
@@ -4769,6 +4772,180 @@
             text-align: center;
         }
 
+        /* ==================== 微信搜索面板 ==================== */
+        .wechat-search-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 99998;
+        }
+        .wechat-search-overlay.show {
+            display: block;
+        }
+        .wechat-search-panel {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 430px;
+            height: 70vh;
+            background: #fff;
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+            z-index: 99999;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .wechat-search-panel.show {
+            display: flex;
+        }
+        .wechat-search-panel-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px 8px;
+            flex-shrink: 0;
+        }
+        .wechat-search-collapse-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #999;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+        }
+        .wechat-search-collapse-btn:active {
+            opacity: 0.5;
+        }
+        .wechat-search-bar {
+            flex: 1;
+            position: relative;
+            margin-left: 8px;
+        }
+        .wechat-search-input {
+            width: 100%;
+            height: 36px;
+            border: none;
+            border-radius: 18px;
+            background: #ededed;
+            padding: 0 16px 0 36px;
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .wechat-search-input:focus {
+            background: #e4e4e4;
+        }
+        .wechat-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        .wechat-search-list {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* 快照条目 */
+        .wechat-snapshot-item {
+            padding: 12px 16px;
+            border-bottom: 0.5px solid #e8e8e8;
+            cursor: pointer;
+        }
+        .wechat-snapshot-item:active {
+            background: #ececec;
+        }
+        .wechat-snapshot-user {
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        .wechat-snapshot-assistant {
+            font-size: 13px;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        .wechat-snapshot-time {
+            font-size: 11px;
+            color: #b0b0b0;
+            text-align: right;
+        }
+        /* 搜索结果条目 */
+        .wechat-search-result-item {
+            padding: 12px 16px;
+            border-bottom: 0.5px solid #e8e8e8;
+            cursor: pointer;
+        }
+        .wechat-search-result-item:active {
+            background: #ececec;
+        }
+        .wechat-search-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .wechat-search-result-sender {
+            font-size: 13px;
+            color: #333;
+            font-weight: 500;
+        }
+        .wechat-search-result-time {
+            font-size: 11px;
+            color: #b0b0b0;
+        }
+        .wechat-search-result-content {
+            font-size: 14px;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .wechat-search-result-content .keyword-highlight {
+            color: #07c160;
+            font-weight: 600;
+        }
+        .wechat-search-load-more {
+            text-align: center;
+            padding: 16px;
+            color: #999;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .wechat-search-load-more:active {
+            opacity: 0.6;
+        }
+        .wechat-search-empty {
+            text-align: center;
+            padding: 40px 16px;
+            color: #b0b0b0;
+            font-size: 14px;
+        }
+        /* 消息跳转高亮动画 */
+        @keyframes msg-highlight {
+            0% { background-color: rgba(7, 193, 96, 0.3); }
+            100% { background-color: transparent; }
+        }
+        .wechat-msg-highlight {
+            animation: msg-highlight 2s ease-out;
+        }
+
         /* ==================== 语音通话模式 ==================== */
         /* 通讯录页面 */
         .vc-contact-list {
@@ -5712,13 +5889,11 @@
         <!-- API模式设置页面 -->
         <div class="page" id="apiSettingsPage">
             <div class="page-header">
-                <button class="page-back" onclick="closePage('apiSettingsPage')">
+                <button class="page-back" onclick="closeApiSettings()">
                     <span class="icon-back"></span>
                 </button>
                 <span class="page-title">API模式设置</span>
-                <button class="page-action" onclick="saveApiSettings()" style="color: var(--accent-dark); font-size: 14px; width: auto; padding: 0 12px;">
-                    保存
-                </button>
+                <div style="width: 36px;"></div>
             </div>
             <div class="page-content">
                 <div class="settings-section">
@@ -5734,7 +5909,7 @@
                                     <div class="settings-item-desc">每次对话携带的历史消息数量</div>
                                 </div>
                             </div>
-                            <input type="number" class="form-input" id="apiContextLengthInput" min="1" max="100" style="width: 100%;">
+                            <input type="number" class="form-input" id="apiContextLengthInput" min="1" max="100" style="width: 100%;" onchange="autoSaveApiSettings()">
                         </div>
                         <div class="settings-item" style="cursor: default;">
                             <div class="settings-item-left">
@@ -5747,7 +5922,7 @@
                                 </div>
                             </div>
                             <div class="settings-item-right">
-                                <div class="switch" id="apiStreamEnabledSwitch" onclick="this.classList.toggle('on')"></div>
+                                <div class="switch" id="apiStreamEnabledSwitch" onclick="this.classList.toggle('on'); autoSaveApiSettings()"></div>
                             </div>
                         </div>
                     </div>
@@ -5791,13 +5966,11 @@
         <!-- 助手记忆管理页面 -->
         <div class="page" id="assistantMemoryPage">
             <div class="page-header">
-                <button class="page-back" onclick="closePage('assistantMemoryPage')">
+                <button class="page-back" onclick="closeAssistantMemory()">
                     <span class="icon-back"></span>
                 </button>
                 <span class="page-title" id="assistantMemoryTitle">记忆管理</span>
-                <button class="page-action" onclick="saveAssistantMemory()" style="color: var(--accent-dark); font-size: 14px; width: auto; padding: 0 12px;">
-                    保存
-                </button>
+                <div style="width: 36px;"></div>
             </div>
             <div class="page-content">
                 <div class="settings-section">
@@ -5813,7 +5986,7 @@
                                 </div>
                             </div>
                             <div class="settings-item-right">
-                                <div class="switch" id="memoryPanelEnabled" onclick="this.classList.toggle('on')"></div>
+                                <div class="switch" id="memoryPanelEnabled" onclick="this.classList.toggle('on'); autoSaveAssistantMemory()"></div>
                             </div>
                         </div>
                     </div>
@@ -5978,6 +6151,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
 
         <!-- 微信模式 - 消息列表页 -->
@@ -6031,9 +6205,9 @@
                             <div class="wechat-plus-icon">🖼️</div>
                             <span>照片</span>
                         </div>
-                        <div class="wechat-plus-item" onclick="wechatTakePhoto()">
-                            <div class="wechat-plus-icon">📷</div>
-                            <span>拍摄</span>
+                        <div class="wechat-plus-item" onclick="openWechatSearch()">
+                            <div class="wechat-plus-icon">🔍</div>
+                            <span>搜索</span>
                         </div>
                         <div class="wechat-plus-item" onclick="showComingSoon()">
                             <div class="wechat-plus-icon">📍</div>
@@ -6144,6 +6318,21 @@
                     <button class="wechat-voice-input-btn cancel" onclick="cancelVoiceInput()">取消</button>
                     <button class="wechat-voice-input-btn send" id="voiceInputSendBtn" onclick="sendVoiceInput()" disabled>发送语音</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- 搜索面板 -->
+        <div class="wechat-search-overlay" id="wechatSearchOverlay" onclick="closeWechatSearch()"></div>
+        <div class="wechat-search-panel" id="wechatSearchPanel">
+            <div class="wechat-search-panel-header">
+                <button class="wechat-search-collapse-btn" onclick="closeWechatSearch()">∨</button>
+                <div class="wechat-search-bar">
+                    <span class="wechat-search-icon">🔍</span>
+                    <input type="text" class="wechat-search-input" id="wechatSearchInput" placeholder="搜索聊天记录..." oninput="onWechatSearchInput(this.value)">
+                </div>
+            </div>
+            <div class="wechat-search-list" id="wechatSearchList">
+                <!-- 快照列表或搜索结果 -->
             </div>
         </div>
 
@@ -6501,7 +6690,7 @@
                 <span>拍照</span>
             </div>
         </div>
-        <input type="file" id="fileInput" style="display:none" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.md,.py,.js,.html,.css,.json" onchange="handleFileSelect(event)">
+        <input type="file" id="fileInput" style="display:none" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.md,.py,.js,.html,.css,.json,.xml,.yaml,.yml,.ts,.jsx,.tsx,.vue,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.sh,.bat,.sql,.csv,image/*,text/*,text/markdown,application/json,application/pdf" onchange="handleFileSelect(event)">
         <input type="file" id="imageInput" style="display:none" multiple accept="image/*" onchange="handleFileSelect(event)">
         <input type="file" id="cameraInput" style="display:none" accept="image/*" capture onchange="handleFileSelect(event)">
 
@@ -7290,9 +7479,8 @@
             backdrop.style.transition = 'none';
             sidebar.classList.remove('open');
             backdrop.classList.remove('show');
-            sidebar.style.visibility = 'hidden';
-            backdrop.style.visibility = 'hidden';
-            sidebar.offsetHeight;
+            sidebar.style.display = 'none';
+            backdrop.style.display = 'none';
 
             closePage('chatPage');
 
@@ -7300,8 +7488,8 @@
             setTimeout(() => {
                 sidebar.style.transition = '';
                 backdrop.style.transition = '';
-                sidebar.style.visibility = '';
-                backdrop.style.visibility = '';
+                sidebar.style.display = '';
+                backdrop.style.display = '';
             }, 350);
         }
 
@@ -8336,10 +8524,14 @@
             openPage('apiSettingsPage');
         }
 
-        function saveApiSettings() {
+        function autoSaveApiSettings() {
             appData.settings.apiContextLength = parseInt(document.getElementById('apiContextLengthInput').value) || 20;
             appData.settings.apiStreamEnabled = document.getElementById('apiStreamEnabledSwitch').classList.contains('on');
             saveData();
+        }
+
+        function closeApiSettings() {
+            autoSaveApiSettings();
             closePage('apiSettingsPage');
         }
 
@@ -8376,8 +8568,8 @@
             container.innerHTML = memories.map((m, i) => `
                 <div class="provider-card" style="margin-bottom: 8px; padding: 12px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <textarea class="form-textarea memory-panel-item" style="min-height: 60px; font-size: 13px;" placeholder="记忆内容...">${m}</textarea>
-                        <button class="btn-icon danger" style="flex-shrink: 0; margin-left: 8px;" onclick="this.parentElement.parentElement.remove()">×</button>
+                        <textarea class="form-textarea memory-panel-item" style="min-height: 60px; font-size: 13px;" placeholder="记忆内容..." onchange="autoSaveAssistantMemory()">${m}</textarea>
+                        <button class="btn-icon danger" style="flex-shrink: 0; margin-left: 8px;" onclick="this.parentElement.parentElement.remove(); autoSaveAssistantMemory()">×</button>
                     </div>
                 </div>
             `).join('');
@@ -8393,14 +8585,14 @@
             item.style.cssText = 'margin-bottom: 8px; padding: 12px;';
             item.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <textarea class="form-textarea memory-panel-item" style="min-height: 60px; font-size: 13px;" placeholder="记忆内容..."></textarea>
-                    <button class="btn-icon danger" style="flex-shrink: 0; margin-left: 8px;" onclick="this.parentElement.parentElement.remove()">×</button>
+                    <textarea class="form-textarea memory-panel-item" style="min-height: 60px; font-size: 13px;" placeholder="记忆内容..." onchange="autoSaveAssistantMemory()"></textarea>
+                    <button class="btn-icon danger" style="flex-shrink: 0; margin-left: 8px;" onclick="this.parentElement.parentElement.remove(); autoSaveAssistantMemory()">×</button>
                 </div>
             `;
             list.appendChild(item);
         }
 
-        function saveAssistantMemory() {
+        function autoSaveAssistantMemory() {
             if (!editingMemoryAssistantId) return;
             const index = appData.assistants.findIndex(a => a.id === editingMemoryAssistantId);
             if (index === -1) return;
@@ -8411,6 +8603,10 @@
             appData.assistants[index].memoryEnabled = memoryEnabled;
             appData.assistants[index].memories = memories;
             saveData();
+        }
+
+        function closeAssistantMemory() {
+            autoSaveAssistantMemory();
             closePage('assistantMemoryPage');
         }
 
@@ -10077,7 +10273,7 @@
         }
 
         // 消息分页配置
-        const WECHAT_PAGE_SIZE = 50; // 每页显示50条消息
+        const WECHAT_PAGE_SIZE = 150; // 每页显示150条消息
         let wechatCurrentPage = 1; // 当前显示的页数（从最新往前数）
 
         function renderWechatMessages(loadMore = false) {
@@ -10097,8 +10293,8 @@
                 return;
             }
 
-            // 如果不是加载更多，重置页数
-            if (!loadMore) {
+            // 如果不是加载更多且不是跳转模式，重置页数
+            if (!loadMore && !wechatJumpToMsgId) {
                 wechatCurrentPage = 1;
             }
 
@@ -10153,11 +10349,19 @@
 
             container.innerHTML = html;
 
-            if (loadMore) {
+            if (wechatJumpToMsgId) {
+                // 跳转模式：不自动滚动，由 jumpToWechatMessage 处理
+            } else if (loadMore) {
                 // 加载更多后，保持视觉位置不变
                 requestAnimationFrame(() => {
                     const newScrollHeight = container.scrollHeight;
                     container.scrollTop = newScrollHeight - oldScrollHeight;
+                });
+            } else if (wechatKeepScrollPosition) {
+                // 编辑/删除后，恢复之前的滚动位置
+                requestAnimationFrame(() => {
+                    container.scrollTop = wechatKeepScrollPosition;
+                    wechatKeepScrollPosition = null;
                 });
             } else {
                 // 新渲染，滚动到底部
@@ -10166,6 +10370,8 @@
                 });
             }
         }
+
+        let wechatKeepScrollPosition = null;
 
         // 加载更多历史消息
         function loadMoreWechatMessages() {
@@ -10342,7 +10548,7 @@
             const quoteHtml = msg.quote ? `
                 <div class="wechat-msg-quote">
                     <div class="wechat-msg-quote-name">${escapeHtml(msg.quote.senderName)}：</div>
-                    <div class="wechat-msg-quote-content">${escapeHtml(msg.quote.content)}</div>
+                    <div class="wechat-msg-quote-content">${escapeHtml(stripInterjectionsAlways(msg.quote.content))}</div>
                 </div>
             ` : '';
 
@@ -10864,10 +11070,11 @@ JSON数组的【第一个元素】必须是思维链对象：
 你现在处于【线下互动模式】——你和对方正在面对面相处，这是真实的、有温度的物理空间。
 【绝对禁止】使用普通微信聊天的风格，【绝对禁止】延续之前在线聊天的纯对话格式。
 
-### 【人称铁律】
-- text中描写自己【必须】用"我"，称呼对方【必须】用"你"
-- 【绝对禁止】用第三人称（他/她/对方/某某）来指代用户
-- voice_message中同理，说话时称呼对方用"你"
+### 【人称铁律 - 最高优先级】
+- 描写自己的动作、心理时，【必须】使用第一人称"我"
+- 所有对用户的描写、称呼，【必须】使用第二人称"你"
+- 第一人称（我）+ 第二人称（你）须贯穿全文，不得在任何段落或场景中混用其他人称
+- text 和 voice_message 中均须严格遵守，无例外
 
 使用以下两种消息类型交替输出：
 - **text**：场景描写、动作、神态、心理活动、环境细节（"我"视角+"你"称呼对方）
@@ -11658,6 +11865,383 @@ ${memoryText}`;
         // 保留旧函数避免弹窗按钮报错
         function sendVoiceInput() { cancelVoiceInput(); }
         function onVoicePreviewEdit() {}
+
+        // ==================== 微信搜索功能 ====================
+        const SNAPSHOT_PAGE_SIZE = 200;
+        const SEARCH_PAGE_SIZE = 100;
+        let wechatSearchDebounceTimer = null;
+        let wechatSnapshotPage = 1;
+        let wechatSearchResultPage = 1;
+        let wechatSearchCurrentKeyword = '';
+        let wechatSearchCachedRounds = null; // 缓存轮次数据
+        let wechatSearchCachedResults = null; // 缓存搜索结果
+
+        function openWechatSearch() {
+            // 关闭+面板
+            const plusPanel = document.getElementById('wechatPlusPanel');
+            if (plusPanel.classList.contains('show')) {
+                plusPanel.classList.remove('show');
+            }
+
+            const panel = document.getElementById('wechatSearchPanel');
+            const overlay = document.getElementById('wechatSearchOverlay');
+            overlay.classList.add('show');
+            panel.classList.add('show');
+
+            // 清空搜索框和状态
+            document.getElementById('wechatSearchInput').value = '';
+            wechatSearchCurrentKeyword = '';
+            wechatSnapshotPage = 1;
+            wechatSearchCachedRounds = null;
+            wechatSearchCachedResults = null;
+
+            // 渲染对话快照
+            renderSnapshotList();
+        }
+
+        function closeWechatSearch() {
+            const panel = document.getElementById('wechatSearchPanel');
+            const overlay = document.getElementById('wechatSearchOverlay');
+            panel.classList.remove('show');
+            overlay.classList.remove('show');
+            wechatSearchCachedRounds = null;
+            wechatSearchCachedResults = null;
+        }
+
+        // 搜索输入防抖
+        function onWechatSearchInput(value) {
+            clearTimeout(wechatSearchDebounceTimer);
+            wechatSearchDebounceTimer = setTimeout(() => {
+                const keyword = value.trim();
+                wechatSearchCurrentKeyword = keyword;
+                if (keyword === '') {
+                    wechatSnapshotPage = 1;
+                    wechatSearchCachedRounds = null;
+                    renderSnapshotList();
+                } else {
+                    wechatSearchResultPage = 1;
+                    wechatSearchCachedResults = null;
+                    const results = searchWechatMessages(keyword);
+                    wechatSearchCachedResults = results;
+                    renderSearchResults(results);
+                }
+            }, 300);
+        }
+
+        // 按 role 变化分割轮次
+        function buildConversationRounds() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (!conv || !conv.messages.length) return [];
+
+            const messages = conv.messages;
+            const rounds = [];
+            let currentRound = null;
+            let prevRole = null;
+
+            for (let i = 0; i < messages.length; i++) {
+                const msg = messages[i];
+                const role = msg.role;
+
+                // 系统消息（拍一拍等）归到当前轮次
+                if (role === 'system') {
+                    if (currentRound) {
+                        currentRound.messages.push(msg);
+                    }
+                    continue;
+                }
+
+                // role 从 user 开始新轮次
+                if (role === 'user' && prevRole !== 'user') {
+                    currentRound = { userMessages: [], assistantMessages: [], messages: [], timestamp: msg.timestamp };
+                    rounds.push(currentRound);
+                }
+
+                if (!currentRound) {
+                    currentRound = { userMessages: [], assistantMessages: [], messages: [], timestamp: msg.timestamp };
+                    rounds.push(currentRound);
+                }
+
+                currentRound.messages.push(msg);
+                if (role === 'user') {
+                    currentRound.userMessages.push(msg);
+                } else if (role === 'assistant') {
+                    currentRound.assistantMessages.push(msg);
+                    // 更新时间戳为最新的
+                    if (msg.timestamp) currentRound.timestamp = msg.timestamp;
+                }
+
+                prevRole = role;
+            }
+
+            return rounds;
+        }
+
+        // 提取消息预览文字
+        function getMessagePreview(msg) {
+            if (!msg) return '';
+            if (msg.type === 'image') return '[图片]';
+            if (msg.type === 'transfer') return `[转账] ¥${msg.amount || ''}`;
+            if (msg.type === 'pat_message') return '[拍了拍]';
+            if (msg.type === 'voice_message') {
+                const clean = stripInterjectionsAlways(msg.content || '');
+                const text = clean.substring(0, 30);
+                return '[语音] ' + text + (clean.length > 30 ? '...' : '');
+            }
+            return msg.content || '';
+        }
+
+        // 快照时间戳格式化
+        function formatSnapshotTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+
+            const HH = String(date.getHours()).padStart(2, '0');
+            const MM = String(date.getMinutes()).padStart(2, '0');
+            const timeStr = `${HH}:${MM}`;
+
+            // 今天
+            if (date.toDateString() === now.toDateString()) {
+                return timeStr;
+            }
+
+            // 昨天
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            if (date.toDateString() === yesterday.toDateString()) {
+                return `昨天 ${timeStr}`;
+            }
+
+            // 本周内（7天内）
+            if (diffDays < 7) {
+                const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+                return `${weekdays[date.getDay()]} ${timeStr}`;
+            }
+
+            // 今年内
+            if (date.getFullYear() === now.getFullYear()) {
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                return `${mm}-${dd} ${timeStr}`;
+            }
+
+            // 跨年
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            return `${date.getFullYear()}-${mm}-${dd}`;
+        }
+
+        // 渲染对话快照列表
+        function renderSnapshotList(loadMore = false) {
+            const container = document.getElementById('wechatSearchList');
+
+            if (!wechatSearchCachedRounds) {
+                wechatSearchCachedRounds = buildConversationRounds();
+            }
+            const rounds = wechatSearchCachedRounds;
+
+            if (rounds.length === 0) {
+                container.innerHTML = '<div class="wechat-search-empty">暂无聊天记录</div>';
+                return;
+            }
+
+            const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
+            const assistantName = assistant ? assistant.name : 'AI';
+            const userName = appData.settings.userName || '我';
+
+            // 倒序显示（最新在上面）
+            const reversedRounds = [...rounds].reverse();
+            const displayCount = wechatSnapshotPage * SNAPSHOT_PAGE_SIZE;
+            const visibleRounds = reversedRounds.slice(0, displayCount);
+            const hasMore = reversedRounds.length > displayCount;
+
+            let html = '';
+            visibleRounds.forEach(round => {
+                const userMsg = round.userMessages[0];
+                const assistantMsg = round.assistantMessages[0];
+                const userPreview = userMsg ? getMessagePreview(userMsg) : '';
+                const assistantPreview = assistantMsg ? getMessagePreview(assistantMsg) : '';
+                const time = formatSnapshotTime(round.timestamp);
+                // 点击跳转到该轮次的第一条消息
+                const firstMsg = round.messages[0];
+                const msgId = firstMsg ? firstMsg.id : '';
+
+                html += `<div class="wechat-snapshot-item" onclick="jumpToWechatMessage('${msgId}')">
+                    ${userPreview ? `<div class="wechat-snapshot-user">${escapeHtml(userName)}：${escapeHtml(userPreview)}</div>` : ''}
+                    ${assistantPreview ? `<div class="wechat-snapshot-assistant">${escapeHtml(assistantName)}：${escapeHtml(assistantPreview)}</div>` : ''}
+                    <div class="wechat-snapshot-time">${time}</div>
+                </div>`;
+            });
+
+            if (hasMore) {
+                html += `<div class="wechat-search-load-more" onclick="loadMoreSnapshots()">加载更多</div>`;
+            }
+
+            if (loadMore) {
+                // 追加到容器
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                // 移除旧的加载更多按钮
+                const oldLoadMore = container.querySelector('.wechat-search-load-more');
+                if (oldLoadMore) oldLoadMore.remove();
+                container.insertAdjacentHTML('beforeend', html);
+            } else {
+                container.innerHTML = html;
+            }
+        }
+
+        function loadMoreSnapshots() {
+            wechatSnapshotPage++;
+            renderSnapshotList(true);
+        }
+
+        // 搜索消息
+        function searchWechatMessages(keyword) {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (!conv || !conv.messages.length) return [];
+
+            const lowerKeyword = keyword.toLowerCase();
+            const results = [];
+
+            for (let i = conv.messages.length - 1; i >= 0; i--) {
+                const msg = conv.messages[i];
+                // 跳过图片、转账回执等无文字内容的消息
+                if (msg.type === 'image' || msg.type === 'transfer' || msg.type === 'pat_message') continue;
+                if (!msg.content) continue;
+
+                const content = msg.type === 'voice_message' ? stripInterjectionsAlways(msg.content) : msg.content;
+                if (content.toLowerCase().includes(lowerKeyword)) {
+                    results.push({ msg, index: i, content });
+                }
+            }
+
+            return results;
+        }
+
+        // 渲染搜索结果
+        function renderSearchResults(results, loadMore = false) {
+            const container = document.getElementById('wechatSearchList');
+
+            if (results.length === 0) {
+                container.innerHTML = '<div class="wechat-search-empty">没有找到相关消息</div>';
+                return;
+            }
+
+            const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
+            const assistantName = assistant ? assistant.name : 'AI';
+            const userName = appData.settings.userName || '我';
+            const keyword = wechatSearchCurrentKeyword;
+
+            const displayCount = wechatSearchResultPage * SEARCH_PAGE_SIZE;
+            const visibleResults = results.slice(0, displayCount);
+            const hasMore = results.length > displayCount;
+
+            let html = '';
+            visibleResults.forEach(({ msg, content }) => {
+                const senderName = msg.role === 'user' ? userName : assistantName;
+                const senderIcon = msg.role === 'user' ? '👤' : '🤖';
+                const time = formatSnapshotTime(msg.timestamp);
+
+                // 关键词高亮摘要
+                const excerpt = buildSearchExcerpt(content, keyword);
+
+                html += `<div class="wechat-search-result-item" onclick="jumpToWechatMessage('${msg.id}')">
+                    <div class="wechat-search-result-header">
+                        <span class="wechat-search-result-sender">${senderIcon} ${escapeHtml(senderName)}</span>
+                        <span class="wechat-search-result-time">${time}</span>
+                    </div>
+                    <div class="wechat-search-result-content">${excerpt}</div>
+                </div>`;
+            });
+
+            if (hasMore) {
+                html += `<div class="wechat-search-load-more" onclick="loadMoreSearchResults()">加载更多（共${results.length}条）</div>`;
+            }
+
+            if (loadMore) {
+                const oldLoadMore = container.querySelector('.wechat-search-load-more');
+                if (oldLoadMore) oldLoadMore.remove();
+                container.insertAdjacentHTML('beforeend', html);
+            } else {
+                container.innerHTML = html;
+            }
+        }
+
+        function loadMoreSearchResults() {
+            wechatSearchResultPage++;
+            if (wechatSearchCachedResults) {
+                renderSearchResults(wechatSearchCachedResults, true);
+            }
+        }
+
+        // 构建搜索摘要（关键词前后各取约20字，关键词高亮）
+        function buildSearchExcerpt(content, keyword) {
+            const lowerContent = content.toLowerCase();
+            const lowerKeyword = keyword.toLowerCase();
+            const idx = lowerContent.indexOf(lowerKeyword);
+            if (idx === -1) return escapeHtml(content.substring(0, 50));
+
+            const start = Math.max(0, idx - 20);
+            const end = Math.min(content.length, idx + keyword.length + 20);
+            let excerpt = '';
+            if (start > 0) excerpt += '...';
+            // 分三段：前缀、关键词、后缀
+            const prefix = content.substring(start, idx);
+            const match = content.substring(idx, idx + keyword.length);
+            const suffix = content.substring(idx + keyword.length, end);
+            excerpt += escapeHtml(prefix) + `<span class="keyword-highlight">${escapeHtml(match)}</span>` + escapeHtml(suffix);
+            if (end < content.length) excerpt += '...';
+            return excerpt;
+        }
+
+        // 跳转到指定消息
+        function jumpToWechatMessage(msgId) {
+            if (!msgId) return;
+
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (!conv || !conv.messages.length) return;
+
+            const messages = conv.messages;
+            const targetIndex = messages.findIndex(m => m.id === msgId);
+            if (targetIndex === -1) {
+                console.log('找不到目标消息:', msgId);
+                return;
+            }
+
+            // 计算需要加载多少页才能包含这条消息
+            const totalMessages = messages.length;
+            const fromEnd = totalMessages - targetIndex; // 从末尾数过来的位置
+            const neededPages = Math.ceil(fromEnd / WECHAT_PAGE_SIZE);
+
+            // 设置页数并渲染（不滚到底部）
+            wechatCurrentPage = neededPages;
+
+            // 用特殊标记让 renderWechatMessages 不滚到底部
+            wechatJumpToMsgId = msgId;
+            renderWechatMessages(false);
+            wechatJumpToMsgId = null;
+
+            // 关闭搜索面板
+            closeWechatSearch();
+
+            // 渲染完成后滚动到目标消息并高亮
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    const targetEl = document.querySelector(`[data-msg-id="${msgId}"]`);
+                    if (targetEl) {
+                        targetEl.scrollIntoView({ block: 'center', behavior: 'instant' });
+                        targetEl.classList.add('wechat-msg-highlight');
+                        targetEl.addEventListener('animationend', () => {
+                            targetEl.classList.remove('wechat-msg-highlight');
+                        }, { once: true });
+                    }
+                }, 50);
+            });
+        }
+
+        let wechatJumpToMsgId = null; // 跳转标记
 
         // ==================== 手动语音输入（假语音） ====================
         // 打开手动语音输入弹窗
@@ -12486,13 +13070,14 @@ ${memoryText}`;
                 alert('消息内容不能为空');
                 return;
             }
-            
+
             const conv = wechatData.conversations[wechatData.currentAssistantId];
             if (conv) {
                 const msg = conv.messages.find(m => m.id === editingWechatMessageId);
                 if (msg) {
                     msg.content = newContent;
                     saveWechatData();
+                    wechatKeepScrollPosition = document.getElementById('wechatMessages').scrollTop;
                     renderWechatMessages();
                 }
             }
@@ -12509,6 +13094,7 @@ ${memoryText}`;
             if (conv) {
                 conv.messages = conv.messages.filter(m => m.id !== msgId);
                 saveWechatData();
+                wechatKeepScrollPosition = document.getElementById('wechatMessages').scrollTop;
                 renderWechatMessages();
             }
         }
@@ -12754,7 +13340,7 @@ ${memoryText}`;
 
             // 显示引用预览
             document.getElementById('wechatQuotePreviewName').textContent = senderName + '：';
-            document.getElementById('wechatQuotePreviewContent').textContent = contentPreview;
+            document.getElementById('wechatQuotePreviewContent').textContent = stripInterjectionsAlways(contentPreview);
             document.getElementById('wechatQuotePreview').classList.add('show');
 
             // 聚焦输入框
