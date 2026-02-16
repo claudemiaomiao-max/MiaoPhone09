@@ -12227,11 +12227,18 @@ ${memoryText}`;
             closeWechatSearch();
 
             // 渲染完成后滚动到目标消息并高亮
+            // 不用 scrollIntoView，它会在 iOS PWA 里滚动整个视口导致底部露边
             requestAnimationFrame(() => {
                 setTimeout(() => {
                     const targetEl = document.querySelector(`[data-msg-id="${msgId}"]`);
                     if (targetEl) {
-                        targetEl.scrollIntoView({ block: 'center', behavior: 'instant' });
+                        const container = document.getElementById('wechatMessages');
+                        const containerRect = container.getBoundingClientRect();
+                        const targetRect = targetEl.getBoundingClientRect();
+                        // 让目标消息滚到容器中间
+                        const offset = targetRect.top - containerRect.top - (containerRect.height / 2) + (targetRect.height / 2);
+                        container.scrollTop += offset;
+
                         targetEl.classList.add('wechat-msg-highlight');
                         targetEl.addEventListener('animationend', () => {
                             targetEl.classList.remove('wechat-msg-highlight');
