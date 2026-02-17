@@ -7604,7 +7604,7 @@
 
         // ==================== 云端同步 (Supabase) ====================
         let _cloudSyncLastTime = null;
-        let _cloudSyncPushingFlags = { appData: false, wechatData: false, voiceCallData: false };
+        let _cloudSyncPushingFlags = { appData: false, wechatData: false, voiceCallData: false, diaryData: false };
         let _cloudSyncTimers = {};
 
         function cloudSyncEnabled() {
@@ -7804,9 +7804,33 @@
             };
         }
 
+        // 推送 diaryData 到云端
+        async function pushDiaryDataToCloud() {
+            if (!cloudSyncEnabled() || _cloudSyncPushingFlags.diaryData) return;
+            _cloudSyncPushingFlags.diaryData = true;
+            try {
+                const now = new Date().toISOString();
+                const records = [];
+                records.push({ key: 'diary_state', value: { currentAssistantId: diaryData.currentAssistantId }, updated_at: now });
+                for (const assistantId of Object.keys(diaryData.diaries || {})) {
+                    records.push({ key: 'diary_' + assistantId, value: diaryData.diaries[assistantId], updated_at: now });
+                }
+                if (records.length) await cloudUpsertBatch(records);
+                _cloudSyncLastTime = new Date();
+                updateCloudSyncStatusDisplay('success');
+                console.log('[云端同步] diaryData 推送成功，' + records.length + ' 条记录');
+            } catch (e) {
+                console.error('[云端同步] diaryData 推送失败:', e);
+                updateCloudSyncStatusDisplay('error', e.message);
+            } finally {
+                _cloudSyncPushingFlags.diaryData = false;
+            }
+        }
+
         const debouncedPushAppData = cloudDebounce(pushAppDataToCloud, 'appData', 10000);
         const debouncedPushWechatData = cloudDebounce(pushWechatDataToCloud, 'wechatData', 10000);
         const debouncedPushVoiceCallData = cloudDebounce(pushVoiceCallDataToCloud, 'voiceCallData', 10000);
+        const debouncedPushDiaryData = cloudDebounce(pushDiaryDataToCloud, 'diaryData', 10000);
 
         // 从云端拉取全部数据并恢复
         async function cloudPullFromCloud() {
@@ -7867,6 +7891,19 @@
                 voiceCallData.records.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
                 saveVoiceCallData();
 
+                // 恢复 diaryData
+                if (dataMap['diary_state']) {
+                    diaryData.currentAssistantId = dataMap['diary_state'].currentAssistantId;
+                }
+                diaryData.diaries = {};
+                for (const key of Object.keys(dataMap)) {
+                    if (key.startsWith('diary_') && key !== 'diary_state') {
+                        const assistantId = key.replace('diary_', '');
+                        diaryData.diaries[assistantId] = dataMap[key];
+                    }
+                }
+                saveDiaryData();
+
                 alert('数据恢复成功！页面将刷新。');
                 location.reload();
             } catch (e) {
@@ -7876,15 +7913,31 @@
             }
         }
 
+        // 确保微信、语音通话、日记数据已加载（它们是懒加载的）
+        async function cloudEnsureAllDataLoaded() {
+            if (!wechatData._loaded) {
+                await initWechatData();
+                wechatData._loaded = true;
+            }
+            if (!voiceCallData._loaded) {
+                await loadVoiceCallData();
+                voiceCallData._loaded = true;
+            }
+            // 日记数据从 localStorage 加载
+            loadDiaryData();
+        }
+
         // 一键上传全部本地数据到云端
         async function cloudMigrateToCloud() {
             if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
             if (!confirm('将本地所有数据上传到云端（已有的云端数据会被覆盖），确定吗？')) return;
             updateCloudSyncStatusDisplay('syncing');
             try {
+                await cloudEnsureAllDataLoaded();
                 await pushAppDataToCloud();
                 await pushWechatDataToCloud();
                 await pushVoiceCallDataToCloud();
+                await pushDiaryDataToCloud();
                 alert('上传完成！你的数据已安全备份到云端。');
             } catch (e) {
                 console.error('[云端同步] 迁移失败:', e);
@@ -7900,9 +7953,11 @@
                 if (_cloudSyncTimers[key]) { clearTimeout(_cloudSyncTimers[key]); _cloudSyncTimers[key] = null; }
             }
             try {
+                await cloudEnsureAllDataLoaded();
                 await pushAppDataToCloud();
                 await pushWechatDataToCloud();
                 await pushVoiceCallDataToCloud();
+                await pushDiaryDataToCloud();
             } catch (e) {
                 console.error('[云端同步] 手动同步失败:', e);
             }
@@ -7943,6 +7998,7 @@
                 pushAppDataToCloud();
                 pushWechatDataToCloud();
                 pushVoiceCallDataToCloud();
+                pushDiaryDataToCloud();
             }
         });
         // ==================== 云端同步结束 ====================
@@ -14422,6 +14478,7 @@ ${memoryText}`;
         function saveDiaryData() {
             try {
                 localStorage.setItem('miaomiao_diary_data', JSON.stringify(diaryData));
+                if (cloudSyncEnabled()) debouncedPushDiaryData();
             } catch (e) {
                 console.error('保存日记数据失败:', e);
             }
