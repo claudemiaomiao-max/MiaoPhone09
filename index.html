@@ -7445,11 +7445,11 @@
                         saveToLocalStorage();
                     }
                 });
-                if (cloudSyncEnabled()) debouncedPushAppData();
+                _cloudSyncDirty.appData = true;
                 return true;
             }
             // 降级到 localStorage
-            if (cloudSyncEnabled()) debouncedPushAppData();
+            _cloudSyncDirty.appData = true;
             return saveToLocalStorage();
         }
 
@@ -7605,7 +7605,8 @@
         // ==================== 云端同步 (Supabase) ====================
         let _cloudSyncLastTime = null;
         let _cloudSyncPushingFlags = { appData: false, wechatData: false, voiceCallData: false, diaryData: false };
-        let _cloudSyncTimers = {};
+        let _cloudSyncDirty = { appData: false, wechatData: false, voiceCallData: false, diaryData: false };
+        let _cloudSyncIntervalId = null;
 
         function cloudSyncEnabled() {
             return !!(appData.settings.supabaseUrl && appData.settings.supabaseKey);
@@ -7796,12 +7797,19 @@
             }
         }
 
-        // 防抖函数
-        function cloudDebounce(fn, key, delay) {
-            return function() {
-                if (_cloudSyncTimers[key]) clearTimeout(_cloudSyncTimers[key]);
-                _cloudSyncTimers[key] = setTimeout(() => { _cloudSyncTimers[key] = null; fn(); }, delay);
-            };
+        // 推送有变化的数据到云端（由定时器或 visibilitychange 调用）
+        async function cloudPushDirty() {
+            if (!cloudSyncEnabled()) return;
+            if (_cloudSyncDirty.appData) { _cloudSyncDirty.appData = false; await pushAppDataToCloud(); }
+            if (_cloudSyncDirty.wechatData) { _cloudSyncDirty.wechatData = false; await pushWechatDataToCloud(); }
+            if (_cloudSyncDirty.voiceCallData) { _cloudSyncDirty.voiceCallData = false; await pushVoiceCallDataToCloud(); }
+            if (_cloudSyncDirty.diaryData) { _cloudSyncDirty.diaryData = false; await pushDiaryDataToCloud(); }
+        }
+
+        // 启动定时同步（每5分钟检查一次，有变化才推送）
+        function cloudStartInterval() {
+            if (_cloudSyncIntervalId) return;
+            _cloudSyncIntervalId = setInterval(() => { cloudPushDirty(); }, 5 * 60 * 1000);
         }
 
         // 推送 diaryData 到云端
@@ -7827,10 +7835,8 @@
             }
         }
 
-        const debouncedPushAppData = cloudDebounce(pushAppDataToCloud, 'appData', 10000);
-        const debouncedPushWechatData = cloudDebounce(pushWechatDataToCloud, 'wechatData', 10000);
-        const debouncedPushVoiceCallData = cloudDebounce(pushVoiceCallDataToCloud, 'voiceCallData', 10000);
-        const debouncedPushDiaryData = cloudDebounce(pushDiaryDataToCloud, 'diaryData', 10000);
+        // 启动定时同步
+        cloudStartInterval();
 
         // 从云端拉取全部数据并恢复
         async function cloudPullFromCloud() {
@@ -7948,16 +7954,14 @@
         // 立即同步
         async function cloudSyncNow() {
             if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
-            // 取消所有防抖计时器
-            for (const key of Object.keys(_cloudSyncTimers)) {
-                if (_cloudSyncTimers[key]) { clearTimeout(_cloudSyncTimers[key]); _cloudSyncTimers[key] = null; }
-            }
             try {
                 await cloudEnsureAllDataLoaded();
                 await pushAppDataToCloud();
                 await pushWechatDataToCloud();
                 await pushVoiceCallDataToCloud();
                 await pushDiaryDataToCloud();
+                // 清除脏标记
+                for (const k of Object.keys(_cloudSyncDirty)) _cloudSyncDirty[k] = false;
             } catch (e) {
                 console.error('[云端同步] 手动同步失败:', e);
             }
@@ -7988,17 +7992,10 @@
             }
         }
 
-        // 页面切出时立即同步
+        // 页面切出时立即推送有变化的数据
         document.addEventListener('visibilitychange', () => {
             if (document.hidden && cloudSyncEnabled()) {
-                // 取消防抖，立即推送
-                for (const key of Object.keys(_cloudSyncTimers)) {
-                    if (_cloudSyncTimers[key]) { clearTimeout(_cloudSyncTimers[key]); _cloudSyncTimers[key] = null; }
-                }
-                pushAppDataToCloud();
-                pushWechatDataToCloud();
-                pushVoiceCallDataToCloud();
-                pushDiaryDataToCloud();
+                cloudPushDirty();
             }
         });
         // ==================== 云端同步结束 ====================
@@ -10796,11 +10793,11 @@
                         saveWechatToLocalStorage();
                     }
                 });
-                if (cloudSyncEnabled()) debouncedPushWechatData();
+                _cloudSyncDirty.wechatData = true;
                 return true;
             }
             // 降级到 localStorage
-            if (cloudSyncEnabled()) debouncedPushWechatData();
+            _cloudSyncDirty.wechatData = true;
             return saveWechatToLocalStorage();
         }
 
@@ -14478,7 +14475,7 @@ ${memoryText}`;
         function saveDiaryData() {
             try {
                 localStorage.setItem('miaomiao_diary_data', JSON.stringify(diaryData));
-                if (cloudSyncEnabled()) debouncedPushDiaryData();
+                _cloudSyncDirty.diaryData = true;
             } catch (e) {
                 console.error('保存日记数据失败:', e);
             }
@@ -16853,11 +16850,11 @@ ${dialogueText}
                         try { localStorage.setItem('miaomiao_voicecall_v1', JSON.stringify(voiceCallData)); } catch(e) {}
                     }
                 });
-                if (cloudSyncEnabled()) debouncedPushVoiceCallData();
+                _cloudSyncDirty.voiceCallData = true;
                 return;
             }
             try { localStorage.setItem('miaomiao_voicecall_v1', JSON.stringify(voiceCallData)); } catch(e) {}
-            if (cloudSyncEnabled()) debouncedPushVoiceCallData();
+            _cloudSyncDirty.voiceCallData = true;
         }
 
         // 保存音频Blob到IndexedDB
