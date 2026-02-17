@@ -5308,6 +5308,29 @@
             overflow-y: auto;
             font-family: inherit;
         }
+        .vc-mic-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .vc-mic-btn.recording {
+            background: #f44336;
+            color: #fff;
+            animation: vc-mic-pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes vc-mic-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(244,67,54,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(244,67,54,0); }
+        }
         .vc-send-btn {
             width: 36px;
             height: 36px;
@@ -5778,6 +5801,60 @@
                             <select class="form-select" id="globalSecondaryModel" onchange="saveGlobalSecondaryModel()" style="width: 100%; margin-top: 8px;">
                                 <option value="">使用主模型</option>
                             </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-section-title">后端服务</div>
+                    <div class="settings-card">
+                        <div class="settings-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+                            <div class="settings-item-left" style="width: 100%;">
+                                <div class="settings-item-icon" style="background: #e3f2fd; color: #1976d2;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">后端地址</div>
+                                    <div class="settings-item-desc">Vercel 后端服务地址，用于语音识别等功能</div>
+                                </div>
+                            </div>
+                            <input type="url" class="form-input" id="backendUrlInput" placeholder="https://miaophone-backend.vercel.app" oninput="saveBackendUrl()" style="width: 100%; margin-top: 4px; box-sizing: border-box;">
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-section-title">云端备份 (Supabase)</div>
+                    <div class="settings-card">
+                        <div class="settings-item" style="flex-direction: column; align-items: stretch; gap: 8px;">
+                            <div class="settings-item-left" style="width: 100%;">
+                                <div class="settings-item-icon" style="background: #e8f5e9; color: #388e3c;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">Supabase 地址</div>
+                                    <div class="settings-item-desc">你的 Supabase 项目 URL</div>
+                                </div>
+                            </div>
+                            <input type="url" class="form-input" id="supabaseUrlInput" placeholder="https://xxxxx.supabase.co" oninput="saveSupabaseConfig()" style="width: 100%; margin-top: 4px; box-sizing: border-box;">
+                        </div>
+                        <div class="settings-item" style="flex-direction: column; align-items: stretch; gap: 8px; margin-top: 12px;">
+                            <div class="settings-item-left" style="width: 100%;">
+                                <div class="settings-item-icon" style="background: #e8f5e9; color: #388e3c;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">Supabase Key</div>
+                                    <div class="settings-item-desc">项目的 anon public key</div>
+                                </div>
+                            </div>
+                            <input type="text" class="form-input" id="supabaseKeyInput" placeholder="sb_publishable_xxxxx" oninput="saveSupabaseConfig()" style="width: 100%; margin-top: 4px; box-sizing: border-box;">
+                        </div>
+                        <div style="margin-top: 12px; padding: 8px 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 12px; color: #888;" id="cloudSyncStatus">
+                            未配置
+                        </div>
+                        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button onclick="cloudSyncNow()" style="flex: 1; min-width: 80px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; background: white; font-size: 13px; cursor: pointer;">立即同步</button>
+                            <button onclick="cloudMigrateToCloud()" style="flex: 1; min-width: 80px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; background: white; font-size: 13px; cursor: pointer;">上传到云端</button>
+                            <button onclick="cloudPullFromCloud()" style="flex: 1; min-width: 80px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; background: white; font-size: 13px; cursor: pointer;">从云端恢复</button>
                         </div>
                     </div>
                 </div>
@@ -7044,6 +7121,9 @@
                 <div class="vc-bottom-area">
                     <div class="vc-input-row">
                         <textarea class="vc-input" id="vcInput" placeholder="语音识别中..." rows="1"></textarea>
+                        <button class="vc-mic-btn" id="vcMicBtn" onclick="toggleVcMic()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                        </button>
                         <button class="vc-send-btn" id="vcSendBtn" onclick="vcManualSend()" style="display: none;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         </button>
@@ -7365,9 +7445,11 @@
                         saveToLocalStorage();
                     }
                 });
+                if (cloudSyncEnabled()) debouncedPushAppData();
                 return true;
             }
             // 降级到 localStorage
+            if (cloudSyncEnabled()) debouncedPushAppData();
             return saveToLocalStorage();
         }
 
@@ -7446,6 +7528,15 @@
         function openSettings() {
             populateGlobalModelDropdown();
             populateSecondaryModelDropdown();
+            // 后端地址
+            const backendInput = document.getElementById('backendUrlInput');
+            if (backendInput) backendInput.value = appData.settings.backendUrl || '';
+            // 云端备份
+            const supabaseUrlInput = document.getElementById('supabaseUrlInput');
+            const supabaseKeyInput = document.getElementById('supabaseKeyInput');
+            if (supabaseUrlInput) supabaseUrlInput.value = appData.settings.supabaseUrl || '';
+            if (supabaseKeyInput) supabaseKeyInput.value = appData.settings.supabaseKey || '';
+            updateCloudSyncStatusDisplay();
             openPage('settingsPage');
         }
 
@@ -7501,6 +7592,360 @@
             appData.settings.defaultModel = select.value;
             saveData();
         }
+
+        // 保存后端地址
+        function saveBackendUrl() {
+            let url = document.getElementById('backendUrlInput').value.trim();
+            // 去掉末尾斜杠
+            if (url.endsWith('/')) url = url.replace(/\/+$/, '');
+            appData.settings.backendUrl = url;
+            saveData();
+        }
+
+        // ==================== 云端同步 (Supabase) ====================
+        let _cloudSyncLastTime = null;
+        let _cloudSyncPushingFlags = { appData: false, wechatData: false, voiceCallData: false };
+        let _cloudSyncTimers = {};
+
+        function cloudSyncEnabled() {
+            return !!(appData.settings.supabaseUrl && appData.settings.supabaseKey);
+        }
+
+        function saveSupabaseConfig() {
+            let url = (document.getElementById('supabaseUrlInput').value || '').trim();
+            if (url.endsWith('/')) url = url.replace(/\/+$/, '');
+            appData.settings.supabaseUrl = url;
+            appData.settings.supabaseKey = (document.getElementById('supabaseKeyInput').value || '').trim();
+            saveData();
+            updateCloudSyncStatusDisplay();
+        }
+
+        // PostgREST 请求封装
+        async function supabaseRequest(method, path, body) {
+            const url = appData.settings.supabaseUrl;
+            const key = appData.settings.supabaseKey;
+            if (!url || !key) throw new Error('Supabase 未配置');
+            const opts = {
+                method,
+                headers: {
+                    'apikey': key,
+                    'Authorization': 'Bearer ' + key,
+                    'Content-Type': 'application/json',
+                    'Prefer': method === 'POST' ? 'resolution=merge-duplicates' : ''
+                }
+            };
+            if (body !== undefined) opts.body = JSON.stringify(body);
+            const resp = await fetch(`${url}/rest/v1/${path}`, opts);
+            if (!resp.ok) {
+                const errText = await resp.text().catch(() => resp.statusText);
+                throw new Error(`Supabase ${resp.status}: ${errText}`);
+            }
+            const contentType = resp.headers.get('content-type') || '';
+            if (contentType.includes('json')) return resp.json();
+            return null;
+        }
+
+        // upsert 一条 key-value
+        async function cloudUpsert(key, value) {
+            return supabaseRequest('POST', 'data_store', {
+                key,
+                value,
+                updated_at: new Date().toISOString()
+            });
+        }
+
+        // 批量 upsert 多条
+        async function cloudUpsertBatch(records) {
+            if (!records.length) return;
+            return supabaseRequest('POST', 'data_store', records);
+        }
+
+        // 读取所有数据（limit=10000 避免默认 1000 条限制）
+        async function cloudFetchAll() {
+            return supabaseRequest('GET', 'data_store?select=key,value,updated_at&limit=10000');
+        }
+
+        // 剥离 base64 图片（微信消息）
+        function cloudStripWechatImages(data) {
+            const stripped = JSON.parse(JSON.stringify(data));
+            for (const assistantId of Object.keys(stripped.conversations || {})) {
+                const conv = stripped.conversations[assistantId];
+                if (conv && conv.messages) {
+                    conv.messages = conv.messages.map(msg => {
+                        if (msg.type === 'image' && msg.content && msg.content.startsWith('data:')) {
+                            return { ...msg, content: '[图片:' + (msg.fileName || 'unknown') + ']' };
+                        }
+                        return msg;
+                    });
+                }
+            }
+            return stripped;
+        }
+
+        // 剥离 base64 附件（API模式消息）
+        function cloudStripApiAttachments(messagesMap) {
+            const stripped = {};
+            for (const convId of Object.keys(messagesMap)) {
+                stripped[convId] = messagesMap[convId].map(msg => {
+                    const m = { ...msg };
+                    // 剥离 attachments 中的 base64 preview
+                    if (m.attachments && m.attachments.length) {
+                        m.attachments = m.attachments.map(att => {
+                            if (att.preview && att.preview.startsWith('data:')) {
+                                return { ...att, preview: '[图片:' + (att.name || 'unknown') + ']' };
+                            }
+                            return att;
+                        });
+                    }
+                    // 剥离 apiContent 中的 base64 图片
+                    if (Array.isArray(m.apiContent)) {
+                        m.apiContent = m.apiContent.map(part => {
+                            if (part.type === 'image_url' && part.image_url && part.image_url.url && part.image_url.url.startsWith('data:')) {
+                                return { type: 'image_url', image_url: { url: '[图片]' } };
+                            }
+                            return part;
+                        });
+                    }
+                    return m;
+                });
+            }
+            return stripped;
+        }
+
+        // 推送 appData 到云端
+        async function pushAppDataToCloud() {
+            if (!cloudSyncEnabled() || _cloudSyncPushingFlags.appData) return;
+            _cloudSyncPushingFlags.appData = true;
+            updateCloudSyncStatusDisplay('syncing');
+            try {
+                const records = [];
+                const now = new Date().toISOString();
+                // 设置
+                records.push({ key: 'app_settings', value: { settings: appData.settings, ttsSettings: appData.ttsSettings }, updated_at: now });
+                // 助手
+                records.push({ key: 'app_assistants', value: appData.assistants, updated_at: now });
+                // 供应商
+                records.push({ key: 'app_providers', value: appData.providers, updated_at: now });
+                // 对话列表 + 当前状态
+                records.push({ key: 'app_conversations', value: { conversations: appData.conversations, currentConversationId: appData.currentConversationId, currentAssistantId: appData.currentAssistantId }, updated_at: now });
+                // 每个对话的消息（剥离图片）
+                const strippedMessages = cloudStripApiAttachments(appData.messages);
+                for (const convId of Object.keys(strippedMessages)) {
+                    records.push({ key: 'app_msgs_' + convId, value: strippedMessages[convId], updated_at: now });
+                }
+                await cloudUpsertBatch(records);
+                _cloudSyncLastTime = new Date();
+                updateCloudSyncStatusDisplay('success');
+                console.log('[云端同步] appData 推送成功，' + records.length + ' 条记录');
+            } catch (e) {
+                console.error('[云端同步] appData 推送失败:', e);
+                updateCloudSyncStatusDisplay('error', e.message);
+            } finally {
+                _cloudSyncPushingFlags.appData = false;
+            }
+        }
+
+        // 推送 wechatData 到云端
+        async function pushWechatDataToCloud() {
+            if (!cloudSyncEnabled() || _cloudSyncPushingFlags.wechatData) return;
+            _cloudSyncPushingFlags.wechatData = true;
+            updateCloudSyncStatusDisplay('syncing');
+            try {
+                const records = [];
+                const now = new Date().toISOString();
+                // 微信状态
+                records.push({ key: 'wechat_state', value: { currentAssistantId: wechatData.currentAssistantId, importedAssistants: wechatData.importedAssistants, pendingMessages: wechatData.pendingMessages || [] }, updated_at: now });
+                // 每个助手的对话（剥离图片）
+                const stripped = cloudStripWechatImages(wechatData);
+                for (const assistantId of Object.keys(stripped.conversations || {})) {
+                    records.push({ key: 'wechat_conv_' + assistantId, value: stripped.conversations[assistantId], updated_at: now });
+                }
+                await cloudUpsertBatch(records);
+                _cloudSyncLastTime = new Date();
+                updateCloudSyncStatusDisplay('success');
+                console.log('[云端同步] wechatData 推送成功，' + records.length + ' 条记录');
+            } catch (e) {
+                console.error('[云端同步] wechatData 推送失败:', e);
+                updateCloudSyncStatusDisplay('error', e.message);
+            } finally {
+                _cloudSyncPushingFlags.wechatData = false;
+            }
+        }
+
+        // 推送 voiceCallData 到云端
+        async function pushVoiceCallDataToCloud() {
+            if (!cloudSyncEnabled() || _cloudSyncPushingFlags.voiceCallData) return;
+            _cloudSyncPushingFlags.voiceCallData = true;
+            updateCloudSyncStatusDisplay('syncing');
+            try {
+                const records = [];
+                const now = new Date().toISOString();
+                records.push({ key: 'vc_settings', value: voiceCallData.settings, updated_at: now });
+                for (const record of (voiceCallData.records || [])) {
+                    records.push({ key: 'vc_record_' + record.id, value: record, updated_at: now });
+                }
+                await cloudUpsertBatch(records);
+                _cloudSyncLastTime = new Date();
+                updateCloudSyncStatusDisplay('success');
+                console.log('[云端同步] voiceCallData 推送成功，' + records.length + ' 条记录');
+            } catch (e) {
+                console.error('[云端同步] voiceCallData 推送失败:', e);
+                updateCloudSyncStatusDisplay('error', e.message);
+            } finally {
+                _cloudSyncPushingFlags.voiceCallData = false;
+            }
+        }
+
+        // 防抖函数
+        function cloudDebounce(fn, key, delay) {
+            return function() {
+                if (_cloudSyncTimers[key]) clearTimeout(_cloudSyncTimers[key]);
+                _cloudSyncTimers[key] = setTimeout(() => { _cloudSyncTimers[key] = null; fn(); }, delay);
+            };
+        }
+
+        const debouncedPushAppData = cloudDebounce(pushAppDataToCloud, 'appData', 10000);
+        const debouncedPushWechatData = cloudDebounce(pushWechatDataToCloud, 'wechatData', 10000);
+        const debouncedPushVoiceCallData = cloudDebounce(pushVoiceCallDataToCloud, 'voiceCallData', 10000);
+
+        // 从云端拉取全部数据并恢复
+        async function cloudPullFromCloud() {
+            if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
+            if (!confirm('从云端恢复数据会覆盖当前本地数据，确定要继续吗？')) return;
+            updateCloudSyncStatusDisplay('syncing');
+            try {
+                const rows = await cloudFetchAll();
+                if (!rows || !rows.length) { alert('云端没有找到任何数据'); updateCloudSyncStatusDisplay('success'); return; }
+                const dataMap = {};
+                rows.forEach(r => { dataMap[r.key] = r.value; });
+
+                // 恢复 appData
+                if (dataMap['app_settings']) {
+                    if (dataMap['app_settings'].settings) appData.settings = { ...appData.settings, ...dataMap['app_settings'].settings };
+                    if (dataMap['app_settings'].ttsSettings) appData.ttsSettings = { ...appData.ttsSettings, ...dataMap['app_settings'].ttsSettings };
+                }
+                if (dataMap['app_assistants']) appData.assistants = dataMap['app_assistants'];
+                if (dataMap['app_providers']) appData.providers = dataMap['app_providers'];
+                if (dataMap['app_conversations']) {
+                    appData.conversations = dataMap['app_conversations'].conversations || [];
+                    appData.currentConversationId = dataMap['app_conversations'].currentConversationId;
+                    appData.currentAssistantId = dataMap['app_conversations'].currentAssistantId;
+                }
+                // 恢复消息
+                appData.messages = {};
+                for (const key of Object.keys(dataMap)) {
+                    if (key.startsWith('app_msgs_')) {
+                        const convId = key.replace('app_msgs_', '');
+                        appData.messages[convId] = dataMap[key];
+                    }
+                }
+                saveData();
+
+                // 恢复 wechatData
+                if (dataMap['wechat_state']) {
+                    wechatData.currentAssistantId = dataMap['wechat_state'].currentAssistantId;
+                    wechatData.importedAssistants = dataMap['wechat_state'].importedAssistants || [];
+                    wechatData.pendingMessages = dataMap['wechat_state'].pendingMessages || [];
+                }
+                wechatData.conversations = {};
+                for (const key of Object.keys(dataMap)) {
+                    if (key.startsWith('wechat_conv_')) {
+                        const assistantId = key.replace('wechat_conv_', '');
+                        wechatData.conversations[assistantId] = dataMap[key];
+                    }
+                }
+                saveWechatData();
+
+                // 恢复 voiceCallData
+                if (dataMap['vc_settings']) voiceCallData.settings = { ...voiceCallData.settings, ...dataMap['vc_settings'] };
+                voiceCallData.records = [];
+                for (const key of Object.keys(dataMap)) {
+                    if (key.startsWith('vc_record_')) {
+                        voiceCallData.records.push(dataMap[key]);
+                    }
+                }
+                voiceCallData.records.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+                saveVoiceCallData();
+
+                alert('数据恢复成功！页面将刷新。');
+                location.reload();
+            } catch (e) {
+                console.error('[云端同步] 拉取失败:', e);
+                alert('从云端恢复失败：' + e.message);
+                updateCloudSyncStatusDisplay('error', e.message);
+            }
+        }
+
+        // 一键上传全部本地数据到云端
+        async function cloudMigrateToCloud() {
+            if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
+            if (!confirm('将本地所有数据上传到云端（已有的云端数据会被覆盖），确定吗？')) return;
+            updateCloudSyncStatusDisplay('syncing');
+            try {
+                await pushAppDataToCloud();
+                await pushWechatDataToCloud();
+                await pushVoiceCallDataToCloud();
+                alert('上传完成！你的数据已安全备份到云端。');
+            } catch (e) {
+                console.error('[云端同步] 迁移失败:', e);
+                alert('上传失败：' + e.message);
+            }
+        }
+
+        // 立即同步
+        async function cloudSyncNow() {
+            if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
+            // 取消所有防抖计时器
+            for (const key of Object.keys(_cloudSyncTimers)) {
+                if (_cloudSyncTimers[key]) { clearTimeout(_cloudSyncTimers[key]); _cloudSyncTimers[key] = null; }
+            }
+            try {
+                await pushAppDataToCloud();
+                await pushWechatDataToCloud();
+                await pushVoiceCallDataToCloud();
+            } catch (e) {
+                console.error('[云端同步] 手动同步失败:', e);
+            }
+        }
+
+        // 同步状态显示
+        function updateCloudSyncStatusDisplay(status, detail) {
+            const el = document.getElementById('cloudSyncStatus');
+            if (!el) return;
+            if (!cloudSyncEnabled()) {
+                el.textContent = '未配置';
+                el.style.color = '#888';
+                return;
+            }
+            if (status === 'syncing') {
+                el.textContent = '同步中...';
+                el.style.color = '#1976d2';
+            } else if (status === 'success') {
+                const timeStr = _cloudSyncLastTime ? _cloudSyncLastTime.toLocaleTimeString('zh-CN') : '--';
+                el.textContent = '最后同步: ' + timeStr;
+                el.style.color = '#388e3c';
+            } else if (status === 'error') {
+                el.textContent = '同步失败' + (detail ? ': ' + detail.substring(0, 50) : '');
+                el.style.color = '#d32f2f';
+            } else {
+                el.textContent = '已配置，等待同步';
+                el.style.color = '#888';
+            }
+        }
+
+        // 页面切出时立即同步
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && cloudSyncEnabled()) {
+                // 取消防抖，立即推送
+                for (const key of Object.keys(_cloudSyncTimers)) {
+                    if (_cloudSyncTimers[key]) { clearTimeout(_cloudSyncTimers[key]); _cloudSyncTimers[key] = null; }
+                }
+                pushAppDataToCloud();
+                pushWechatDataToCloud();
+                pushVoiceCallDataToCloud();
+            }
+        });
+        // ==================== 云端同步结束 ====================
 
         // 保存副模型
         function saveGlobalSecondaryModel() {
@@ -10295,9 +10740,11 @@
                         saveWechatToLocalStorage();
                     }
                 });
+                if (cloudSyncEnabled()) debouncedPushWechatData();
                 return true;
             }
             // 降级到 localStorage
+            if (cloudSyncEnabled()) debouncedPushWechatData();
             return saveWechatToLocalStorage();
         }
 
@@ -11934,10 +12381,18 @@ ${memoryText}`;
         }
 
         // 用户语音输入相关
-        let voiceRecognition = null;
+        let voiceRecognition = null;  // non-null = 正在录音（Web Speech API 对象或 {type:'xfyun'} 标记）
         let voicePendingText = '';
         let voiceProcessedCount = 0;
         let voiceInputTarget = 'wechat';  // 'wechat' | 'api'
+
+        // 讯飞 STT 状态
+        let xfyunWs = null;
+        let xfyunAudioContext = null;
+        let xfyunMicStream = null;
+        let xfyunProcessor = null;
+        let xfyunSourceNode = null;
+        let xfyunResults = {};  // {sn: text} 用于组装识别结果
 
         function getVoiceTargetInput() {
             return voiceInputTarget === 'api'
@@ -11970,7 +12425,246 @@ ${memoryText}`;
             startVoiceInputCommon();
         }
 
+        // 语音识别入口：优先讯飞，降级 Web Speech API
         function startVoiceInputCommon() {
+            if (appData.settings.backendUrl) {
+                startXfyunVoiceInput();
+            } else {
+                startWebSpeechInput();
+            }
+        }
+
+        // ---- 讯飞流式语音识别 ----
+        async function startXfyunVoiceInput() {
+            // 重置状态，保留输入框已有内容
+            const input = getVoiceTargetInput();
+            voicePendingText = input.value || '';
+            xfyunResults = {};
+
+            // 录音中视觉反馈
+            const btn = getVoiceTargetBtn();
+            if (btn) btn.classList.add('recording');
+
+            try {
+                // 1. 从后端获取签名 URL
+                const backendUrl = appData.settings.backendUrl;
+                console.log('请求讯飞签名...');
+                const signResp = await fetch(`${backendUrl}/api/stt-sign`);
+                if (!signResp.ok) throw new Error('签名请求失败: ' + signResp.status);
+                const { url, appid } = await signResp.json();
+
+                // 2. 获取麦克风权限
+                xfyunMicStream = await navigator.mediaDevices.getUserMedia({
+                    audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+                });
+
+                // 3. 创建 AudioContext 提取 PCM 数据
+                xfyunAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                xfyunSourceNode = xfyunAudioContext.createMediaStreamSource(xfyunMicStream);
+                xfyunProcessor = xfyunAudioContext.createScriptProcessor(4096, 1, 1);
+
+                // 4. 连接讯飞 WebSocket
+                xfyunWs = new WebSocket(url);
+                let frameCount = 0;
+
+                xfyunWs.onopen = () => {
+                    console.log('讯飞 WebSocket 已连接');
+                    voiceRecognition = { type: 'xfyun' };
+
+                    // 开始发送音频数据
+                    xfyunProcessor.onaudioprocess = (e) => {
+                        if (!xfyunWs || xfyunWs.readyState !== WebSocket.OPEN) return;
+
+                        const float32 = e.inputBuffer.getChannelData(0);
+                        const int16 = xfFloat32ToInt16(float32);
+                        const base64Audio = xfArrayBufferToBase64(int16.buffer);
+
+                        const frame = {
+                            data: {
+                                status: frameCount === 0 ? 0 : 1,
+                                format: 'audio/L16;rate=16000',
+                                encoding: 'raw',
+                                audio: base64Audio
+                            }
+                        };
+
+                        // 第一帧附带 common 和 business 参数
+                        if (frameCount === 0) {
+                            frame.common = { app_id: appid };
+                            frame.business = {
+                                language: 'zh_cn',
+                                domain: 'iat',
+                                accent: 'mandarin',
+                                vad_eos: 60000,
+                                dwa: 'wpgs',
+                                ptt: 1
+                            };
+                        }
+
+                        xfyunWs.send(JSON.stringify(frame));
+                        frameCount++;
+                    };
+
+                    xfyunSourceNode.connect(xfyunProcessor);
+                    xfyunProcessor.connect(xfyunAudioContext.destination);
+                };
+
+                xfyunWs.onmessage = (event) => {
+                    try {
+                        const resp = JSON.parse(event.data);
+                        if (resp.code !== 0) {
+                            console.error('讯飞识别错误:', resp.code, resp.message);
+                            return;
+                        }
+                        xfParseResult(resp);
+                    } catch (e) {
+                        console.error('讯飞消息解析失败:', e);
+                    }
+                };
+
+                xfyunWs.onclose = () => {
+                    console.log('讯飞 WebSocket 关闭（60秒到期或手动停止）');
+                    // 把当前未合并的结果存入 pendingText
+                    const keys = Object.keys(xfyunResults).map(Number).sort((a, b) => a - b);
+                    const remainText = keys.map(k => xfyunResults[k]).join('');
+                    if (remainText) voicePendingText += remainText;
+                    xfyunResults = {};
+
+                    // 清理音频资源
+                    xfCleanupAudio();
+
+                    // 60秒到期：结束录音，图标变灰，用户想继续说可以再点麦克风
+                    if (voiceRecognition?.type === 'xfyun') {
+                        voiceRecognition = null;
+                        document.querySelectorAll('.wechat-voice-btn.recording').forEach(b => b.classList.remove('recording'));
+                        resetAudioRoute();
+                        console.log('讯飞识别已结束，点击麦克风可继续');
+                    }
+                };
+
+                xfyunWs.onerror = (e) => {
+                    console.error('讯飞 WebSocket 错误:', e);
+                    xfCleanupAll();
+                    // 降级到 Web Speech API
+                    console.log('讯飞不可用，降级到浏览器语音识别');
+                    startWebSpeechInput();
+                };
+
+            } catch (e) {
+                console.error('讯飞语音识别启动失败:', e);
+                xfCleanupAll();
+                // 降级到 Web Speech API
+                console.log('讯飞启动失败，降级到浏览器语音识别');
+                startWebSpeechInput();
+            }
+        }
+
+        // 解析讯飞识别结果
+        function xfParseResult(resp) {
+            const result = resp.data?.result;
+            if (!result) return;
+
+            const sn = result.sn;
+            const pgs = result.pgs;
+
+            // 从 ws 数组中提取文字
+            let text = '';
+            if (result.ws) {
+                result.ws.forEach(w => {
+                    w.cw.forEach(c => { text += c.w; });
+                });
+            }
+
+            // rpl 模式：替换指定范围的结果
+            if (pgs === 'rpl' && result.rg) {
+                for (let i = result.rg[0]; i <= result.rg[1]; i++) {
+                    if (i !== sn) delete xfyunResults[i];
+                }
+            }
+
+            xfyunResults[sn] = text;
+
+            // 组装完整识别文本
+            const keys = Object.keys(xfyunResults).map(Number).sort((a, b) => a - b);
+            const fullText = keys.map(k => xfyunResults[k]).join('');
+
+            // 更新输入框
+            const targetInput = getVoiceTargetInput();
+            targetInput.value = voicePendingText + fullText;
+            targetInput.style.height = 'auto';
+            targetInput.style.height = Math.min(targetInput.scrollHeight, 120) + 'px';
+            targetInput.scrollTop = targetInput.scrollHeight;
+
+            // 讯飞返回 status=2 表示最终结果，把文本合入 pendingText
+            if (resp.data.status === 2) {
+                voicePendingText += fullText;
+                xfyunResults = {};
+            }
+        }
+
+        // PCM 工具函数
+        function xfFloat32ToInt16(float32Array) {
+            const int16 = new Int16Array(float32Array.length);
+            for (let i = 0; i < float32Array.length; i++) {
+                const s = Math.max(-1, Math.min(1, float32Array[i]));
+                int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            return int16;
+        }
+
+        function xfArrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        // 清理讯飞音频资源（保留 WebSocket）
+        function xfCleanupAudio() {
+            if (xfyunProcessor) {
+                xfyunProcessor.onaudioprocess = null;
+                xfyunProcessor.disconnect();
+                xfyunProcessor = null;
+            }
+            if (xfyunSourceNode) {
+                xfyunSourceNode.disconnect();
+                xfyunSourceNode = null;
+            }
+            if (xfyunAudioContext) {
+                xfyunAudioContext.close().catch(() => {});
+                xfyunAudioContext = null;
+            }
+            if (xfyunMicStream) {
+                xfyunMicStream.getTracks().forEach(t => t.stop());
+                xfyunMicStream = null;
+            }
+        }
+
+        // 完全清理讯飞所有资源
+        function xfCleanupAll() {
+            if (xfyunWs) {
+                // 发送结束帧
+                if (xfyunWs.readyState === WebSocket.OPEN) {
+                    try {
+                        xfyunWs.send(JSON.stringify({
+                            data: { status: 2, format: 'audio/L16;rate=16000', encoding: 'raw', audio: '' }
+                        }));
+                    } catch (e) {}
+                }
+                xfyunWs.onclose = null;
+                xfyunWs.onerror = null;
+                xfyunWs.onmessage = null;
+                xfyunWs.close();
+                xfyunWs = null;
+            }
+            xfCleanupAudio();
+            xfyunResults = {};
+        }
+
+        // ---- Web Speech API（降级方案） ----
+        function startWebSpeechInput() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 alert('您的浏览器不支持语音识别功能，请使用Chrome或Edge浏览器');
@@ -12013,6 +12707,7 @@ ${memoryText}`;
                 // 自动调整高度
                 targetInput.style.height = 'auto';
                 targetInput.style.height = Math.min(targetInput.scrollHeight, 120) + 'px';
+                targetInput.scrollTop = targetInput.scrollHeight;
             };
 
             voiceRecognition.onerror = (event) => {
@@ -12054,11 +12749,15 @@ ${memoryText}`;
         }
 
         function stopVoiceInputCommon() {
-            if (voiceRecognition) {
+            if (voiceRecognition?.type === 'xfyun') {
+                // 停止讯飞
+                xfCleanupAll();
+            } else if (voiceRecognition) {
+                // 停止 Web Speech API
                 voiceRecognition.onend = null;
                 voiceRecognition.stop();
-                voiceRecognition = null;
             }
+            voiceRecognition = null;
             voicePendingText = '';
             // 移除录音视觉状态
             document.querySelectorAll('.wechat-voice-btn.recording').forEach(b => b.classList.remove('recording'));
@@ -16097,9 +16796,11 @@ ${dialogueText}
                         try { localStorage.setItem('miaomiao_voicecall_v1', JSON.stringify(voiceCallData)); } catch(e) {}
                     }
                 });
+                if (cloudSyncEnabled()) debouncedPushVoiceCallData();
                 return;
             }
             try { localStorage.setItem('miaomiao_voicecall_v1', JSON.stringify(voiceCallData)); } catch(e) {}
+            if (cloudSyncEnabled()) debouncedPushVoiceCallData();
         }
 
         // 保存音频Blob到IndexedDB
@@ -16130,11 +16831,11 @@ ${dialogueText}
         }
 
         // ---- 打开语音通话模式 ----
-        function openVoiceCallMode() {
-            loadVoiceCallData().then(() => {
-                renderVcContactList();
-                openPage('voiceCallPage');
-            });
+        async function openVoiceCallMode() {
+            await loadVoiceCallData();
+            await initWechatData();  // 确保微信聊天数据已加载（语音通话可能携带微信上下文）
+            renderVcContactList();
+            openPage('voiceCallPage');
         }
 
         // ---- 渲染通讯录 ----
@@ -16241,6 +16942,7 @@ ${dialogueText}
             const el = document.getElementById('vcInput');
             el.style.height = 'auto';
             el.style.height = Math.min(el.scrollHeight, 84) + 'px';
+            el.scrollTop = el.scrollHeight;
         }
 
         // ---- 通话计时器 ----
@@ -16315,8 +17017,266 @@ ${dialogueText}
             }
         }
 
-        // ---- 语音识别 ----
+        // ---- 语音识别（讯飞优先，降级 Web Speech API） ----
+        let vcXfWs = null;
+        let vcXfAudioCtx = null;
+        let vcXfMicStream = null;
+        let vcXfProcessor = null;
+        let vcXfSource = null;
+        let vcXfResults = {};
+        let vcXfLastFullText = '';
+
         function startVcRecognition() {
+            if (appData.settings.backendUrl) {
+                startVcXfRecognition();
+            } else {
+                startVcWebSpeechRecognition();
+            }
+        }
+
+        function stopVcRecognition() {
+            clearTimeout(vcState.autoSendTimeout);
+            if (vcState.recognition?.type === 'xfyun') {
+                vcXfCleanupAll();
+            } else if (vcState.recognition) {
+                vcState.recognition.onend = null;
+                vcState.recognition.stop();
+            }
+            vcState.recognition = null;
+            const micBtn = document.getElementById('vcMicBtn');
+            if (micBtn) micBtn.classList.remove('recording');
+        }
+
+        // 麦克风按钮切换
+        function toggleVcMic() {
+            if (vcState.isProcessing) return;
+            if (vcState.recognition) {
+                stopVcRecognition();
+            } else {
+                startVcRecognition();
+            }
+        }
+
+        // ---- 讯飞 STT（语音通话用） ----
+        async function startVcXfRecognition() {
+            vcXfResults = {};
+            vcXfLastFullText = '';
+            vcState.pendingText = '';
+            vcState.processedCount = 0;
+
+            const micBtn = document.getElementById('vcMicBtn');
+            if (micBtn) micBtn.classList.add('recording');
+
+            try {
+                const backendUrl = appData.settings.backendUrl;
+                console.log('语音通话：请求讯飞签名...');
+                const signResp = await fetch(`${backendUrl}/api/stt-sign`);
+                if (!signResp.ok) throw new Error('签名请求失败: ' + signResp.status);
+                const { url, appid } = await signResp.json();
+
+                vcXfMicStream = await navigator.mediaDevices.getUserMedia({
+                    audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+                });
+
+                vcXfAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                vcXfSource = vcXfAudioCtx.createMediaStreamSource(vcXfMicStream);
+                vcXfProcessor = vcXfAudioCtx.createScriptProcessor(4096, 1, 1);
+
+                vcXfWs = new WebSocket(url);
+                let frameCount = 0;
+
+                vcXfWs.onopen = () => {
+                    console.log('语音通话：讯飞已连接');
+                    vcState.recognition = { type: 'xfyun' };
+
+                    vcXfProcessor.onaudioprocess = (e) => {
+                        if (!vcXfWs || vcXfWs.readyState !== WebSocket.OPEN) return;
+
+                        const float32 = e.inputBuffer.getChannelData(0);
+                        const int16 = xfFloat32ToInt16(float32);
+                        const base64Audio = xfArrayBufferToBase64(int16.buffer);
+
+                        const frame = {
+                            data: {
+                                status: frameCount === 0 ? 0 : 1,
+                                format: 'audio/L16;rate=16000',
+                                encoding: 'raw',
+                                audio: base64Audio
+                            }
+                        };
+
+                        if (frameCount === 0) {
+                            frame.common = { app_id: appid };
+                            frame.business = {
+                                language: 'zh_cn',
+                                domain: 'iat',
+                                accent: 'mandarin',
+                                vad_eos: 60000,
+                                dwa: 'wpgs',
+                                ptt: 1
+                            };
+                        }
+
+                        vcXfWs.send(JSON.stringify(frame));
+                        frameCount++;
+                    };
+
+                    vcXfSource.connect(vcXfProcessor);
+                    vcXfProcessor.connect(vcXfAudioCtx.destination);
+                };
+
+                vcXfWs.onmessage = (event) => {
+                    try {
+                        const resp = JSON.parse(event.data);
+                        if (resp.code !== 0) {
+                            console.error('语音通话：讯飞识别错误:', resp.code, resp.message);
+                            return;
+                        }
+                        vcXfParseResult(resp);
+                    } catch (e) {
+                        console.error('语音通话：讯飞消息解析失败:', e);
+                    }
+                };
+
+                vcXfWs.onclose = () => {
+                    console.log('语音通话：讯飞连接关闭');
+                    // 合并剩余结果
+                    const keys = Object.keys(vcXfResults).map(Number).sort((a, b) => a - b);
+                    const remainText = keys.map(k => vcXfResults[k]).join('');
+                    if (remainText) vcState.pendingText += remainText;
+                    vcXfResults = {};
+
+                    vcXfCleanupAudio();
+
+                    const isActive = document.getElementById('voiceCallActivePage').classList.contains('active');
+                    if (!isActive || !vcState.recognition?.type) return;
+
+                    if (voiceCallData.settings.autoSend) {
+                        // 自动发送模式：60秒到了，有文字就发出去
+                        if (vcState.pendingText.trim()) {
+                            clearTimeout(vcState.autoSendTimeout);
+                            const text = vcState.pendingText.trim();
+                            vcState.pendingText = '';
+                            document.getElementById('vcInput').value = '';
+                            vcAutoResize();
+                            vcState.recognition = null;
+                            const micBtn = document.getElementById('vcMicBtn');
+                            if (micBtn) micBtn.classList.remove('recording');
+                            vcSendUserMessage(text);
+                        } else {
+                            // 没文字，自动重连继续听
+                            vcState.recognition = null;
+                            setTimeout(() => {
+                                if (isActive && !vcState.isProcessing) startVcXfRecognition();
+                            }, 300);
+                        }
+                    } else {
+                        // 手动发送模式：60秒到了就停，图标变灰
+                        vcState.recognition = null;
+                        const micBtn = document.getElementById('vcMicBtn');
+                        if (micBtn) micBtn.classList.remove('recording');
+                        console.log('语音通话：讯飞60秒到期，点击麦克风可继续');
+                    }
+                };
+
+                vcXfWs.onerror = (e) => {
+                    console.error('语音通话：讯飞错误:', e);
+                    vcXfCleanupAll();
+                    vcState.recognition = null;
+                    console.log('语音通话：讯飞不可用，降级到浏览器语音识别');
+                    startVcWebSpeechRecognition();
+                };
+
+            } catch (e) {
+                console.error('语音通话：讯飞启动失败:', e);
+                vcXfCleanupAll();
+                vcState.recognition = null;
+                console.log('语音通话：讯飞启动失败，降级到浏览器语音识别');
+                startVcWebSpeechRecognition();
+            }
+        }
+
+        // 解析语音通话讯飞识别结果
+        function vcXfParseResult(resp) {
+            if (vcState.isProcessing) return;
+
+            const result = resp.data?.result;
+            if (!result) return;
+
+            const sn = result.sn;
+            const pgs = result.pgs;
+
+            let text = '';
+            if (result.ws) {
+                result.ws.forEach(w => { w.cw.forEach(c => { text += c.w; }); });
+            }
+
+            if (pgs === 'rpl' && result.rg) {
+                for (let i = result.rg[0]; i <= result.rg[1]; i++) {
+                    if (i !== sn) delete vcXfResults[i];
+                }
+            }
+
+            vcXfResults[sn] = text;
+
+            const keys = Object.keys(vcXfResults).map(Number).sort((a, b) => a - b);
+            const fullText = keys.map(k => vcXfResults[k]).join('');
+
+            const display = vcState.pendingText + fullText;
+            document.getElementById('vcInput').value = display;
+            vcAutoResize();
+
+            // 自动发送模式：文字变化时重置沉默计时器
+            if (voiceCallData.settings.autoSend && fullText !== vcXfLastFullText) {
+                vcXfLastFullText = fullText;
+                clearTimeout(vcState.autoSendTimeout);
+                if (display.trim()) {
+                    vcState.autoSendTimeout = setTimeout(() => {
+                        if (vcState.recognition?.type === 'xfyun' && !vcState.isProcessing) {
+                            const textToSend = (vcState.pendingText + fullText).trim();
+                            vcState.pendingText = '';
+                            vcXfResults = {};
+                            vcXfLastFullText = '';
+                            document.getElementById('vcInput').value = '';
+                            vcAutoResize();
+                            stopVcRecognition();
+                            vcSendUserMessage(textToSend);
+                        }
+                    }, (voiceCallData.settings.autoSendDelay || 2) * 1000);
+                }
+            }
+
+            // 最终结果合入 pendingText
+            if (resp.data.status === 2) {
+                vcState.pendingText += fullText;
+                vcXfResults = {};
+                vcXfLastFullText = '';
+            }
+        }
+
+        // 清理语音通话讯飞音频资源
+        function vcXfCleanupAudio() {
+            if (vcXfProcessor) { vcXfProcessor.onaudioprocess = null; vcXfProcessor.disconnect(); vcXfProcessor = null; }
+            if (vcXfSource) { vcXfSource.disconnect(); vcXfSource = null; }
+            if (vcXfAudioCtx) { vcXfAudioCtx.close().catch(() => {}); vcXfAudioCtx = null; }
+            if (vcXfMicStream) { vcXfMicStream.getTracks().forEach(t => t.stop()); vcXfMicStream = null; }
+        }
+
+        function vcXfCleanupAll() {
+            if (vcXfWs) {
+                if (vcXfWs.readyState === WebSocket.OPEN) {
+                    try { vcXfWs.send(JSON.stringify({ data: { status: 2, format: 'audio/L16;rate=16000', encoding: 'raw', audio: '' } })); } catch(e) {}
+                }
+                vcXfWs.onclose = null; vcXfWs.onerror = null; vcXfWs.onmessage = null;
+                vcXfWs.close(); vcXfWs = null;
+            }
+            vcXfCleanupAudio();
+            vcXfResults = {};
+            vcXfLastFullText = '';
+        }
+
+        // ---- Web Speech API（语音通话降级方案） ----
+        function startVcWebSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
                 alert('您的浏览器不支持语音识别');
@@ -16329,8 +17289,11 @@ ${dialogueText}
             recognition.interimResults = true;
             vcState.recognition = recognition;
 
+            const micBtn = document.getElementById('vcMicBtn');
+            if (micBtn) micBtn.classList.add('recording');
+
             recognition.onresult = (event) => {
-                if (vcState.isProcessing) return; // AI回复中不处理新输入
+                if (vcState.isProcessing) return;
 
                 let interim = '';
                 let finalText = '';
@@ -16351,7 +17314,6 @@ ${dialogueText}
                 document.getElementById('vcInput').value = display;
                 vcAutoResize();
 
-                // 自动发送：有最终文本时重置计时器
                 if (voiceCallData.settings.autoSend && finalText) {
                     clearTimeout(vcState.autoSendTimeout);
                     vcState.autoSendTimeout = setTimeout(() => {
@@ -16368,9 +17330,8 @@ ${dialogueText}
             recognition.onerror = (event) => {
                 console.warn('语音识别错误:', event.error);
                 if (event.error === 'no-speech' || event.error === 'aborted') {
-                    // 自动重启
                     setTimeout(() => {
-                        if (vcState.recognition) {
+                        if (vcState.recognition && !vcState.recognition.type) {
                             try { vcState.recognition.start(); } catch(e) {}
                         }
                     }, 500);
@@ -16378,10 +17339,9 @@ ${dialogueText}
             };
 
             recognition.onend = () => {
-                // 通话未结束则自动重启
                 if (document.getElementById('voiceCallActivePage').classList.contains('active')) {
                     setTimeout(() => {
-                        if (vcState.recognition) {
+                        if (vcState.recognition && !vcState.recognition.type) {
                             try {
                                 vcState.processedCount = 0;
                                 vcState.recognition.start();
@@ -16394,20 +17354,13 @@ ${dialogueText}
             recognition.start();
         }
 
-        function stopVcRecognition() {
-            if (vcState.recognition) {
-                vcState.recognition.onend = null; // 防止自动重启
-                vcState.recognition.stop();
-                vcState.recognition = null;
-            }
-            clearTimeout(vcState.autoSendTimeout);
-        }
-
         // ---- 手动发送 ----
         function vcManualSend() {
             const input = document.getElementById('vcInput');
             const text = input.value.trim();
             if (!text || vcState.isProcessing) return;
+            // 发送时自动断开识别
+            stopVcRecognition();
             vcState.pendingText = '';
             vcState.processedCount = 0;
             input.value = '';
@@ -16517,17 +17470,11 @@ ${dialogueText}
 
             vcState.isProcessing = false;
 
-            // 重启语音识别
+            // 重启语音识别（AI回复完毕后自动恢复听写）
             if (document.getElementById('voiceCallActivePage').classList.contains('active')) {
                 vcState.pendingText = '';
                 vcState.processedCount = 0;
-                if (vcState.recognition) {
-                    try { vcState.recognition.start(); } catch(e) {
-                        startVcRecognition();
-                    }
-                } else {
-                    startVcRecognition();
-                }
+                startVcRecognition();
             }
         }
 
@@ -16588,6 +17535,12 @@ ${dialogueText}
             let fullContent = systemPrompt + '\n\n=====对话记录=====\n';
 
             // 携带微信上下文
+            console.log('语音通话上下文检查:', {
+                carryWechatContext: voiceCallData.settings.carryWechatContext,
+                assistantId: vcState.assistantId,
+                hasConv: !!conv,
+                msgCount: conv?.messages?.length || 0
+            });
             if (voiceCallData.settings.carryWechatContext && conv?.messages?.length) {
                 const ctxCount = voiceCallData.settings.contextCount || 30;
                 const ctxMsgs = conv.messages.slice(-ctxCount);
@@ -16614,38 +17567,109 @@ ${dialogueText}
         // 解析AI回复
         function vcParseReply(content) {
             let trimmed = content.trim();
-            // 清理思考标签
+
+            // 第一步：清理思考标签和干扰内容
             trimmed = trimmed.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
             trimmed = trimmed.replace(/<think>[\s\S]*?<\/think>/gi, '');
-            trimmed = trimmed.replace(/```(?:json)?\s*/gi, '').replace(/\s*```/g, '');
+            trimmed = trimmed.replace(/```thinking[\s\S]*?```/gi, '');
+            trimmed = trimmed.replace(/[\[【]思考[\]】][\s\S]*?[\[【]\/思考[\]】]/gi, '');
             trimmed = trimmed.trim();
 
+            if (!trimmed) {
+                console.warn('清理思考链后内容为空，使用原始内容');
+                trimmed = content.trim();
+            }
+
             const results = [];
+
+            // 第二步：尝试标准 JSON 解析
             try {
+                // 处理代码块格式
+                if (trimmed.includes('```')) {
+                    trimmed = trimmed.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+                    console.log('语音通话：检测到代码块格式，已去除标记');
+                }
+
                 let arr;
                 if (trimmed.startsWith('[')) {
                     arr = JSON.parse(trimmed);
                 } else {
-                    const match = trimmed.match(/\[[\s\S]*\]/);
+                    // AI 可能在 JSON 前面加了废话
+                    const match = trimmed.match(/\[[\s\S]*?\](?=\s*$|\s*```)/) || trimmed.match(/\[[\s\S]*\]/);
                     arr = match ? JSON.parse(match[0]) : null;
                 }
 
                 if (Array.isArray(arr)) {
                     for (const item of arr) {
+                        if (item.type === 'thinking') continue;
                         if (item.type === 'voice_message' && item.content) {
                             results.push({ content: item.content, emotion: item.emotion || 'neutral' });
-                        } else if (item.type === 'text' && item.content && item.type !== 'thinking') {
-                            results.push({ content: item.content, emotion: 'neutral' });
+                        } else if (item.content) {
+                            results.push({ content: item.content, emotion: item.emotion || 'neutral' });
                         }
                     }
                 }
+
+                if (results.length > 0) {
+                    console.log(`语音通话：成功解析${results.length}条回复`);
+                }
             } catch(e) {
-                console.warn('语音通话JSON解析失败:', e);
+                console.warn('语音通话JSON标准解析失败:', e.message);
+
+                // 第三步：容错 —— 尝试修复不完整 JSON
+                try {
+                    let fixAttempt = trimmed;
+                    fixAttempt = fixAttempt.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+
+                    // 缺少闭合括号的情况
+                    if (fixAttempt.startsWith('[') && !fixAttempt.endsWith(']')) {
+                        const lastObj = fixAttempt.lastIndexOf('}');
+                        if (lastObj > 0) {
+                            fixAttempt = fixAttempt.substring(0, lastObj + 1) + ']';
+                            const arr = JSON.parse(fixAttempt);
+                            for (const item of arr) {
+                                if (item.type === 'thinking') continue;
+                                if (item.content) {
+                                    results.push({ content: item.content, emotion: item.emotion || 'neutral' });
+                                }
+                            }
+                            console.log(`语音通话容错：修复后解析到${results.length}条回复`);
+                        }
+                    }
+
+                    // 逐个提取 JSON 对象
+                    if (results.length === 0) {
+                        const objPattern = /\{\s*"type"\s*:\s*"([^"]+)"\s*,\s*"content"\s*:\s*"((?:[^"\\]|\\.)*)"\s*(?:,\s*"emotion"\s*:\s*"([^"]+)")?\s*\}/g;
+                        let match;
+                        while ((match = objPattern.exec(content)) !== null) {
+                            if (match[1] === 'thinking') continue;
+                            results.push({
+                                content: match[2].replace(/\\"/g, '"').replace(/\\n/g, '\n'),
+                                emotion: match[3] || 'neutral'
+                            });
+                        }
+                        if (results.length > 0) {
+                            console.log(`语音通话容错：正则提取到${results.length}条回复`);
+                        }
+                    }
+                } catch(e2) {
+                    console.warn('语音通话容错解析也失败:', e2.message);
+                }
             }
 
+            // 第四步：兜底 —— 当纯文本处理
             if (results.length === 0) {
-                // fallback: 当纯文本处理
-                const cleaned = trimmed.replace(/^\[?\s*\{[\s\S]*?\}\s*\]?$/, '').trim() || trimmed;
+                console.log('语音通话：未能解析JSON，作为纯文本处理');
+                // 去掉 JSON 残留，提取纯文字
+                let cleaned = trimmed
+                    .replace(/\[?\s*\{[^}]*"type"\s*:\s*"thinking"[^}]*\}\s*,?\s*/g, '')  // 去 thinking 对象
+                    .replace(/[\[\]{}]/g, '')  // 去 JSON 符号
+                    .replace(/"type"\s*:\s*"[^"]*"\s*,?\s*/g, '')
+                    .replace(/"content"\s*:\s*/g, '')
+                    .replace(/"emotion"\s*:\s*"[^"]*"\s*,?\s*/g, '')
+                    .replace(/"/g, '')
+                    .trim();
+                if (!cleaned) cleaned = trimmed;
                 results.push({ content: cleaned, emotion: 'neutral' });
             }
             return results;
@@ -16686,7 +17710,9 @@ ${dialogueText}
             const el = document.getElementById('vcMessages');
             el.innerHTML = vcState.messages.map(m => {
                 const cls = m.role === 'user' ? 'vc-msg-user' : 'vc-msg-assistant';
-                return `<div class="vc-msg ${cls}">${m.content}</div>`;
+                // 助手消息去除拟声词标签（不让用户看到标签文本）
+                const displayContent = m.role === 'assistant' ? stripInterjectionsAlways(m.content) : m.content;
+                return `<div class="vc-msg ${cls}">${displayContent}</div>`;
             }).join('');
             el.scrollTop = el.scrollHeight;
         }
