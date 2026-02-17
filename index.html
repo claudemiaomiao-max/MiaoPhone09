@@ -7171,9 +7171,9 @@
                             this.style.height = Math.min(this.scrollHeight, 120) + 'px';
                             e.preventDefault();
                         } else {
-                            // Enter：发送消息
+                            // Enter：发送消息（检查是否正在发送中）
                             e.preventDefault();
-                            sendMessage();
+                            if (!isSending) sendMessage();
                         }
                     }
                 }
@@ -7326,6 +7326,8 @@
             return saveToLocalStorage();
         }
 
+        let lastStorageWarningTime = 0; // 防止频繁弹窗
+
         function saveToLocalStorage() {
             try {
                 localStorage.setItem('miaomiao_chat_v5', JSON.stringify(appData));
@@ -7333,7 +7335,12 @@
             } catch (e) {
                 console.error('localStorage保存失败:', e);
                 if (e.name === 'QuotaExceededError' || e.message.includes('quota')) {
-                    console.warn('⚠️ 存储空间已满，新消息可能无法持久保存。');
+                    // 每5分钟最多提示一次，避免频繁打扰
+                    const now = Date.now();
+                    if (now - lastStorageWarningTime > 300000) {
+                        lastStorageWarningTime = now;
+                        alert('⚠️ 存储空间已满，消息可能无法保存！\n建议导出数据后清理不需要的对话。');
+                    }
                 }
                 return false;
             }
@@ -9081,6 +9088,8 @@
         }
 
         async function regenerateResponse(msgId) {
+            if (isSending) return; // 防止和发送消息冲突
+
             const messages = appData.messages[appData.currentConversationId] || [];
             const msgIndex = messages.findIndex(m => m.id === msgId);
             if (msgIndex === -1) return;
@@ -9122,8 +9131,10 @@
             aiMsg.reasoningText = '';
             aiMsg.thinkingDuration = '';
 
+            isSending = true;
+            const chatSendBtn = document.getElementById('chatSendBtn');
+            chatSendBtn.disabled = true;
             renderMessages();
-            document.getElementById('chatSendBtn').disabled = true;
 
             try {
                 // 构建历史消息（不包括当前AI消息）
@@ -9171,23 +9182,24 @@
                     // 流式处理
                     await processStreamResponse(response, aiMsg);
                 }
-                
+
                 // 添加新版本
                 aiMsg.versions.push(aiMsg.content);
                 aiMsg.currentVersion = aiMsg.versions.length - 1;
-                
+
             } catch (error) {
                 console.error('请求失败:', error);
                 const errorContent = '请求失败：' + error.message;
                 aiMsg.content = errorContent;
                 aiMsg.versions.push(errorContent);
                 aiMsg.currentVersion = aiMsg.versions.length - 1;
+            } finally {
+                aiMsg.isStreaming = false;
+                isSending = false;
+                chatSendBtn.disabled = false;
+                saveData();
+                renderMessages();
             }
-
-            aiMsg.isStreaming = false;
-            document.getElementById('chatSendBtn').disabled = false;
-            saveData();
-            renderMessages();
         }
 
         async function regenerateFromMessage(userMsgId) {
@@ -9203,7 +9215,11 @@
         }
 
         // ==================== 发送消息 ====================
+        let isSending = false; // 防止并发发送
+
         async function sendMessage() {
+            if (isSending) return; // 防止重复发送
+
             const input = document.getElementById('chatInput');
             const content = input.value.trim();
 
@@ -9240,6 +9256,11 @@
                 return;
             }
 
+            // 标记发送中，禁用按钮
+            isSending = true;
+            const chatSendBtn = document.getElementById('chatSendBtn');
+            chatSendBtn.disabled = true;
+
             // 临时覆盖assistant的模型（用于本次请求）
             const effectiveAssistant = { ...assistant, providerId, modelId };
 
@@ -9271,52 +9292,61 @@
                 timestamp: new Date().toISOString()
             };
 
-            appData.messages[appData.currentConversationId].push(userMsg);
-            input.value = '';
-            input.style.height = 'auto';
-            clearPendingFiles(); // 清空待发送文件
-            renderMessages();
-
-            if (appData.messages[appData.currentConversationId].length === 1) {
-                const conv = appData.conversations.find(c => c.id === appData.currentConversationId);
-                conv.title = content.substring(0, 20) + (content.length > 20 ? '...' : '');
-                renderConversationList();
-                updateChatHeader();
-            }
-
-            document.getElementById('chatSendBtn').disabled = true;
-
-            const aiMsg = {
-                id: 'msg_' + Date.now() + '_ai',
-                role: 'assistant',
-                content: '',
-                versions: [''],
-                currentVersion: 0,
-                reasoningText: '',
-                timestamp: new Date().toISOString(),
-                isStreaming: true
-            };
-            appData.messages[appData.currentConversationId].push(aiMsg);
-            renderMessages();
+            const convId = appData.currentConversationId; // 锁定当前对话ID，防止切换对话后写错地方
 
             try {
+                appData.messages[convId].push(userMsg);
+                input.value = '';
+                input.style.height = 'auto';
+                clearPendingFiles(); // 清空待发送文件
+                renderMessages();
+
+                if (appData.messages[convId].length === 1) {
+                    const conv = appData.conversations.find(c => c.id === convId);
+                    conv.title = content.substring(0, 20) + (content.length > 20 ? '...' : '');
+                    renderConversationList();
+                    updateChatHeader();
+                }
+
+                // 用户消息推入后立即存盘，防止流式期间丢消息
+                saveData();
+
+                const aiMsg = {
+                    id: 'msg_' + Date.now() + '_ai',
+                    role: 'assistant',
+                    content: '',
+                    versions: [''],
+                    currentVersion: 0,
+                    reasoningText: '',
+                    timestamp: new Date().toISOString(),
+                    isStreaming: true
+                };
+                appData.messages[convId].push(aiMsg);
+                renderMessages();
+
                 await streamChat(provider, effectiveAssistant, aiMsg);
                 aiMsg.versions[0] = aiMsg.content;
+                aiMsg.isStreaming = false;
+
+                if (conv) {
+                    conv.updatedAt = new Date().toISOString();
+                }
             } catch (error) {
                 console.error('请求失败:', error);
-                aiMsg.content = '请求失败：' + error.message;
-                aiMsg.versions[0] = aiMsg.content;
-            }
-
-            aiMsg.isStreaming = false;
-            document.getElementById('chatSendBtn').disabled = false;
-            saveData();
-            renderMessages();
-
-            // conv 已在函数开头声明，直接使用
-            if (conv) {
-                conv.updatedAt = new Date().toISOString();
+                // 找到最后一条AI消息并写入错误信息
+                const msgs = appData.messages[convId];
+                const lastMsg = msgs && msgs.length > 0 ? msgs[msgs.length - 1] : null;
+                if (lastMsg && lastMsg.role === 'assistant' && lastMsg.isStreaming) {
+                    lastMsg.content = '请求失败：' + error.message;
+                    lastMsg.versions[0] = lastMsg.content;
+                    lastMsg.isStreaming = false;
+                }
+            } finally {
+                // 无论成功失败，都恢复按钮和保存数据
+                isSending = false;
+                chatSendBtn.disabled = false;
                 saveData();
+                renderMessages();
             }
         }
 
@@ -9518,9 +9548,24 @@
             let buffer = '';
             let thinkingStartTime = Date.now();
             let isThinking = false;
+            const STREAM_TIMEOUT = 120000; // 2分钟超时，防止网络半断开时永远挂起
 
             while (true) {
-                const { done, value } = await reader.read();
+                // 带超时的读取，防止卡死
+                const readPromise = reader.read();
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('流式响应超时（2分钟无数据）')), STREAM_TIMEOUT)
+                );
+
+                let result;
+                try {
+                    result = await Promise.race([readPromise, timeoutPromise]);
+                } catch (timeoutError) {
+                    reader.cancel();
+                    throw timeoutError;
+                }
+
+                const { done, value } = result;
                 if (done) break;
 
                 buffer += decoder.decode(value, { stream: true });
