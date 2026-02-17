@@ -5989,6 +5989,20 @@
                                 <span class="icon-arrow"></span>
                             </div>
                         </div>
+                        <div class="settings-item" onclick="clearApiAttachmentCache()">
+                            <div class="settings-item-left">
+                                <div class="settings-item-icon" style="background: #fff3e0; color: #ef6c00;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                </div>
+                                <div>
+                                    <div class="settings-item-text">清除附件缓存</div>
+                                    <div class="settings-item-desc" id="apiAttachmentCacheDesc">统计中...</div>
+                                </div>
+                            </div>
+                            <div class="settings-item-right">
+                                <span class="icon-arrow"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -8567,6 +8581,7 @@
                 sw.classList.remove('on');
             }
             openPage('apiSettingsPage');
+            updateApiAttachmentCacheDesc();
         }
 
         function autoSaveApiSettings() {
@@ -8578,6 +8593,108 @@
         function closeApiSettings() {
             autoSaveApiSettings();
             closePage('apiSettingsPage');
+        }
+
+        function updateApiAttachmentCacheDesc() {
+            let imageCount = 0;
+            let fileCount = 0;
+            for (const convId in appData.messages) {
+                const msgs = appData.messages[convId];
+                if (!Array.isArray(msgs)) continue;
+                for (const msg of msgs) {
+                    // 统计有图片预览的附件
+                    if (msg.attachments) {
+                        for (const att of msg.attachments) {
+                            if (att.isImage && att.preview) imageCount++;
+                        }
+                    }
+                    // 统计apiContent里的图片（multimodal格式）
+                    if (Array.isArray(msg.apiContent)) {
+                        for (const part of msg.apiContent) {
+                            if (part.type === 'image_url' && part.image_url?.url) imageCount++;
+                        }
+                    }
+                    // 统计文件消息
+                    if (msg.isFile && msg.content && !msg.content.includes('（内容已清除）')) fileCount++;
+                }
+            }
+            const desc = document.getElementById('apiAttachmentCacheDesc');
+            if (imageCount === 0 && fileCount === 0) {
+                desc.textContent = '无缓存';
+            } else {
+                const parts = [];
+                if (imageCount > 0) parts.push(`${imageCount} 张图片`);
+                if (fileCount > 0) parts.push(`${fileCount} 个文件`);
+                desc.textContent = `当前：${parts.join(' / ')}`;
+            }
+        }
+
+        function clearApiAttachmentCache() {
+            // 先统计
+            let imageCount = 0;
+            let fileCount = 0;
+            for (const convId in appData.messages) {
+                const msgs = appData.messages[convId];
+                if (!Array.isArray(msgs)) continue;
+                for (const msg of msgs) {
+                    if (msg.attachments) {
+                        for (const att of msg.attachments) {
+                            if (att.isImage && att.preview) imageCount++;
+                        }
+                    }
+                    if (Array.isArray(msg.apiContent)) {
+                        for (const part of msg.apiContent) {
+                            if (part.type === 'image_url' && part.image_url?.url) imageCount++;
+                        }
+                    }
+                    if (msg.isFile && msg.content && !msg.content.includes('（内容已清除）')) fileCount++;
+                }
+            }
+
+            if (imageCount === 0 && fileCount === 0) {
+                alert('没有附件缓存需要清除');
+                return;
+            }
+
+            const parts = [];
+            if (imageCount > 0) parts.push(`${imageCount} 张图片`);
+            if (fileCount > 0) parts.push(`${fileCount} 个文件`);
+            if (!confirm(`确定要清除所有对话中的附件缓存吗？\n${parts.join(' / ')}\n\n清除后图片将显示为占位符，文件内容不可恢复。`)) return;
+
+            // 执行清除
+            for (const convId in appData.messages) {
+                const msgs = appData.messages[convId];
+                if (!Array.isArray(msgs)) continue;
+                for (const msg of msgs) {
+                    // 清除附件预览
+                    if (msg.attachments) {
+                        for (const att of msg.attachments) {
+                            if (att.isImage && att.preview) {
+                                att.preview = null;
+                            }
+                        }
+                    }
+                    // 清除apiContent里的图片数据
+                    if (Array.isArray(msg.apiContent)) {
+                        msg.apiContent = msg.apiContent.filter(part => part.type !== 'image_url');
+                        // 如果只剩文本，简化回字符串
+                        if (msg.apiContent.length === 1 && msg.apiContent[0].type === 'text') {
+                            msg.apiContent = msg.apiContent[0].text;
+                        } else if (msg.apiContent.length === 0) {
+                            msg.apiContent = msg.content || '[附件已清除]';
+                        }
+                    }
+                    // 清除文件消息内容
+                    if (msg.isFile && msg.content && !msg.content.includes('（内容已清除）')) {
+                        msg.content = `[文件: ${msg.fileName || '未知文件'}]（内容已清除）`;
+                    }
+                }
+            }
+
+            saveData();
+            renderMessages();
+            updateApiAttachmentCacheDesc();
+            alert('附件缓存已清除');
         }
 
         // ==================== 助手记忆管理 ====================
