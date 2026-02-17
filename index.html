@@ -3180,6 +3180,33 @@
             border-radius: 4px;
         }
 
+        /* 文件消息卡片 */
+        .wechat-file-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #fff;
+            border-radius: 6px;
+            min-width: 180px;
+            max-width: 240px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+        .wechat-file-card-icon {
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+        .wechat-file-card-name {
+            font-size: 13px;
+            color: #333;
+            line-height: 1.3;
+            word-break: break-all;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
         /* 语音消息样式 */
         .wechat-voice-bubble {
             display: flex;
@@ -10593,6 +10620,28 @@
                         <div class="wechat-msg-body">
                             <div class="wechat-msg-image" ${clickHandler}>
                                 ${imageContent}
+                            </div>
+                            ${timeHtml(msg.timestamp)}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 文件消息：显示为卡片样式
+            if (msg.isFile && msg.fileName) {
+                const ext = msg.fileName.split('.').pop().toLowerCase();
+                const iconMap = { md: '📝', txt: '📄', json: '📋', js: '📜', html: '🌐', css: '🎨', py: '🐍', csv: '📊' };
+                const fileIcon = iconMap[ext] || '📄';
+                return `
+                    <div class="wechat-msg ${isUser ? 'user' : 'assistant'}${selectedClass}" ${bubbleClass} data-msg-id="${msg.id}">
+                        ${selectCheckbox}
+                        <div class="wechat-msg-avatar">
+                            ${isUser ? userAvatarHtml : assistantAvatarHtml}
+                        </div>
+                        <div class="wechat-msg-body">
+                            <div class="wechat-file-card">
+                                <span class="wechat-file-card-icon">${fileIcon}</span>
+                                <span class="wechat-file-card-name">${escapeHtml(msg.fileName)}</span>
                             </div>
                             ${timeHtml(msg.timestamp)}
                         </div>
