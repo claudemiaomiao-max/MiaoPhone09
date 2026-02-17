@@ -6596,8 +6596,12 @@
                         </div>
                     </div>
                 </div>
-                <!-- 长期记忆自动总结设置 -->
+                <!-- 长期记忆设置 -->
                 <div class="wechat-settings-section">
+                    <div class="wechat-settings-item">
+                        <span class="wechat-settings-label">启用长期记忆</span>
+                        <div class="switch" id="wechatLongTermMemoryEnabled" onclick="this.classList.toggle('on')"></div>
+                    </div>
                     <div class="wechat-settings-item">
                         <span class="wechat-settings-label">自动总结记忆</span>
                         <div class="switch" id="wechatAutoSummaryEnabled" onclick="this.classList.toggle('on')"></div>
@@ -11412,9 +11416,9 @@ JSON数组的【第一个元素】必须是思维链对象：
 你能看到每条消息的时间戳。像一个真正生活在用户身边的人一样，自然地感知时间流逝。`;
             }
 
-            // 添加长期记忆（如果有）- 参考330的高优先级写法
+            // 添加长期记忆（如果开关开启且有记忆）
             const longTermMemory = settings.longTermMemory || [];
-            if (longTermMemory.length > 0) {
+            if (settings.longTermMemoryEnabled !== false && longTermMemory.length > 0) {
                 const memoryText = longTermMemory.map(m => `- ${m.content}`).join('\n');
                 systemPart += `
 
@@ -14920,7 +14924,8 @@ ${chatContext}
             document.getElementById('wechatProactiveInterval').value = settings.proactiveInterval || 15;
             updateProactiveIntervalVisibility();
 
-            // 自动总结记忆设置
+            // 长期记忆设置
+            document.getElementById('wechatLongTermMemoryEnabled').classList.toggle('on', settings.longTermMemoryEnabled !== false); // 默认开启
             document.getElementById('wechatAutoSummaryEnabled').classList.toggle('on', settings.autoSummaryEnabled || false);
             document.getElementById('wechatAutoSummaryInterval').value = settings.autoSummaryInterval || 50;
 
@@ -14948,8 +14953,8 @@ ${chatContext}
             const imageCount = (conv?.messages || []).filter(m => m.type === 'image' && m.content && m.content.startsWith('data:')).length;
             document.getElementById('wechatImageCacheCount').textContent = imageCount + ' 张';
 
-            // 统计文件数量
-            const fileCount = (conv?.messages || []).filter(m => m.isFile && m.content).length;
+            // 统计文件数量（排除已清除的）
+            const fileCount = (conv?.messages || []).filter(m => m.isFile && m.content && !m.content.includes('（内容已清除）')).length;
             document.getElementById('wechatFileCacheCount').textContent = fileCount + ' 个';
 
             // 主题颜色
@@ -14985,6 +14990,7 @@ ${chatContext}
                     ttsEnabled: document.getElementById('wechatTtsEnabled').classList.contains('on'),
                     voiceId: document.getElementById('wechatVoiceId').value.trim(),
                     edgeVoiceId: document.getElementById('wechatEdgeVoice').value || 'zh-CN-XiaoxiaoNeural',
+                    longTermMemoryEnabled: document.getElementById('wechatLongTermMemoryEnabled').classList.contains('on'),
                     autoSummaryEnabled: document.getElementById('wechatAutoSummaryEnabled').classList.contains('on'),
                     autoSummaryInterval: parseInt(document.getElementById('wechatAutoSummaryInterval').value) || 50,
                     proactiveEnabled: document.getElementById('wechatProactive').classList.contains('on'),
@@ -15865,7 +15871,7 @@ ${dialogueText}
             const conv = wechatData.conversations[wechatData.currentAssistantId];
             if (!conv) return;
 
-            const fileCount = conv.messages.filter(msg => msg.isFile && msg.content).length;
+            const fileCount = conv.messages.filter(msg => msg.isFile && msg.content && !msg.content.includes('（内容已清除）')).length;
 
             if (fileCount === 0) {
                 alert('没有文件缓存需要清除');
@@ -15877,7 +15883,7 @@ ${dialogueText}
             }
 
             conv.messages.forEach(msg => {
-                if (msg.isFile && msg.content) {
+                if (msg.isFile && msg.content && !msg.content.includes('（内容已清除）')) {
                     msg.content = `[文件: ${msg.fileName || '未知文件'}]（内容已清除）`;
                 }
             });
