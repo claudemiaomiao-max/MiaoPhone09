@@ -3428,6 +3428,9 @@
         .wechat-system-msg {
             text-align: center;
             margin: 12px 0;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
         .wechat-system-msg span {
             font-size: 12px;
@@ -3982,7 +3985,8 @@
             background: #fa5151;
             color: #fff;
         }
-        .wechat-msg.selected {
+        .wechat-msg.selected,
+        .wechat-system-msg.selected {
             background: rgba(7, 193, 96, 0.1);
         }
         .wechat-msg .select-checkbox {
@@ -6353,6 +6357,9 @@
 
         <!-- 长按上下文菜单 -->
         <div class="wechat-context-menu" id="wechatContextMenu">
+            <div class="wechat-context-menu-item" id="wechatMenuCopy" onclick="wechatCopyMessage()">
+                <span>📋</span><span>复制</span>
+            </div>
             <div class="wechat-context-menu-item" id="wechatMenuQuote" onclick="wechatQuoteMessage()">
                 <span>💬</span><span>引用</span>
             </div>
@@ -6690,7 +6697,7 @@
                 <span>拍照</span>
             </div>
         </div>
-        <input type="file" id="fileInput" style="display:none" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.md,.py,.js,.html,.css,.json,.xml,.yaml,.yml,.ts,.jsx,.tsx,.vue,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.sh,.bat,.sql,.csv,image/*,text/*,text/markdown,application/json,application/pdf" onchange="handleFileSelect(event)">
+        <input type="file" id="fileInput" style="display:none" multiple onchange="handleFileSelect(event)">
         <input type="file" id="imageInput" style="display:none" multiple accept="image/*" onchange="handleFileSelect(event)">
         <input type="file" id="cameraInput" style="display:none" accept="image/*" capture onchange="handleFileSelect(event)">
 
@@ -13066,6 +13073,7 @@ ${memoryText}`;
             const msg = conv.messages.find(m => m.id === msgId);
             if (msg) {
                 editingWechatMessageId = msgId;
+                editingWechatIsPending = false;
                 document.getElementById('editWechatMessageContent').value = msg.content || '';
                 showModal('editWechatMessageModal');
             }
@@ -13078,19 +13086,30 @@ ${memoryText}`;
                 return;
             }
 
-            const conv = wechatData.conversations[wechatData.currentAssistantId];
-            if (conv) {
-                const msg = conv.messages.find(m => m.id === editingWechatMessageId);
+            if (editingWechatIsPending) {
+                // 编辑待发消息
+                const msg = wechatData.pendingMessages.find(m => m.id === editingWechatMessageId);
                 if (msg) {
                     msg.content = newContent;
-                    saveWechatData();
-                    wechatKeepScrollPosition = document.getElementById('wechatMessages').scrollTop;
                     renderWechatMessages();
                 }
+            } else {
+                // 编辑已发送消息
+                const conv = wechatData.conversations[wechatData.currentAssistantId];
+                if (conv) {
+                    const msg = conv.messages.find(m => m.id === editingWechatMessageId);
+                    if (msg) {
+                        msg.content = newContent;
+                        saveWechatData();
+                        wechatKeepScrollPosition = document.getElementById('wechatMessages').scrollTop;
+                        renderWechatMessages();
+                    }
+                }
             }
-            
+
             hideModal('editWechatMessageModal');
             editingWechatMessageId = null;
+            editingWechatIsPending = false;
         }
 
         // 删除微信消息
@@ -13136,7 +13155,7 @@ ${memoryText}`;
         function handleWechatClick(e) {
             if (!wechatMultiSelectMode) return;
 
-            const msgEl = e.target.closest('.wechat-msg');
+            const msgEl = e.target.closest('.wechat-msg') || e.target.closest('.wechat-system-msg');
             if (msgEl) {
                 const msgId = msgEl.getAttribute('data-msg-id');
                 if (msgId) {
@@ -13158,7 +13177,7 @@ ${memoryText}`;
             const isSystemMsg = msgEl.classList.contains('wechat-system-msg');
 
             wechatLongPressTimer = setTimeout(() => {
-                if (wechatMultiSelectMode && !isSystemMsg) {
+                if (wechatMultiSelectMode) {
                     toggleWechatMessageSelect(msgId);
                 } else {
                     showWechatContextMenu(e, msgId, isSystemMsg);
@@ -13176,7 +13195,7 @@ ${memoryText}`;
 
             // 多选模式下，点击切换选择
             if (wechatMultiSelectMode) {
-                const msgEl = e.target.closest('.wechat-msg');
+                const msgEl = e.target.closest('.wechat-msg') || e.target.closest('.wechat-system-msg');
                 if (msgEl) {
                     const msgId = msgEl.getAttribute('data-msg-id');
                     if (msgId) {
@@ -13210,10 +13229,9 @@ ${memoryText}`;
             wechatSelectedMsgId = msgId;
             const menu = document.getElementById('wechatContextMenu');
 
-            // 系统消息（拍一拍）只显示删除按钮
+            // 系统消息（拍一拍）隐藏引用和编辑，保留多选和删除
             document.getElementById('wechatMenuQuote').style.display = isSystemMsg ? 'none' : '';
             document.getElementById('wechatMenuEdit').style.display = isSystemMsg ? 'none' : '';
-            document.getElementById('wechatMenuMultiSelect').style.display = isSystemMsg ? 'none' : '';
 
             // 计算位置
             let x = e.touches ? e.touches[0].clientX : e.clientX;
@@ -13239,6 +13257,30 @@ ${memoryText}`;
             if (menu && !menu.contains(e?.target)) {
                 menu.classList.remove('show');
             }
+        }
+
+        function wechatCopyMessage() {
+            closeWechatContextMenu();
+            if (!wechatSelectedMsgId) return;
+
+            // 从已发送消息或待发消息中查找
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            let msg = conv?.messages?.find(m => m.id === wechatSelectedMsgId);
+            if (!msg) msg = wechatData.pendingMessages.find(m => m.id === wechatSelectedMsgId);
+            if (!msg || !msg.content) return;
+
+            const text = msg.type === 'voice_message' ? stripInterjectionsAlways(msg.content) : msg.content;
+            navigator.clipboard.writeText(text).then(() => {
+                // 简单的复制成功提示
+                const el = document.querySelector(`[data-msg-id="${wechatSelectedMsgId}"]`);
+                if (el) {
+                    const tip = document.createElement('div');
+                    tip.textContent = '已复制';
+                    tip.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);color:#fff;padding:8px 20px;border-radius:8px;font-size:14px;z-index:99999;';
+                    document.body.appendChild(tip);
+                    setTimeout(() => tip.remove(), 1000);
+                }
+            }).catch(() => {});
         }
 
         function wechatEditSelectedMessage() {
@@ -13271,15 +13313,16 @@ ${memoryText}`;
         function editWechatPendingMessage(msgId) {
             const msg = wechatData.pendingMessages.find(m => m.id === msgId);
             if (msg && msg.type === 'text') {
-                const newContent = prompt('编辑消息：', msg.content);
-                if (newContent !== null && newContent.trim()) {
-                    msg.content = newContent.trim();
-                    renderWechatMessages();
-                }
+                // 复用编辑消息弹窗
+                editingWechatMessageId = msgId;
+                editingWechatIsPending = true;
+                document.getElementById('editWechatMessageContent').value = msg.content || '';
+                showModal('editWechatMessageModal');
             } else if (msg) {
                 alert('此类型消息不支持编辑');
             }
         }
+        let editingWechatIsPending = false;
 
         function deleteWechatPendingMessage(msgId) {
             const idx = wechatData.pendingMessages.findIndex(m => m.id === msgId);
@@ -13392,7 +13435,7 @@ ${memoryText}`;
             updateWechatSelectedCount();
 
             // 更新UI
-            const msgEl = document.querySelector(`.wechat-msg[data-msg-id="${msgId}"]`);
+            const msgEl = document.querySelector(`[data-msg-id="${msgId}"]`);
             if (msgEl) {
                 msgEl.classList.toggle('selected', wechatSelectedMessages.has(msgId));
             }
