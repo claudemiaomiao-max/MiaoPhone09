@@ -6582,6 +6582,10 @@
                         <span class="wechat-settings-label">清除图片缓存</span>
                         <span class="wechat-settings-value" id="wechatImageCacheCount" style="color: #576b95;">0 张</span>
                     </div>
+                    <div class="wechat-settings-item" onclick="clearWechatFileCache()">
+                        <span class="wechat-settings-label">清除文件缓存</span>
+                        <span class="wechat-settings-value" id="wechatFileCacheCount" style="color: #576b95;">0 个</span>
+                    </div>
                     <div class="wechat-settings-item" onclick="clearWechatChat()">
                         <span class="wechat-settings-label" style="color: #fa5151;">清空聊天记录</span>
                         <span class="wechat-settings-value"><span class="icon-arrow"></span></span>
@@ -10885,12 +10889,12 @@
             const hasFiles = filesToSend.length > 0;
             const hasQuote = wechatQuotedMessage !== null;
 
-            // 如果有图片，先添加图片消息到暂存
+            // 如果有文件，先添加到暂存
             if (hasFiles) {
                 for (const file of filesToSend) {
                     if (file.isImage) {
                         const imgMsg = {
-                            id: 'wmsg_' + Date.now() + '_img',
+                            id: 'wmsg_' + Date.now() + '_img_' + Math.random().toString(36).slice(2, 6),
                             role: 'user',
                             type: 'image',
                             content: file.base64,
@@ -10898,6 +10902,18 @@
                             timestamp: new Date().toISOString()
                         };
                         wechatData.pendingMessages.push(imgMsg);
+                    } else if (file.isTextFile && file.textContent) {
+                        // 文本文件：作为文本消息发送，标注文件名
+                        const fileMsg = {
+                            id: 'wmsg_' + Date.now() + '_file_' + Math.random().toString(36).slice(2, 6),
+                            role: 'user',
+                            type: 'text',
+                            content: `[文件: ${file.name}]\n${file.textContent}`,
+                            fileName: file.name,
+                            isFile: true,
+                            timestamp: new Date().toISOString()
+                        };
+                        wechatData.pendingMessages.push(fileMsg);
                     }
                 }
                 clearPendingFiles();
@@ -13312,7 +13328,7 @@ ${memoryText}`;
         // ========== 待发消息编辑/删除 ==========
         function editWechatPendingMessage(msgId) {
             const msg = wechatData.pendingMessages.find(m => m.id === msgId);
-            if (msg && msg.type === 'text') {
+            if (msg && (msg.type === 'text' || msg.type === 'voice_message')) {
                 // 复用编辑消息弹窗
                 editingWechatMessageId = msgId;
                 editingWechatIsPending = true;
@@ -13415,6 +13431,7 @@ ${memoryText}`;
             document.getElementById('wechatMessages').classList.add('wechat-multiselect-mode');
             document.getElementById('wechatMultiselectBar').classList.add('show');
             updateWechatSelectedCount();
+            wechatKeepScrollPosition = document.getElementById('wechatMessages').scrollTop;
             renderWechatMessages();
         }
 
@@ -13423,6 +13440,7 @@ ${memoryText}`;
             wechatSelectedMessages.clear();
             document.getElementById('wechatMessages').classList.remove('wechat-multiselect-mode');
             document.getElementById('wechatMultiselectBar').classList.remove('show');
+            wechatKeepScrollPosition = document.getElementById('wechatMessages').scrollTop;
             renderWechatMessages();
         }
 
@@ -14719,6 +14737,10 @@ ${chatContext}
             const imageCount = (conv?.messages || []).filter(m => m.type === 'image' && m.content && m.content.startsWith('data:')).length;
             document.getElementById('wechatImageCacheCount').textContent = imageCount + ' 张';
 
+            // 统计文件数量
+            const fileCount = (conv?.messages || []).filter(m => m.isFile && m.content).length;
+            document.getElementById('wechatFileCacheCount').textContent = fileCount + ' 个';
+
             // 主题颜色
             const theme = settings.theme || 'default';
             document.querySelectorAll('#wechatThemeSelector .wechat-theme-dot').forEach(dot => {
@@ -15625,6 +15647,34 @@ ${dialogueText}
             renderWechatMessages();
             document.getElementById('wechatImageCacheCount').textContent = '0 张';
             alert(`已清除 ${imageCount} 张图片缓存`);
+        }
+
+        // 清除文件缓存（isFile标记的文本文件消息内容）
+        function clearWechatFileCache() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (!conv) return;
+
+            const fileCount = conv.messages.filter(msg => msg.isFile && msg.content).length;
+
+            if (fileCount === 0) {
+                alert('没有文件缓存需要清除');
+                return;
+            }
+
+            if (!confirm(`确定要清除 ${fileCount} 个文件缓存吗？\n清除后文件内容将显示为占位符，无法恢复。`)) {
+                return;
+            }
+
+            conv.messages.forEach(msg => {
+                if (msg.isFile && msg.content) {
+                    msg.content = `[文件: ${msg.fileName || '未知文件'}]（内容已清除）`;
+                }
+            });
+
+            saveWechatData();
+            renderWechatMessages();
+            document.getElementById('wechatFileCacheCount').textContent = '0 个';
+            alert(`已清除 ${fileCount} 个文件缓存`);
         }
 
         function importWechatChat() {
