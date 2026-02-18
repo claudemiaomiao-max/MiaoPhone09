@@ -4012,6 +4012,10 @@
             background: #fa5151;
             color: #fff;
         }
+        .wechat-multiselect-bar .export-btn {
+            background: #576b95;
+            color: #fff;
+        }
         .wechat-msg.selected,
         .wechat-system-msg.selected {
             background: rgba(7, 193, 96, 0.1);
@@ -6496,7 +6500,10 @@
         <div class="wechat-multiselect-bar" id="wechatMultiselectBar">
             <button class="cancel-btn" onclick="exitWechatMultiSelect()">取消</button>
             <span id="wechatSelectedCount">已选择 0 条</span>
-            <button class="delete-btn" onclick="deleteWechatSelectedMessages()">删除</button>
+            <div style="display:flex;gap:8px;">
+                <button class="export-btn" onclick="exportWechatSelectedMessages()">导出</button>
+                <button class="delete-btn" onclick="deleteWechatSelectedMessages()">删除</button>
+            </div>
         </div>
 
         <!-- 微信模式 - 长期记忆页 -->
@@ -14445,6 +14452,65 @@ ${memoryText}`;
             }
 
             exitWechatMultiSelect();
+        }
+
+        function exportWechatSelectedMessages() {
+            if (wechatSelectedMessages.size === 0) {
+                alert('请先选择要导出的消息');
+                return;
+            }
+            const format = prompt('导出格式：输入 1 导出 JSON，输入 2 导出 MD（Markdown）', '2');
+            if (!format) return;
+
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            if (!conv) return;
+
+            // 按时间顺序收集选中的消息
+            const selected = conv.messages.filter(m => wechatSelectedMessages.has(m.id));
+            const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
+            const assistantName = assistant ? assistant.name : '助手';
+
+            if (format.trim() === '1') {
+                // JSON 格式
+                const exportData = selected.map(m => {
+                    const obj = { role: m.role === 'user' ? '我' : assistantName, content: m.content, time: m.timestamp };
+                    if (m.type && m.type !== 'text') obj.type = m.type;
+                    return obj;
+                });
+                const json = JSON.stringify(exportData, null, 2);
+                downloadFile(json, `聊天记录_${assistantName}_${new Date().toISOString().slice(0,10)}.json`, 'application/json');
+            } else {
+                // Markdown 格式
+                let md = `# 聊天记录 - ${assistantName}\n\n`;
+                let lastDate = '';
+                for (const m of selected) {
+                    const dt = new Date(m.timestamp);
+                    const date = dt.toLocaleDateString('zh-CN');
+                    if (date !== lastDate) {
+                        md += `## ${date}\n\n`;
+                        lastDate = date;
+                    }
+                    const time = dt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                    const name = m.role === 'user' ? '我' : assistantName;
+                    const content = m.type === 'image' ? '[图片]' : (m.content || '');
+                    md += `**${name}** (${time})\n\n${content}\n\n---\n\n`;
+                }
+                downloadFile(md, `聊天记录_${assistantName}_${new Date().toISOString().slice(0,10)}.md`, 'text/markdown');
+            }
+
+            exitWechatMultiSelect();
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
 
         // ==================== 日记模式功能 ====================
