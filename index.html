@@ -7529,6 +7529,15 @@
                             <input type="number" class="form-input mlab-param-input" id="mlabMinThreshold" value="40" min="10" max="200" onchange="mlabSaveConfig()">
                         </div>
                     </div>
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">自动提取控制</div>
+                        <div class="mlab-param-row">
+                            <span>自动提取</span>
+                            <div class="switch" id="mlabAutoSwitch" onclick="mlabToggleAuto()"></div>
+                        </div>
+                        <div id="mlabAutoStatus" style="font-size:12px;color:#9ca3af;margin-top:4px;"></div>
+                        <button class="mlab-btn mlab-btn-outline" onclick="mlabResetProgress()" style="margin-top:10px;font-size:12px;">重置提取进度（从当前位置重新开始）</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -8353,6 +8362,12 @@
             document.getElementById('mlabSilenceTimeout').value = mlabConfig.silenceTimeout;
             document.getElementById('mlabMsgLimit').value = mlabConfig.msgLimit;
             document.getElementById('mlabMinThreshold').value = mlabConfig.minThreshold;
+            // 恢复自动提取开关状态
+            try {
+                const saved = localStorage.getItem('miaomiao_mlab_auto_enabled');
+                if (saved !== null) mlabAutoEnabled = saved === '1';
+            } catch(e) {}
+            mlabUpdateAutoStatus();
         }
 
         function closeMemoryLab() {
@@ -8732,9 +8747,64 @@
             return finalChunks;
         }
 
+        // --- 自动提取 UI 控制 ---
+        let mlabAutoEnabled = true; // 默认开启（进入微信模式时自动启动）
+
+        function mlabToggleAuto() {
+            const sw = document.getElementById('mlabAutoSwitch');
+            mlabAutoEnabled = !mlabAutoEnabled;
+            sw.classList.toggle('on', mlabAutoEnabled);
+            if (mlabAutoEnabled) {
+                mlabStartAutoTimer();
+            } else {
+                mlabStopAutoTimer();
+            }
+            try { localStorage.setItem('miaomiao_mlab_auto_enabled', mlabAutoEnabled ? '1' : '0'); } catch(e) {}
+            mlabUpdateAutoStatus();
+        }
+
+        function mlabUpdateAutoStatus() {
+            const el = document.getElementById('mlabAutoStatus');
+            if (!el) return;
+            const sw = document.getElementById('mlabAutoSwitch');
+            if (sw) sw.classList.toggle('on', mlabAutoEnabled);
+            if (mlabAutoTimer) {
+                el.textContent = '自动提取运行中，每60秒检查一次';
+                el.style.color = '#059669';
+            } else {
+                el.textContent = mlabAutoEnabled ? '自动提取已启用，进入微信模式后生效' : '自动提取已关闭';
+                el.style.color = '#9ca3af';
+            }
+        }
+
+        function mlabResetProgress() {
+            if (!confirm('确定重置所有助手的提取进度？\n这会让自动提取从"当前位置"重新开始，不会回溯老数据。')) return;
+            const conversations = wechatData?.conversations;
+            if (conversations) {
+                for (const assistantId of Object.keys(conversations)) {
+                    const conv = conversations[assistantId];
+                    if (conv?.messages) {
+                        mlabExtractProgress[assistantId] = conv.messages.length - 1;
+                    }
+                }
+            }
+            saveMlabProgress();
+            mlabUpdateAutoStatus();
+            alert('进度已重置，所有助手将从当前最新消息开始追踪');
+        }
+
         // --- 心跳定时器 + 自动提取 ---
         function mlabStartAutoTimer() {
             if (mlabAutoTimer) return;
+            // 加载开关状态
+            try {
+                const saved = localStorage.getItem('miaomiao_mlab_auto_enabled');
+                if (saved !== null) mlabAutoEnabled = saved === '1';
+            } catch(e) {}
+            if (!mlabAutoEnabled) {
+                console.log('Memory Lab: 自动提取已关闭，跳过启动');
+                return;
+            }
             loadMlabConfig();
             loadMlabProgress();
             mlabAutoTimer = setInterval(mlabAutoHeartbeat, 60 * 1000);
@@ -8767,8 +8837,14 @@
                     const conv = conversations[assistantId];
                     if (!conv || !conv.messages || conv.messages.length < 2) continue;
 
-                    const lastExtractedIndex = mlabExtractProgress[assistantId] || 0;
-                    // messages[0] 通常是 system，实际消息从 index 1 开始
+                    // 首次遇到没有 progress 记录的助手：初始化为当前末尾，只追踪之后的新消息
+                    if (!(assistantId in mlabExtractProgress)) {
+                        mlabExtractProgress[assistantId] = conv.messages.length - 1;
+                        saveMlabProgress();
+                        console.log(`Memory Lab: [${assistant.name}] 首次初始化进度到 ${conv.messages.length - 1}，老数据跳过`);
+                        continue;
+                    }
+                    const lastExtractedIndex = mlabExtractProgress[assistantId];
                     const totalMsgs = conv.messages.length - 1;
                     const unprocessed = totalMsgs - lastExtractedIndex;
 
@@ -12168,8 +12244,8 @@
                     const newScrollHeight = container.scrollHeight;
                     container.scrollTop = newScrollHeight - oldScrollHeight;
                 });
-            } else if (wechatKeepScrollPosition) {
-                // 编辑/删除后，恢复之前的滚动位置
+            } else if (wechatKeepScrollPosition !== null) {
+                // 编辑/删除/多选后，恢复之前的滚动位置
                 requestAnimationFrame(() => {
                     container.scrollTop = wechatKeepScrollPosition;
                     wechatKeepScrollPosition = null;
