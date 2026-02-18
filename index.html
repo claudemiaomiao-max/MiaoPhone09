@@ -4981,6 +4981,183 @@
             animation: msg-highlight 2s ease-out;
         }
 
+        /* ==================== Memory Lab ==================== */
+        .mlab-tabs {
+            display: flex;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .mlab-tab {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            background: none;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .mlab-tab.active {
+            color: #7c3aed;
+            border-bottom-color: #7c3aed;
+            font-weight: 600;
+        }
+        .mlab-panel {
+            padding: 12px;
+        }
+        .mlab-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+        .mlab-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+        .mlab-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 13px;
+            cursor: pointer;
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .mlab-btn-primary {
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            color: #fff;
+        }
+        .mlab-btn-primary:disabled {
+            opacity: 0.5;
+        }
+        .mlab-btn-outline {
+            background: none;
+            border: 1px solid #d1d5db;
+            color: #6b7280;
+        }
+        .mlab-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff;
+        }
+        .mlab-msg-preview {
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 13px;
+            line-height: 1.6;
+            background: #fafafa;
+            -webkit-overflow-scrolling: touch;
+        }
+        .mlab-placeholder {
+            color: #9ca3af;
+            font-size: 13px;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .mlab-prompt-editor {
+            width: 100%;
+            min-height: 200px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .mlab-param-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 13px;
+            color: #374151;
+        }
+        .mlab-param-row + .mlab-param-row {
+            border-top: 1px solid #f3f4f6;
+        }
+        .mlab-param-input {
+            width: 70px;
+            text-align: center;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .mlab-narrative {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+        .mlab-narrative:last-child {
+            margin-bottom: 0;
+        }
+        .mlab-narrative-context {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+        .mlab-narrative-quote {
+            font-size: 12px;
+            color: #7c3aed;
+            padding: 3px 0;
+            font-style: italic;
+        }
+        .mlab-narrative-summary {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        .mlab-narrative-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .mlab-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+        .mlab-tag-intensity {
+            background: #fef3c7;
+            color: #d97706;
+        }
+        .mlab-split-reason {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+        .mlab-raw-json {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         /* ==================== 语音通话模式 ==================== */
         /* 通讯录页面 */
         .vc-contact-list {
@@ -5658,6 +5835,11 @@
         html.standalone .vc-bottom-area {
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
+        /* Memory Lab 图标 */
+        .app-memory-lab .app-icon-img {
+            background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+        }
+
         /* 语音通话图标 */
         .app-voice-call .app-icon-img {
             background: linear-gradient(135deg, #5b86e5 0%, #36d1dc 100%);
@@ -5693,6 +5875,12 @@
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                     </div>
                     <span class="app-icon-label">语音通话</span>
+                </div>
+                <div class="app-icon app-memory-lab" onclick="openMemoryLab()">
+                    <div class="app-icon-img">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24A2.5 2.5 0 0 1 9.5 2"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2"/></svg>
+                    </div>
+                    <span class="app-icon-label">Memory Lab</span>
                 </div>
             </div>
         </div>
@@ -7218,6 +7406,92 @@
             </div>
         </div>
 
+        <!-- Memory Lab 页面 -->
+        <div class="page" id="memoryLabPage">
+            <div class="page-header" style="background: linear-gradient(135deg, #a855f7, #6366f1); border: none;">
+                <button class="page-back" onclick="closeMemoryLab()" style="color: #fff;"><span class="icon-back" style="border-color: #fff;"></span></button>
+                <span class="page-title" style="color: #fff;">Memory Lab</span>
+                <div style="width: 40px;"></div>
+            </div>
+            <div class="page-content" style="padding: 0; background: #f5f3ff;">
+                <!-- Tab 切换 -->
+                <div class="mlab-tabs">
+                    <button class="mlab-tab active" onclick="switchMlabTab('test')">手动测试</button>
+                    <button class="mlab-tab" onclick="switchMlabTab('log')">提取日志</button>
+                    <button class="mlab-tab" onclick="switchMlabTab('config')">配置</button>
+                </div>
+
+                <!-- 手动测试区 -->
+                <div class="mlab-panel" id="mlabTestPanel">
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">导入对话</div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="mlab-btn" onclick="mlabImportJson()" style="flex:1;">导入 JSON 文件</button>
+                            <button class="mlab-btn mlab-btn-outline" onclick="mlabClearTest()" style="flex:0 0 auto;">清空</button>
+                        </div>
+                        <div class="mlab-msg-preview" id="mlabInputPreview">
+                            <div class="mlab-placeholder">导入聊天记录 JSON 后在此预览</div>
+                        </div>
+                        <input type="file" id="mlabFileInput" accept=".json" style="display:none" onchange="mlabHandleFile(this)">
+                    </div>
+                    <div class="mlab-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="mlab-section-title" style="margin-bottom:0;">提取结果</div>
+                            <button class="mlab-btn mlab-btn-primary" onclick="mlabRunExtract()" id="mlabExtractBtn">提取叙事元</button>
+                        </div>
+                        <div class="mlab-msg-preview" id="mlabOutputPreview" style="margin-top: 8px;">
+                            <div class="mlab-placeholder">点击"提取叙事元"后在此显示结果</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 提取日志（P0b 占位） -->
+                <div class="mlab-panel" id="mlabLogPanel" style="display:none;">
+                    <div class="mlab-section">
+                        <div class="mlab-placeholder" style="padding: 40px 0; text-align: center; color: #999;">
+                            自动提取日志（开发中）
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 配置区 -->
+                <div class="mlab-panel" id="mlabConfigPanel" style="display:none;">
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">总结模型</div>
+                        <select class="form-select mlab-select" id="mlabModelSelect" onchange="mlabSaveConfig()">
+                            <option value="">请选择模型</option>
+                        </select>
+                    </div>
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">Temperature</div>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="mlabTempSlider" min="0" max="2" step="0.05" value="0.5" oninput="document.getElementById('mlabTempValue').textContent=this.value; mlabSaveConfig();">
+                            <span class="slider-value" id="mlabTempValue">0.5</span>
+                        </div>
+                    </div>
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">提取提示词</div>
+                        <textarea class="form-textarea mlab-prompt-editor" id="mlabPromptEditor" rows="12" placeholder="输入提取叙事元的提示词..." onchange="mlabSaveConfig()"></textarea>
+                    </div>
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">切分参数</div>
+                        <div class="mlab-param-row">
+                            <span>沉默超时触发（分钟）</span>
+                            <input type="number" class="form-input mlab-param-input" id="mlabSilenceTimeout" value="30" min="5" max="120" onchange="mlabSaveConfig()">
+                        </div>
+                        <div class="mlab-param-row">
+                            <span>消息累积上限（条）</span>
+                            <input type="number" class="form-input mlab-param-input" id="mlabMsgLimit" value="80" min="20" max="500" onchange="mlabSaveConfig()">
+                        </div>
+                        <div class="mlab-param-row">
+                            <span>最小条数门槛（条）</span>
+                            <input type="number" class="form-input mlab-param-input" id="mlabMinThreshold" value="40" min="10" max="200" onchange="mlabSaveConfig()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -8006,6 +8280,261 @@
             }
         });
         // ==================== 云端同步结束 ====================
+
+        // ==================== Memory Lab ====================
+        let mlabTestMessages = null; // 手动测试导入的消息
+        let mlabConfig = {
+            model: '',          // providerId||modelId
+            temperature: 0.5,
+            prompt: '',
+            silenceTimeout: 30, // 分钟
+            msgLimit: 80,       // 消息累积上限
+            minThreshold: 40    // 最小条数门槛
+        };
+
+        function openMemoryLab() {
+            loadMlabConfig();
+            openPage('memoryLabPage');
+            populateMlabModelDropdown();
+            // 恢复配置到UI
+            document.getElementById('mlabModelSelect').value = mlabConfig.model || '';
+            document.getElementById('mlabTempSlider').value = mlabConfig.temperature;
+            document.getElementById('mlabTempValue').textContent = mlabConfig.temperature;
+            document.getElementById('mlabPromptEditor').value = mlabConfig.prompt || '';
+            document.getElementById('mlabSilenceTimeout').value = mlabConfig.silenceTimeout;
+            document.getElementById('mlabMsgLimit').value = mlabConfig.msgLimit;
+            document.getElementById('mlabMinThreshold').value = mlabConfig.minThreshold;
+        }
+
+        function closeMemoryLab() {
+            closePage('memoryLabPage');
+        }
+
+        function switchMlabTab(tab) {
+            document.querySelectorAll('.mlab-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.mlab-tab[onclick*="${tab}"]`).classList.add('active');
+            document.getElementById('mlabTestPanel').style.display = tab === 'test' ? 'block' : 'none';
+            document.getElementById('mlabLogPanel').style.display = tab === 'log' ? 'block' : 'none';
+            document.getElementById('mlabConfigPanel').style.display = tab === 'config' ? 'block' : 'none';
+        }
+
+        function populateMlabModelDropdown() {
+            const select = document.getElementById('mlabModelSelect');
+            const enabledProviders = appData.providers.filter(p => p.models && p.models.length > 0);
+            let html = '<option value="">请选择模型</option>';
+            enabledProviders.forEach(p => {
+                html += `<optgroup label="${p.name}">`;
+                p.models.forEach(m => {
+                    html += `<option value="${p.id}||${m.id}">${m.name || m.id}</option>`;
+                });
+                html += '</optgroup>';
+            });
+            select.innerHTML = html;
+        }
+
+        function mlabSaveConfig() {
+            mlabConfig.model = document.getElementById('mlabModelSelect').value;
+            mlabConfig.temperature = parseFloat(document.getElementById('mlabTempSlider').value);
+            mlabConfig.prompt = document.getElementById('mlabPromptEditor').value;
+            mlabConfig.silenceTimeout = parseInt(document.getElementById('mlabSilenceTimeout').value) || 30;
+            mlabConfig.msgLimit = parseInt(document.getElementById('mlabMsgLimit').value) || 80;
+            mlabConfig.minThreshold = parseInt(document.getElementById('mlabMinThreshold').value) || 40;
+            try { localStorage.setItem('miaomiao_mlab_config', JSON.stringify(mlabConfig)); } catch(e) {}
+        }
+
+        function loadMlabConfig() {
+            try {
+                const saved = localStorage.getItem('miaomiao_mlab_config');
+                if (saved) Object.assign(mlabConfig, JSON.parse(saved));
+            } catch(e) {}
+        }
+
+        // 导入JSON文件
+        function mlabImportJson() {
+            document.getElementById('mlabFileInput').click();
+        }
+
+        function mlabHandleFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    // 兼容多种格式：数组 或 {messages: [...]}
+                    let messages = Array.isArray(data) ? data : (data.messages || []);
+                    if (messages.length === 0) {
+                        alert('未找到消息数据');
+                        return;
+                    }
+                    // 标准化 role 字段（兼容导出的 "我"/助手名 格式）
+                    messages = messages.map(m => {
+                        if (m.role && m.role !== 'user' && m.role !== 'assistant') {
+                            return { ...m, role: m.role === '我' ? 'user' : 'assistant' };
+                        }
+                        return m;
+                    });
+                    mlabTestMessages = messages;
+                    mlabRenderInputPreview(messages);
+                    console.log(`Memory Lab: 导入 ${messages.length} 条消息`);
+                } catch(err) {
+                    alert('JSON 解析失败: ' + err.message);
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function mlabRenderInputPreview(messages) {
+            const container = document.getElementById('mlabInputPreview');
+            const maxPreview = 100; // 只预览前100条
+            const msgs = messages.slice(0, maxPreview);
+            let html = `<div style="font-size:12px;color:#7c3aed;margin-bottom:8px;font-weight:600;">共 ${messages.length} 条消息${messages.length > maxPreview ? '（预览前100条）' : ''}</div>`;
+            msgs.forEach(m => {
+                const name = m.role === 'user' ? '<b style="color:#059669;">妙妙</b>' : '<b style="color:#7c3aed;">嗔</b>';
+                const content = (m.type === 'image' ? '[图片]' : (m.content || '')).substring(0, 100);
+                html += `<div style="margin-bottom:4px;">${name}: ${escapeHtml(content)}</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function mlabClearTest() {
+            mlabTestMessages = null;
+            document.getElementById('mlabInputPreview').innerHTML = '<div class="mlab-placeholder">导入聊天记录 JSON 后在此预览</div>';
+            document.getElementById('mlabOutputPreview').innerHTML = '<div class="mlab-placeholder">点击"提取叙事元"后在此显示结果</div>';
+        }
+
+        // 运行提取
+        async function mlabRunExtract() {
+            if (!mlabTestMessages || mlabTestMessages.length === 0) {
+                alert('请先导入对话数据');
+                return;
+            }
+            if (!mlabConfig.model) {
+                alert('请先在"配置"页选择总结模型');
+                return;
+            }
+            if (!mlabConfig.prompt || mlabConfig.prompt.trim().length < 10) {
+                alert('请先在"配置"页填写提取提示词');
+                return;
+            }
+
+            const btn = document.getElementById('mlabExtractBtn');
+            btn.disabled = true;
+            btn.textContent = '提取中...';
+            const outputDiv = document.getElementById('mlabOutputPreview');
+            outputDiv.innerHTML = '<div class="mlab-placeholder">正在调用总结模型...</div>';
+
+            try {
+                // 构建对话文本
+                const dialogueText = mlabTestMessages.map(m => {
+                    const role = m.role === 'user' ? '妙妙' : '嗔';
+                    const content = m.type === 'image' ? '[图片]' : (m.content || '');
+                    return `${role}: ${content}`;
+                }).join('\n');
+
+                // 解析模型配置
+                const [providerId, modelId] = mlabConfig.model.split('||');
+                const provider = appData.providers.find(p => p.id === providerId);
+                if (!provider) throw new Error('供应商未找到');
+
+                // 拼接完整prompt
+                const fullPrompt = mlabConfig.prompt + '\n\n对话内容：\n' + dialogueText;
+
+                // 调用API
+                const response = await fetch(provider.baseUrl + provider.apiPath, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + provider.apiKey
+                    },
+                    body: JSON.stringify({
+                        model: modelId,
+                        messages: [{ role: 'user', content: fullPrompt }],
+                        temperature: mlabConfig.temperature
+                    })
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errText.substring(0, 200)}`);
+                }
+
+                const result = await response.json();
+                const content = result.choices?.[0]?.message?.content || '';
+                console.log('Memory Lab 原始输出:', content);
+
+                // 尝试解析JSON
+                let narratives = null;
+                try {
+                    narratives = JSON.parse(content);
+                } catch(e) {
+                    // 尝试从文本中提取JSON
+                    const jsonMatch = content.match(/\[[\s\S]*\]/);
+                    if (jsonMatch) {
+                        try { narratives = JSON.parse(jsonMatch[0]); } catch(e2) {}
+                    }
+                }
+
+                if (Array.isArray(narratives)) {
+                    mlabRenderNarratives(narratives, content);
+                } else {
+                    // 解析失败，显示原始输出
+                    outputDiv.innerHTML = `<div style="color:#ef4444;font-size:12px;margin-bottom:8px;">JSON 解析失败，显示原始输出：</div><div class="mlab-raw-json">${escapeHtml(content)}</div>`;
+                }
+            } catch(err) {
+                outputDiv.innerHTML = `<div style="color:#ef4444;padding:10px;">出错: ${escapeHtml(err.message)}</div>`;
+                console.error('Memory Lab 提取失败:', err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '提取叙事元';
+            }
+        }
+
+        function mlabRenderNarratives(narratives, rawJson) {
+            const container = document.getElementById('mlabOutputPreview');
+            if (narratives.length === 0) {
+                container.innerHTML = '<div class="mlab-placeholder">模型认为这段对话没有值得提取的记忆</div>';
+                return;
+            }
+            let html = `<div style="font-size:12px;color:#7c3aed;margin-bottom:8px;font-weight:600;">提取到 ${narratives.length} 个叙事元</div>`;
+            narratives.forEach((n, i) => {
+                html += '<div class="mlab-narrative">';
+                if (n.split_reason) {
+                    html += `<div class="mlab-split-reason">切分: ${escapeHtml(n.split_reason)}</div>`;
+                }
+                html += `<div class="mlab-narrative-context">${escapeHtml(n.context || '')}</div>`;
+                // user_quotes
+                const quotes = n.user_quotes || n.miaomiao_says || [];
+                quotes.forEach(q => {
+                    html += `<div class="mlab-narrative-quote">"${escapeHtml(q)}"</div>`;
+                });
+                // assistant_summary
+                if (n.assistant_summary || n.chen_response) {
+                    html += `<div class="mlab-narrative-summary">嗔: ${escapeHtml(n.assistant_summary || n.chen_response)}</div>`;
+                }
+                // tags
+                html += '<div class="mlab-narrative-tags">';
+                const tags = n.tags?.type || n.tags || [];
+                const tagArr = Array.isArray(tags) ? tags : [tags];
+                tagArr.forEach(t => {
+                    if (typeof t === 'string') html += `<span class="mlab-tag">${escapeHtml(t)}</span>`;
+                });
+                const intensity = n.tags?.emotion_intensity || n.intensity;
+                if (intensity) {
+                    html += `<span class="mlab-tag mlab-tag-intensity">intensity: ${intensity}</span>`;
+                }
+                const keywords = n.tags?.topic_keywords || [];
+                keywords.forEach(k => {
+                    html += `<span class="mlab-tag" style="background:#e0f2fe;color:#0284c7;">${escapeHtml(k)}</span>`;
+                });
+                html += '</div></div>';
+            });
+            // 原始JSON折叠
+            html += `<details style="margin-top:10px;"><summary style="font-size:12px;color:#9ca3af;cursor:pointer;">查看原始 JSON</summary><div class="mlab-raw-json" style="margin-top:6px;">${escapeHtml(rawJson)}</div></details>`;
+            container.innerHTML = html;
+        }
+        // ==================== Memory Lab 结束 ====================
 
         // 保存副模型
         function saveGlobalSecondaryModel() {
@@ -8855,6 +9384,16 @@
                             <input type="number" class="form-input" id="editAssistantMaxTokens" value="${data.maxTokens || 0}" min="0">
                         </div>
                     </div>
+                    <div class="form-section">
+                        <div class="form-section-title">向量记忆</div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div>
+                                <div style="font-size:14px;color:var(--text-primary);">启用向量记忆</div>
+                                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">微信模式聊天记录参与记忆提取</div>
+                            </div>
+                            <div class="switch ${data.vectorMemoryEnabled ? 'on' : ''}" id="editVectorMemory" onclick="this.classList.toggle('on')"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="assistantTabPrompt" style="display: none;">
@@ -9029,6 +9568,8 @@
             const providerId = document.getElementById('editAssistantProviderId').value;
             const modelId = document.getElementById('editAssistantModelId').value;
 
+            const vectorMemoryEnabled = document.getElementById('editVectorMemory')?.classList.contains('on') || false;
+
             const assistantData = {
                 id: editingAssistantId || 'assistant_' + Date.now(),
                 name,
@@ -9037,7 +9578,8 @@
                 modelId: modelId || '',
                 systemPrompt: prompt,
                 temperature: temp,
-                maxTokens
+                maxTokens,
+                vectorMemoryEnabled
             };
 
             if (editingAssistantId) {
