@@ -8387,11 +8387,14 @@
 
         function mlabRenderInputPreview(messages) {
             const container = document.getElementById('mlabInputPreview');
-            const maxPreview = 100; // 只预览前100条
+            const curAssistant = appData.assistants.find(a => a.id === wechatData?.currentAssistantId);
+            const aName = curAssistant?.name || '助手';
+            const uName = appData.settings.userName || '用户';
+            const maxPreview = 100;
             const msgs = messages.slice(0, maxPreview);
             let html = `<div style="font-size:12px;color:#7c3aed;margin-bottom:8px;font-weight:600;">共 ${messages.length} 条消息${messages.length > maxPreview ? '（预览前100条）' : ''}</div>`;
             msgs.forEach(m => {
-                const name = m.role === 'user' ? '<b style="color:#059669;">妙妙</b>' : '<b style="color:#7c3aed;">嗔</b>';
+                const name = m.role === 'user' ? `<b style="color:#059669;">${escapeHtml(uName)}</b>` : `<b style="color:#7c3aed;">${escapeHtml(aName)}</b>`;
                 const content = (m.type === 'image' ? '[图片]' : (m.content || '')).substring(0, 100);
                 html += `<div style="margin-bottom:4px;">${name}: ${escapeHtml(content)}</div>`;
             });
@@ -8426,9 +8429,14 @@
             outputDiv.innerHTML = '<div class="mlab-placeholder">正在调用总结模型...</div>';
 
             try {
+                // 获取当前助手信息
+                const curAssistant = appData.assistants.find(a => a.id === wechatData?.currentAssistantId);
+                const assistantName = curAssistant?.name || '助手';
+                const userName = appData.settings.userName || '用户';
+
                 // 构建对话文本
                 const dialogueText = mlabTestMessages.map(m => {
-                    const role = m.role === 'user' ? '妙妙' : '嗔';
+                    const role = m.role === 'user' ? userName : assistantName;
                     const content = m.type === 'image' ? '[图片]' : (m.content || '');
                     return `${role}: ${content}`;
                 }).join('\n');
@@ -8438,8 +8446,9 @@
                 const provider = appData.providers.find(p => p.id === providerId);
                 if (!provider) throw new Error('供应商未找到');
 
-                // 拼接完整prompt
-                const fullPrompt = mlabConfig.prompt + '\n\n对话内容：\n' + dialogueText;
+                // 拼接完整prompt：提示词 + 基础信息 + 对话内容
+                const contextInfo = `\n\n【基础信息】\n- 你的名字：${assistantName}\n- 用户昵称：${userName}\n- 提取时间：${new Date().toLocaleDateString('zh-CN')}`;
+                const fullPrompt = mlabConfig.prompt + contextInfo + '\n\n对话内容：\n' + dialogueText;
 
                 // 调用API
                 const response = await fetch(provider.baseUrl + provider.apiPath, {
