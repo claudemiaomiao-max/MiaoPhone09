@@ -5157,6 +5157,47 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
+        .mlab-log-entry {
+            padding: 12px;
+            border-radius: 10px;
+            background: #f9fafb;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .mlab-log-entry:active {
+            background: #f3f4f6;
+        }
+        .mlab-log-detail {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+            cursor: default;
+        }
+        .mlab-log-status-success {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #d1fae5;
+            color: #059669;
+            flex-shrink: 0;
+        }
+        .mlab-log-status-error {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #fee2e2;
+            color: #dc2626;
+            flex-shrink: 0;
+        }
+        .mlab-log-status-parse-error {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: #fef3c7;
+            color: #d97706;
+            flex-shrink: 0;
+        }
 
         /* ==================== 语音通话模式 ==================== */
         /* 通讯录页面 */
@@ -7445,11 +7486,11 @@
                     </div>
                 </div>
 
-                <!-- 提取日志（P0b 占位） -->
+                <!-- 提取日志 -->
                 <div class="mlab-panel" id="mlabLogPanel" style="display:none;">
                     <div class="mlab-section">
                         <div class="mlab-placeholder" style="padding: 40px 0; text-align: center; color: #999;">
-                            自动提取日志（开发中）
+                            点击此标签加载日志
                         </div>
                     </div>
                 </div>
@@ -8283,6 +8324,13 @@
 
         // ==================== Memory Lab ====================
         let mlabTestMessages = null; // 手动测试导入的消息
+        // P0b 自动提取状态
+        let mlabAutoTimer = null;          // setInterval ID
+        let mlabAutoRunning = false;       // 并发锁
+        let mlabExtractProgress = {};      // { assistantId: lastExtractedMsgIndex }
+        let mlabLogs = [];                 // 内存中的日志缓存
+        let mlabLogsLoaded = false;        // 是否已从 Supabase 加载过
+
         let mlabConfig = {
             model: '',          // providerId||modelId
             temperature: 0.5,
@@ -8294,6 +8342,7 @@
 
         function openMemoryLab() {
             loadMlabConfig();
+            loadMlabProgress();
             openPage('memoryLabPage');
             populateMlabModelDropdown();
             // 恢复配置到UI
@@ -8316,6 +8365,7 @@
             document.getElementById('mlabTestPanel').style.display = tab === 'test' ? 'block' : 'none';
             document.getElementById('mlabLogPanel').style.display = tab === 'log' ? 'block' : 'none';
             document.getElementById('mlabConfigPanel').style.display = tab === 'config' ? 'block' : 'none';
+            if (tab === 'log') mlabRenderLogPanel();
         }
 
         function populateMlabModelDropdown() {
@@ -8407,7 +8457,53 @@
             document.getElementById('mlabOutputPreview').innerHTML = '<div class="mlab-placeholder">点击"提取叙事元"后在此显示结果</div>';
         }
 
-        // 运行提取
+        // 公共提取函数：调用 API + 解析 JSON，返回 { narratives, rawContent }
+        async function mlabExtractChunk(messages, assistantName, userName, provider, modelId) {
+            const dialogueText = messages.map(m => {
+                const role = m.role === 'user' ? userName : assistantName;
+                const content = m.type === 'image' ? '[图片]' : (m.content || '');
+                return `${role}: ${content}`;
+            }).join('\n');
+
+            const contextInfo = `\n\n【基础信息】\n- 你的名字：${assistantName}\n- 用户昵称：${userName}\n- 提取时间：${new Date().toLocaleDateString('zh-CN')}`;
+            const fullPrompt = mlabConfig.prompt + contextInfo + '\n\n对话内容：\n' + dialogueText;
+
+            const response = await fetch(provider.baseUrl + provider.apiPath, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + provider.apiKey
+                },
+                body: JSON.stringify({
+                    model: modelId,
+                    messages: [{ role: 'user', content: fullPrompt }],
+                    temperature: mlabConfig.temperature
+                })
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errText.substring(0, 200)}`);
+            }
+
+            const result = await response.json();
+            const rawContent = result.choices?.[0]?.message?.content || '';
+            console.log('Memory Lab 原始输出:', rawContent.substring(0, 200));
+
+            let narratives = null;
+            try {
+                narratives = JSON.parse(rawContent);
+            } catch(e) {
+                const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+                if (jsonMatch) {
+                    try { narratives = JSON.parse(jsonMatch[0]); } catch(e2) {}
+                }
+            }
+
+            return { narratives: Array.isArray(narratives) ? narratives : null, rawContent };
+        }
+
+        // 运行提取（手动测试用）
         async function mlabRunExtract() {
             if (!mlabTestMessages || mlabTestMessages.length === 0) {
                 alert('请先导入对话数据');
@@ -8429,67 +8525,21 @@
             outputDiv.innerHTML = '<div class="mlab-placeholder">正在调用总结模型...</div>';
 
             try {
-                // 获取当前助手信息
                 const curAssistant = appData.assistants.find(a => a.id === wechatData?.currentAssistantId);
                 const assistantName = curAssistant?.name || '助手';
                 const userName = appData.settings.userName || '用户';
 
-                // 构建对话文本
-                const dialogueText = mlabTestMessages.map(m => {
-                    const role = m.role === 'user' ? userName : assistantName;
-                    const content = m.type === 'image' ? '[图片]' : (m.content || '');
-                    return `${role}: ${content}`;
-                }).join('\n');
-
-                // 解析模型配置
                 const [providerId, modelId] = mlabConfig.model.split('||');
                 const provider = appData.providers.find(p => p.id === providerId);
                 if (!provider) throw new Error('供应商未找到');
 
-                // 拼接完整prompt：提示词 + 基础信息 + 对话内容
-                const contextInfo = `\n\n【基础信息】\n- 你的名字：${assistantName}\n- 用户昵称：${userName}\n- 提取时间：${new Date().toLocaleDateString('zh-CN')}`;
-                const fullPrompt = mlabConfig.prompt + contextInfo + '\n\n对话内容：\n' + dialogueText;
+                const { narratives, rawContent } = await mlabExtractChunk(mlabTestMessages, assistantName, userName, provider, modelId);
 
-                // 调用API
-                const response = await fetch(provider.baseUrl + provider.apiPath, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + provider.apiKey
-                    },
-                    body: JSON.stringify({
-                        model: modelId,
-                        messages: [{ role: 'user', content: fullPrompt }],
-                        temperature: mlabConfig.temperature
-                    })
-                });
-
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errText.substring(0, 200)}`);
-                }
-
-                const result = await response.json();
-                const content = result.choices?.[0]?.message?.content || '';
-                console.log('Memory Lab 原始输出:', content);
-
-                // 尝试解析JSON
-                let narratives = null;
-                try {
-                    narratives = JSON.parse(content);
-                } catch(e) {
-                    // 尝试从文本中提取JSON
-                    const jsonMatch = content.match(/\[[\s\S]*\]/);
-                    if (jsonMatch) {
-                        try { narratives = JSON.parse(jsonMatch[0]); } catch(e2) {}
-                    }
-                }
-
-                if (Array.isArray(narratives)) {
-                    mlabRenderNarratives(narratives, content);
+                if (narratives) {
+                    mlabRenderNarratives(narratives, rawContent);
                 } else {
-                    // 解析失败，显示原始输出
-                    outputDiv.innerHTML = `<div style="color:#ef4444;font-size:12px;margin-bottom:8px;">JSON 解析失败，显示原始输出：</div><div class="mlab-raw-json">${escapeHtml(content)}</div>`;
+                    _mlabLastRawJson = rawContent;
+                    outputDiv.innerHTML = `<div style="color:#ef4444;font-size:12px;margin-bottom:8px;">JSON 解析失败，显示原始输出：</div><button onclick="mlabCopyJson()" style="margin-bottom:6px;padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:12px;color:#374151;cursor:pointer;">复制原始输出</button><div class="mlab-raw-json">${escapeHtml(rawContent)}</div>`;
                 }
             } catch(err) {
                 outputDiv.innerHTML = `<div style="color:#ef4444;padding:10px;">出错: ${escapeHtml(err.message)}</div>`;
@@ -8501,6 +8551,7 @@
         }
 
         function mlabRenderNarratives(narratives, rawJson) {
+            _mlabLastRawJson = rawJson;
             const container = document.getElementById('mlabOutputPreview');
             if (narratives.length === 0) {
                 container.innerHTML = '<div class="mlab-placeholder">模型认为这段对话没有值得提取的记忆</div>';
@@ -8540,9 +8591,505 @@
                 html += '</div></div>';
             });
             // 原始JSON折叠
-            html += `<details style="margin-top:10px;"><summary style="font-size:12px;color:#9ca3af;cursor:pointer;">查看原始 JSON</summary><div class="mlab-raw-json" style="margin-top:6px;">${escapeHtml(rawJson)}</div></details>`;
+            html += `<details style="margin-top:10px;"><summary style="font-size:12px;color:#9ca3af;cursor:pointer;">查看原始 JSON</summary><div style="margin-top:6px;"><button onclick="mlabCopyJson()" style="margin-bottom:6px;padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:12px;color:#374151;cursor:pointer;">复制 JSON</button><div class="mlab-raw-json" id="mlabRawJsonContent">${escapeHtml(rawJson)}</div></div></details>`;
             container.innerHTML = html;
         }
+        let _mlabLastRawJson = '';
+
+        function mlabCopyJson() {
+            if (!_mlabLastRawJson) return;
+            navigator.clipboard.writeText(_mlabLastRawJson).then(() => {
+                // 简单反馈
+                const btn = event.target;
+                const orig = btn.textContent;
+                btn.textContent = '已复制';
+                btn.style.color = '#7c3aed';
+                setTimeout(() => { btn.textContent = orig; btn.style.color = '#374151'; }, 1500);
+            }).catch(() => {
+                // iOS Safari fallback
+                const ta = document.createElement('textarea');
+                ta.value = _mlabLastRawJson;
+                ta.style.cssText = 'position:fixed;left:-9999px;';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                const btn = event.target;
+                btn.textContent = '已复制';
+                btn.style.color = '#7c3aed';
+                setTimeout(() => { btn.textContent = '复制 JSON'; btn.style.color = '#374151'; }, 1500);
+            });
+        }
+        // ==================== Memory Lab P0b ====================
+
+        // --- 进度持久化 ---
+        function loadMlabProgress() {
+            try {
+                const saved = localStorage.getItem('miaomiao_mlab_progress');
+                if (saved) mlabExtractProgress = JSON.parse(saved);
+            } catch(e) {}
+        }
+
+        function saveMlabProgress() {
+            try {
+                localStorage.setItem('miaomiao_mlab_progress', JSON.stringify(mlabExtractProgress));
+            } catch(e) {}
+            // 备份到 Supabase（fire-and-forget）
+            if (cloudSyncEnabled()) {
+                cloudUpsert('mlab_progress', mlabExtractProgress).catch(e =>
+                    console.warn('Memory Lab: 进度备份失败', e.message)
+                );
+            }
+        }
+
+        // --- 消息预切分算法 ---
+        function mlabFindTurnBoundary(messages, idealIdx) {
+            // 从 idealIdx 往后找 role=user 且前一条是 role=assistant 的位置
+            for (let i = idealIdx; i < messages.length; i++) {
+                if (messages[i].role === 'user' && i > 0 && messages[i - 1].role === 'assistant') {
+                    return i;
+                }
+            }
+            // 往前找
+            for (let i = idealIdx - 1; i > 0; i--) {
+                if (messages[i].role === 'user' && messages[i - 1].role === 'assistant') {
+                    return i;
+                }
+            }
+            return idealIdx; // fallback
+        }
+
+        function mlabSplitLargeChunk(chunk, minSize, maxSize) {
+            if (chunk.length <= maxSize) return [chunk];
+            const targetSize = 60;
+            const result = [];
+            let start = 0;
+            while (start < chunk.length) {
+                if (chunk.length - start <= maxSize) {
+                    result.push(chunk.slice(start));
+                    break;
+                }
+                let splitAt = start + targetSize;
+                if (splitAt >= chunk.length) {
+                    result.push(chunk.slice(start));
+                    break;
+                }
+                // 找轮次边界
+                splitAt = mlabFindTurnBoundary(chunk, splitAt);
+                if (splitAt <= start) splitAt = start + targetSize; // 防死循环
+                result.push(chunk.slice(start, splitAt));
+                start = splitAt;
+            }
+            return result;
+        }
+
+        function mlabPreSplit(messages) {
+            const minThreshold = mlabConfig.minThreshold || 40;
+            const msgLimit = mlabConfig.msgLimit || 80;
+
+            if (messages.length <= msgLimit) {
+                return messages.length >= minThreshold ? [messages] : [];
+            }
+
+            // 按时间间隔 >30分钟 找断点
+            const gaps = [];
+            for (let i = 1; i < messages.length; i++) {
+                const prev = new Date(messages[i - 1].timestamp).getTime();
+                const curr = new Date(messages[i].timestamp).getTime();
+                if (curr - prev > 30 * 60 * 1000) {
+                    gaps.push(i);
+                }
+            }
+
+            // 调整断点到轮次边界
+            const breakpoints = gaps.map(idx => mlabFindTurnBoundary(messages, idx));
+            // 去重并排序
+            const uniqueBreaks = [...new Set(breakpoints)].sort((a, b) => a - b);
+
+            // 切块
+            let chunks = [];
+            let start = 0;
+            for (const bp of uniqueBreaks) {
+                if (bp > start && bp < messages.length) {
+                    chunks.push(messages.slice(start, bp));
+                    start = bp;
+                }
+            }
+            if (start < messages.length) {
+                chunks.push(messages.slice(start));
+            }
+
+            // 拆分过大的块
+            let finalChunks = [];
+            for (const chunk of chunks) {
+                const splits = mlabSplitLargeChunk(chunk, minThreshold, msgLimit);
+                finalChunks.push(...splits);
+            }
+
+            // 过滤掉小于 minThreshold 的碎块
+            finalChunks = finalChunks.filter(c => c.length >= minThreshold);
+
+            return finalChunks;
+        }
+
+        // --- 心跳定时器 + 自动提取 ---
+        function mlabStartAutoTimer() {
+            if (mlabAutoTimer) return;
+            loadMlabConfig();
+            loadMlabProgress();
+            mlabAutoTimer = setInterval(mlabAutoHeartbeat, 60 * 1000);
+            console.log('Memory Lab: 自动提取心跳已启动');
+            // 立即做一次检查
+            setTimeout(mlabAutoHeartbeat, 2000);
+        }
+
+        function mlabStopAutoTimer() {
+            if (mlabAutoTimer) {
+                clearInterval(mlabAutoTimer);
+                mlabAutoTimer = null;
+                console.log('Memory Lab: 自动提取心跳已停止');
+            }
+        }
+
+        async function mlabAutoHeartbeat() {
+            if (mlabAutoRunning) return;
+            if (!mlabConfig.model || !mlabConfig.prompt || mlabConfig.prompt.trim().length < 10) return;
+
+            mlabAutoRunning = true;
+            try {
+                const conversations = wechatData?.conversations;
+                if (!conversations) return;
+
+                for (const assistantId of Object.keys(conversations)) {
+                    const assistant = appData.assistants.find(a => a.id === assistantId);
+                    if (!assistant || !assistant.vectorMemoryEnabled) continue;
+
+                    const conv = conversations[assistantId];
+                    if (!conv || !conv.messages || conv.messages.length < 2) continue;
+
+                    const lastExtractedIndex = mlabExtractProgress[assistantId] || 0;
+                    // messages[0] 通常是 system，实际消息从 index 1 开始
+                    const totalMsgs = conv.messages.length - 1;
+                    const unprocessed = totalMsgs - lastExtractedIndex;
+
+                    if (unprocessed < (mlabConfig.minThreshold || 40)) continue;
+
+                    // 检查触发条件
+                    const lastMsg = conv.messages[conv.messages.length - 1];
+                    const silenceMs = Date.now() - new Date(lastMsg.timestamp).getTime();
+                    const silenceTimeout = (mlabConfig.silenceTimeout || 30) * 60 * 1000;
+                    const msgLimit = mlabConfig.msgLimit || 80;
+
+                    let triggerReason = null;
+                    if (silenceMs >= silenceTimeout) {
+                        triggerReason = 'silence';
+                    } else if (unprocessed >= msgLimit) {
+                        triggerReason = 'accumulation';
+                    }
+
+                    if (triggerReason) {
+                        console.log(`Memory Lab: 触发自动提取 [${assistant.name}] 原因=${triggerReason} 未处理=${unprocessed}条`);
+                        await mlabAutoExtract(assistantId, conv, assistant, triggerReason);
+                    }
+                }
+            } catch(err) {
+                console.error('Memory Lab: 心跳出错', err);
+            } finally {
+                mlabAutoRunning = false;
+            }
+        }
+
+        async function mlabAutoExtract(assistantId, conv, assistant, triggerReason) {
+            const lastExtractedIndex = mlabExtractProgress[assistantId] || 0;
+            // 未处理的消息（跳过 index 0 的 system 消息）
+            const startIdx = Math.max(1, lastExtractedIndex + 1);
+            const unprocessedMsgs = conv.messages.slice(startIdx);
+
+            if (unprocessedMsgs.length === 0) return;
+
+            const assistantName = assistant.name || '助手';
+            const userName = appData.settings.userName || '用户';
+
+            // 解析模型
+            const [providerId, modelId] = mlabConfig.model.split('||');
+            const provider = appData.providers.find(p => p.id === providerId);
+            if (!provider) {
+                console.warn('Memory Lab: 供应商未找到', providerId);
+                return;
+            }
+
+            // 切分
+            const chunks = mlabPreSplit(unprocessedMsgs);
+            if (chunks.length === 0) {
+                console.log(`Memory Lab: [${assistantName}] 消息不足最小门槛，跳过`);
+                return;
+            }
+
+            console.log(`Memory Lab: [${assistantName}] 切分为 ${chunks.length} 个块`);
+            let allSuccess = true;
+            let lastProcessedGlobalIdx = lastExtractedIndex;
+
+            for (let i = 0; i < chunks.length; i++) {
+                const chunk = chunks[i];
+                const triggerTime = new Date().toISOString();
+                const firstMsg = chunk[0];
+                const lastMsg = chunk[chunk.length - 1];
+
+                try {
+                    const { narratives, rawContent } = await mlabExtractChunk(chunk, assistantName, userName, provider, modelId);
+
+                    if (narratives) {
+                        mlabSaveLog({
+                            id: 'mlog_' + Date.now() + '_' + i,
+                            assistantId,
+                            assistantName,
+                            triggerTime,
+                            triggerReason,
+                            chunkSize: chunk.length,
+                            timeRange: { start: firstMsg.timestamp, end: lastMsg.timestamp },
+                            inputMessages: chunk,
+                            outputNarratives: narratives,
+                            rawOutput: rawContent,
+                            status: 'success'
+                        });
+                    } else {
+                        // JSON 解析失败
+                        mlabSaveLog({
+                            id: 'mlog_' + Date.now() + '_' + i,
+                            assistantId,
+                            assistantName,
+                            triggerTime,
+                            triggerReason,
+                            chunkSize: chunk.length,
+                            timeRange: { start: firstMsg.timestamp, end: lastMsg.timestamp },
+                            inputMessages: chunk,
+                            outputNarratives: [],
+                            rawOutput: rawContent,
+                            status: 'parse_error',
+                            error: 'JSON 解析失败'
+                        });
+                    }
+
+                    // 计算这个 chunk 最后一条消息在 conv.messages 中的全局索引
+                    const chunkLastInGlobal = conv.messages.indexOf(lastMsg);
+                    if (chunkLastInGlobal > lastProcessedGlobalIdx) {
+                        lastProcessedGlobalIdx = chunkLastInGlobal;
+                    }
+
+                } catch(err) {
+                    console.error(`Memory Lab: chunk ${i} 提取失败`, err);
+                    mlabSaveLog({
+                        id: 'mlog_' + Date.now() + '_' + i,
+                        assistantId,
+                        assistantName,
+                        triggerTime,
+                        triggerReason,
+                        chunkSize: chunk.length,
+                        timeRange: { start: firstMsg.timestamp, end: lastMsg.timestamp },
+                        inputMessages: chunk,
+                        outputNarratives: [],
+                        rawOutput: '',
+                        status: 'error',
+                        error: err.message
+                    });
+                    allSuccess = false;
+                    break; // API 失败不推进 progress，下次重试
+                }
+            }
+
+            // 更新进度（error 时不推进，parse_error 时推进）
+            if (lastProcessedGlobalIdx > lastExtractedIndex) {
+                mlabExtractProgress[assistantId] = lastProcessedGlobalIdx;
+                saveMlabProgress();
+                console.log(`Memory Lab: [${assistantName}] 进度更新到 ${lastProcessedGlobalIdx}`);
+            }
+        }
+
+        // --- 日志存储 ---
+        function mlabSaveLog(logEntry) {
+            // 清理 inputMessages 中的图片 base64
+            const cleanEntry = { ...logEntry };
+            if (cleanEntry.inputMessages) {
+                cleanEntry.inputMessages = cleanEntry.inputMessages.map(m => {
+                    if (m.type === 'image' && m.content && m.content.length > 200) {
+                        return { ...m, content: '[图片]' };
+                    }
+                    return m;
+                });
+            }
+
+            // 加入内存缓存
+            mlabLogs.unshift(cleanEntry);
+
+            // 存 Supabase（fire-and-forget）
+            if (cloudSyncEnabled()) {
+                cloudUpsert('mlab_log_' + cleanEntry.id, cleanEntry).catch(e =>
+                    console.warn('Memory Lab: 日志存储失败', e.message)
+                );
+            }
+
+            // 如果日志面板可见，刷新
+            const logPanel = document.getElementById('mlabLogPanel');
+            if (logPanel && logPanel.style.display !== 'none') {
+                mlabRenderLogPanel();
+            }
+        }
+
+        async function mlabLoadLogs() {
+            if (mlabLogsLoaded) return;
+            if (!cloudSyncEnabled()) {
+                mlabLogsLoaded = true;
+                return;
+            }
+            try {
+                const url = appData.settings.supabaseUrl;
+                const key = appData.settings.supabaseKey;
+                const resp = await fetch(`${url}/rest/v1/data_store?key=like.mlab_log_*&order=updated_at.desc&limit=200`, {
+                    headers: {
+                        'apikey': key,
+                        'Authorization': 'Bearer ' + key
+                    }
+                });
+                if (resp.ok) {
+                    const rows = await resp.json();
+                    const serverLogs = rows.map(r => r.value).filter(Boolean);
+                    // 合并：以 id 去重，内存中的优先
+                    const existingIds = new Set(mlabLogs.map(l => l.id));
+                    for (const log of serverLogs) {
+                        if (!existingIds.has(log.id)) {
+                            mlabLogs.push(log);
+                        }
+                    }
+                    // 按 triggerTime 降序排序
+                    mlabLogs.sort((a, b) => new Date(b.triggerTime) - new Date(a.triggerTime));
+                    console.log(`Memory Lab: 加载了 ${serverLogs.length} 条日志`);
+                }
+            } catch(e) {
+                console.warn('Memory Lab: 加载日志失败', e.message);
+            }
+            mlabLogsLoaded = true;
+        }
+
+        // --- 日志面板渲染 ---
+        async function mlabRenderLogPanel() {
+            const container = document.getElementById('mlabLogPanel');
+            if (!container) return;
+
+            // 首次加载
+            if (!mlabLogsLoaded) {
+                container.innerHTML = '<div class="mlab-section"><div class="mlab-placeholder" style="padding:40px 0;text-align:center;">加载日志中...</div></div>';
+                await mlabLoadLogs();
+            }
+
+            if (mlabLogs.length === 0) {
+                container.innerHTML = '<div class="mlab-section"><div class="mlab-placeholder" style="padding:40px 0;text-align:center;color:#999;">暂无提取日志<br><span style="font-size:12px;">开启向量记忆的助手在微信模式聊天后会自动触发提取</span></div></div>';
+                return;
+            }
+
+            // 统计
+            const today = new Date().toDateString();
+            const todayCount = mlabLogs.filter(l => new Date(l.triggerTime).toDateString() === today).length;
+
+            let html = `<div class="mlab-section" style="padding-bottom:8px;">
+                <div style="display:flex;gap:16px;font-size:13px;color:#6b7280;">
+                    <span>今日提取: <b style="color:#7c3aed;">${todayCount}</b> 次</span>
+                    <span>总日志: <b style="color:#7c3aed;">${mlabLogs.length}</b> 条</span>
+                    <span>自动提取: ${mlabAutoTimer ? '<b style="color:#059669;">运行中</b>' : '<b style="color:#9ca3af;">未启动</b>'}</span>
+                </div>
+            </div>`;
+
+            html += '<div class="mlab-section" style="padding-top:0;">';
+            mlabLogs.forEach((log, idx) => {
+                const time = new Date(log.triggerTime);
+                const timeStr = time.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) + ' ' + time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                const reasonText = log.triggerReason === 'silence' ? '沉默超时' : log.triggerReason === 'accumulation' ? '累积上限' : (log.triggerReason || '手动');
+                const statusClass = log.status === 'success' ? 'mlab-log-status-success' : log.status === 'parse_error' ? 'mlab-log-status-parse-error' : 'mlab-log-status-error';
+                const statusText = log.status === 'success' ? '成功' : log.status === 'parse_error' ? '解析失败' : '错误';
+                const narrativeCount = log.outputNarratives?.length || 0;
+
+                html += `<div class="mlab-log-entry" onclick="mlabToggleLogDetail(${idx})">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:14px;font-weight:500;color:#1f2937;">${escapeHtml(log.assistantName || '未知助手')}</div>
+                            <div style="font-size:12px;color:#9ca3af;margin-top:2px;">${timeStr} · ${reasonText} · ${log.chunkSize || 0}条消息${narrativeCount > 0 ? ' · ' + narrativeCount + '个叙事元' : ''}</div>
+                        </div>
+                        <span class="${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="mlab-log-detail" id="mlabLogDetail_${idx}" style="display:none;"></div>
+                </div>`;
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        function mlabToggleLogDetail(idx) {
+            const detailEl = document.getElementById('mlabLogDetail_' + idx);
+            if (!detailEl) return;
+
+            if (detailEl.style.display === 'none') {
+                detailEl.style.display = 'block';
+                const log = mlabLogs[idx];
+                if (!log) return;
+
+                let detailHtml = '';
+
+                // 错误信息
+                if (log.error) {
+                    detailHtml += `<div style="color:#ef4444;font-size:12px;margin-bottom:8px;">错误: ${escapeHtml(log.error)}</div>`;
+                }
+
+                // 叙事元卡片
+                if (log.outputNarratives && log.outputNarratives.length > 0) {
+                    detailHtml += `<div style="font-size:12px;color:#7c3aed;margin-bottom:6px;font-weight:600;">提取到 ${log.outputNarratives.length} 个叙事元</div>`;
+                    log.outputNarratives.forEach(n => {
+                        detailHtml += '<div class="mlab-narrative">';
+                        if (n.split_reason) {
+                            detailHtml += `<div class="mlab-split-reason">切分: ${escapeHtml(n.split_reason)}</div>`;
+                        }
+                        detailHtml += `<div class="mlab-narrative-context">${escapeHtml(n.context || '')}</div>`;
+                        const quotes = n.user_quotes || n.miaomiao_says || [];
+                        quotes.forEach(q => {
+                            detailHtml += `<div class="mlab-narrative-quote">"${escapeHtml(q)}"</div>`;
+                        });
+                        if (n.assistant_summary || n.chen_response) {
+                            detailHtml += `<div class="mlab-narrative-summary">嗔: ${escapeHtml(n.assistant_summary || n.chen_response)}</div>`;
+                        }
+                        detailHtml += '<div class="mlab-narrative-tags">';
+                        const tags = n.tags?.type || n.tags || [];
+                        const tagArr = Array.isArray(tags) ? tags : [tags];
+                        tagArr.forEach(t => {
+                            if (typeof t === 'string') detailHtml += `<span class="mlab-tag">${escapeHtml(t)}</span>`;
+                        });
+                        const intensity = n.tags?.emotion_intensity || n.intensity;
+                        if (intensity) detailHtml += `<span class="mlab-tag mlab-tag-intensity">intensity: ${intensity}</span>`;
+                        detailHtml += '</div></div>';
+                    });
+                }
+
+                // 原始对话折叠
+                if (log.inputMessages && log.inputMessages.length > 0) {
+                    detailHtml += `<details style="margin-top:8px;"><summary style="font-size:12px;color:#9ca3af;cursor:pointer;">原始对话 (${log.inputMessages.length}条)</summary><div style="margin-top:6px;max-height:200px;overflow-y:auto;font-size:12px;color:#6b7280;">`;
+                    log.inputMessages.slice(0, 50).forEach(m => {
+                        const name = m.role === 'user' ? '用户' : '助手';
+                        const content = (m.content || '').substring(0, 80);
+                        detailHtml += `<div style="margin-bottom:3px;"><b>${name}:</b> ${escapeHtml(content)}</div>`;
+                    });
+                    if (log.inputMessages.length > 50) detailHtml += '<div style="color:#9ca3af;">...还有更多</div>';
+                    detailHtml += '</div></details>';
+                }
+
+                // 原始 JSON 折叠
+                if (log.rawOutput) {
+                    detailHtml += `<details style="margin-top:6px;"><summary style="font-size:12px;color:#9ca3af;cursor:pointer;">原始 JSON 输出</summary><div class="mlab-raw-json" style="margin-top:6px;">${escapeHtml(log.rawOutput)}</div></details>`;
+                }
+
+                detailEl.innerHTML = detailHtml;
+            } else {
+                detailEl.style.display = 'none';
+            }
+        }
+
         // ==================== Memory Lab 结束 ====================
 
         // 保存副模型
@@ -11377,11 +11924,13 @@
             renderWechatList();
             openPage('wechatListPage');
             startProactiveTimer();
+            mlabStartAutoTimer();
         }
 
         function closeWechatMode() {
             closePage('wechatListPage');
             stopProactiveTimer();
+            mlabStopAutoTimer();
         }
 
         function renderWechatList() {
