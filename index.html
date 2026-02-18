@@ -9091,7 +9091,7 @@
                         </div>
                         <span class="${statusClass}">${statusText}</span>
                     </div>
-                    <div class="mlab-log-detail" id="mlabLogDetail_${idx}" style="display:none;"></div>
+                    <div class="mlab-log-detail" id="mlabLogDetail_${idx}" style="display:none;" onclick="event.stopPropagation()"></div>
                 </div>`;
             });
             html += '</div>';
