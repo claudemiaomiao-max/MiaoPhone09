@@ -7592,6 +7592,33 @@
                         </div>
                     </div>
                     <div class="mlab-section">
+                        <div class="mlab-section-title">排序权重</div>
+                        <div class="mlab-param-row">
+                            <span>语义相关度</span>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <input type="range" style="width:80px;" id="mlabWSimSlider" min="0" max="1" step="0.1" value="0.5" oninput="document.getElementById('mlabWSim').textContent=this.value">
+                                <span id="mlabWSim" style="font-size:12px;min-width:24px;">0.5</span>
+                            </div>
+                        </div>
+                        <div class="mlab-param-row">
+                            <span>时间新鲜度</span>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <input type="range" style="width:80px;" id="mlabWRecSlider" min="0" max="1" step="0.1" value="0.3" oninput="document.getElementById('mlabWRec').textContent=this.value">
+                                <span id="mlabWRec" style="font-size:12px;min-width:24px;">0.3</span>
+                            </div>
+                        </div>
+                        <div class="mlab-param-row">
+                            <span>标签重要度</span>
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <input type="range" style="width:80px;" id="mlabWImpSlider" min="0" max="1" step="0.1" value="0.2" oninput="document.getElementById('mlabWImp').textContent=this.value">
+                                <span id="mlabWImp" style="font-size:12px;min-width:24px;">0.2</span>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">
+                            标签重要度：bond/conflict/promise=1.0 mood=0.8 daily=0.5
+                        </div>
+                    </div>
+                    <div class="mlab-section">
                         <div class="mlab-section-title">模拟用户输入</div>
                         <textarea class="mlab-search-input" id="mlabSearchQuery" placeholder="输入一句话，模拟聊天检索..." rows="3"></textarea>
                         <button class="mlab-btn mlab-btn-primary" onclick="mlabRunSearch()" id="mlabSearchBtn" style="margin-top:10px;width:100%;">检索叙事元</button>
@@ -8737,7 +8764,9 @@
                     // P0c: 手动测试成功 → 也存入向量库
                     if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
                         const assistantId = wechatData?.currentAssistantId || 'manual_test';
-                        mlabBatchStoreVectors(narratives, assistantId, 'manual_test').catch(e =>
+                        const tStart = mlabTestMessages[0]?.timestamp;
+                        const tEnd = mlabTestMessages[mlabTestMessages.length - 1]?.timestamp;
+                        mlabBatchStoreVectors(narratives, assistantId, 'manual_test', tStart, tEnd).catch(e =>
                             console.warn('Memory Lab P0c: 手动测试向量存储失败', e.message)
                         );
                     }
@@ -9120,7 +9149,7 @@
                             status: 'success'
                         });
                         // P0c: fire-and-forget 存入向量库
-                        mlabBatchStoreVectors(narratives, assistantId, logId).catch(e =>
+                        mlabBatchStoreVectors(narratives, assistantId, logId, firstMsg.timestamp, lastMsg.timestamp).catch(e =>
                             console.warn('Memory Lab P0c: 自动向量存储失败', e.message)
                         );
                     } else {
@@ -9411,7 +9440,7 @@
             return data.data[0].embedding;
         }
 
-        async function mlabStoreNarrativeVector(narrative, assistantId, logId) {
+        async function mlabStoreNarrativeVector(narrative, assistantId, logId, startTime, endTime) {
             const content = (narrative.context || '') + '\n' + (narrative.user_quotes || []).join('\n');
             const embedding = await mlabGetEmbedding(content);
 
@@ -9420,6 +9449,17 @@
             if (!url || !key) throw new Error('Supabase 未配置');
 
             const id = 'nv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+            const record = {
+                id,
+                assistant_id: assistantId,
+                content,
+                narrative,
+                embedding: `[${embedding.join(',')}]`,
+                log_id: logId || null
+            };
+            if (startTime) record.start_time = new Date(startTime).toISOString();
+            if (endTime) record.end_time = new Date(endTime).toISOString();
+
             const resp = await fetch(`${url}/rest/v1/mlab_narratives`, {
                 method: 'POST',
                 headers: {
@@ -9428,14 +9468,7 @@
                     'Content-Type': 'application/json',
                     'Prefer': 'resolution=merge-duplicates'
                 },
-                body: JSON.stringify({
-                    id,
-                    assistant_id: assistantId,
-                    content,
-                    narrative,
-                    embedding: `[${embedding.join(',')}]`,
-                    log_id: logId || null
-                })
+                body: JSON.stringify(record)
             });
             if (!resp.ok) {
                 const errText = await resp.text().catch(() => resp.statusText);
@@ -9444,7 +9477,7 @@
             return id;
         }
 
-        async function mlabBatchStoreVectors(narratives, assistantId, logId) {
+        async function mlabBatchStoreVectors(narratives, assistantId, logId, startTime, endTime) {
             if (!narratives || narratives.length === 0) return;
             if (!mlabConfig.siliconFlowKey || !cloudSyncEnabled()) return;
 
@@ -9452,7 +9485,7 @@
             let stored = 0;
             for (let i = 0; i < narratives.length; i++) {
                 try {
-                    await mlabStoreNarrativeVector(narratives[i], assistantId, logId);
+                    await mlabStoreNarrativeVector(narratives[i], assistantId, logId, startTime, endTime);
                     stored++;
                     if (i < narratives.length - 1) {
                         await new Promise(r => setTimeout(r, 200));
@@ -9464,12 +9497,23 @@
             console.log(`Memory Lab P0c: 叙事元已存入向量库 (${stored}/${narratives.length})`);
         }
 
-        async function mlabSearchNarratives(queryText, topK, assistantId) {
+        async function mlabSearchNarratives(queryText, topK, assistantId, weights) {
             const embedding = await mlabGetEmbedding(queryText);
 
             const url = appData.settings.supabaseUrl;
             const key = appData.settings.supabaseKey;
             if (!url || !key) throw new Error('Supabase 未配置');
+
+            const params = {
+                query_embedding: `[${embedding.join(',')}]`,
+                match_count: topK || 5,
+                filter_assistant_id: assistantId || null
+            };
+            if (weights) {
+                params.w_similarity = weights.similarity;
+                params.w_recency = weights.recency;
+                params.w_importance = weights.importance;
+            }
 
             const resp = await fetch(`${url}/rest/v1/rpc/match_narratives`, {
                 method: 'POST',
@@ -9478,11 +9522,7 @@
                     'Authorization': 'Bearer ' + key,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    query_embedding: `[${embedding.join(',')}]`,
-                    match_count: topK || 5,
-                    filter_assistant_id: assistantId || null
-                })
+                body: JSON.stringify(params)
             });
             if (!resp.ok) {
                 const errText = await resp.text().catch(() => resp.statusText);
@@ -9520,7 +9560,13 @@
                     }
                 }
 
-                const results = await mlabSearchNarratives(fullQuery, topK, assistantId);
+                const weights = {
+                    similarity: parseFloat(document.getElementById('mlabWSimSlider').value) || 0.5,
+                    recency: parseFloat(document.getElementById('mlabWRecSlider').value) || 0.3,
+                    importance: parseFloat(document.getElementById('mlabWImpSlider').value) || 0.2
+                };
+
+                const results = await mlabSearchNarratives(fullQuery, topK, assistantId, weights);
                 mlabRenderSearchResults(results);
             } catch(err) {
                 resultsDiv.innerHTML = `<div style="color:#ef4444;padding:10px;font-size:13px;">检索出错: ${escapeHtml(err.message)}</div>`;
@@ -9540,14 +9586,24 @@
 
             let html = '';
             results.forEach((r, i) => {
-                const pct = (r.similarity * 100).toFixed(1);
-                const simClass = r.similarity >= 0.5 ? '' : ' low';
+                const simPct = (r.similarity * 100).toFixed(1);
+                const finalPct = r.final_score != null ? (r.final_score * 100).toFixed(1) : simPct;
+                const simClass = (r.final_score != null ? r.final_score : r.similarity) >= 0.5 ? '' : ' low';
                 const n = r.narrative || {};
                 html += `<div class="mlab-search-result">`;
                 html += `<div class="mlab-search-result-header">`;
                 html += `<span style="font-size:12px;color:#9ca3af;">#${i + 1}</span>`;
-                html += `<span class="mlab-search-similarity${simClass}">${pct}%</span>`;
-                html += `</div>`;
+                html += `<div style="display:flex;gap:6px;align-items:center;">`;
+                html += `<span style="font-size:11px;color:#9ca3af;">语义${simPct}%</span>`;
+                html += `<span class="mlab-search-similarity${simClass}">${finalPct}%</span>`;
+                html += `</div></div>`;
+
+                // 时间范围
+                if (r.start_time || r.end_time) {
+                    const fmt = (t) => { try { return new Date(t).toLocaleDateString('zh-CN', {month:'short',day:'numeric'}); } catch(e) { return ''; } };
+                    const timeStr = r.start_time ? fmt(r.start_time) + (r.end_time && r.end_time !== r.start_time ? ' ~ ' + fmt(r.end_time) : '') : '';
+                    if (timeStr) html += `<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">${timeStr}</div>`;
+                }
 
                 if (n.context) html += `<div style="font-size:13px;color:#374151;margin-bottom:6px;">${escapeHtml(n.context)}</div>`;
                 if (n.user_quotes && n.user_quotes.length > 0) {
@@ -9677,7 +9733,8 @@
             if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
                 try {
                     const assistantId = log.assistantId || 'unknown';
-                    await mlabStoreNarrativeVector(n, assistantId, log.id);
+                    const tr = log.timeRange || {};
+                    await mlabStoreNarrativeVector(n, assistantId, log.id, tr.start, tr.end);
                     console.log('Memory Lab: 编辑后叙事元已同步到向量库');
                 } catch(e) {
                     console.warn('Memory Lab: 编辑后向量同步失败', e.message);
@@ -9766,7 +9823,7 @@
                                 // 存入向量库
                                 if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
                                     statusEl.textContent = `[${assistantName}] 第 ${i + 1}/${chunks.length} 块：存入向量库 (${narratives.length}条叙事元)...`;
-                                    await mlabBatchStoreVectors(narratives, assistantId, logId);
+                                    await mlabBatchStoreVectors(narratives, assistantId, logId, chunk[0].timestamp, chunk[chunk.length - 1].timestamp);
                                 }
                                 console.log(`Memory Lab 历史提取: [${assistantName}] 块${i + 1}/${chunks.length} 成功，${narratives.length}条叙事元`);
                             } else {
