@@ -9364,6 +9364,11 @@
                     detailHtml += `<div style="color:#ef4444;font-size:12px;margin-bottom:8px;">错误: ${escapeHtml(log.error)}</div>`;
                 }
 
+                // 重新提取按钮（日志里有原始对话数据才显示）
+                if (log.inputMessages && log.inputMessages.length > 0) {
+                    detailHtml += `<div style="margin-bottom:8px;"><button class="mlab-btn mlab-btn-outline" id="mlabReExtractBtn_${idx}" onclick="mlabReExtract(${idx})" style="font-size:12px;padding:4px 12px;">重新提取</button></div>`;
+                }
+
                 // 叙事元卡片
                 if (log.outputNarratives && log.outputNarratives.length > 0) {
                     detailHtml += `<div style="font-size:12px;color:#7c3aed;margin-bottom:6px;font-weight:600;">提取到 ${log.outputNarratives.length} 个叙事元</div>`;
@@ -9422,6 +9427,69 @@
                 detailEl.innerHTML = detailHtml;
             } else {
                 detailEl.style.display = 'none';
+            }
+        }
+
+        // 重新提取日志中的叙事元
+        async function mlabReExtract(logIdx) {
+            const log = mlabLogs[logIdx];
+            if (!log || !log.inputMessages || log.inputMessages.length === 0) {
+                alert('该日志没有原始对话数据，无法重新提取');
+                return;
+            }
+            if (!mlabConfig.model) { alert('请先在"配置"页选择总结模型'); return; }
+            if (!mlabConfig.prompt || mlabConfig.prompt.trim().length < 10) { alert('请先填写提取提示词'); return; }
+
+            const [providerId, modelId] = mlabConfig.model.split('||');
+            const provider = appData.providers.find(p => p.id === providerId);
+            if (!provider) { alert('供应商未找到'); return; }
+
+            const btn = document.getElementById('mlabReExtractBtn_' + logIdx);
+            if (btn) { btn.disabled = true; btn.textContent = '提取中...'; }
+
+            try {
+                const assistantName = log.assistantName || '助手';
+                const userName = appData.settings.userName || '用户';
+                const { narratives, rawContent } = await mlabExtractChunk(log.inputMessages, assistantName, userName, provider, modelId);
+
+                if (!narratives || narratives.length === 0) {
+                    alert('提取结果为空，可能是模型返回格式不对');
+                    return;
+                }
+
+                // 更新日志
+                log.outputNarratives = narratives;
+                log.rawOutput = rawContent;
+                log.status = 'success';
+                log.error = null;
+
+                // 存日志到 Supabase
+                if (cloudSyncEnabled()) {
+                    cloudUpsert('mlab_log_' + log.id, log).catch(e =>
+                        console.warn('Memory Lab: 日志更新失败', e.message)
+                    );
+                }
+
+                // 重新存入向量库
+                if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
+                    const tStart = log.timeRange?.start || log.inputMessages[0]?.timestamp;
+                    const tEnd = log.timeRange?.end || log.inputMessages[log.inputMessages.length - 1]?.timestamp;
+                    await mlabBatchStoreVectors(narratives, log.assistantId, log.id, tStart, tEnd);
+                }
+
+                console.log(`Memory Lab 重新提取: [${assistantName}] 成功，${narratives.length}条叙事元`);
+
+                // 重新渲染日志详情
+                const detailEl = document.getElementById('mlabLogDetail_' + logIdx);
+                if (detailEl) {
+                    detailEl.style.display = 'none';
+                    mlabToggleLogDetail(logIdx);
+                }
+            } catch (err) {
+                console.error('Memory Lab 重新提取失败:', err);
+                alert('重新提取失败: ' + err.message);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '重新提取'; }
             }
         }
 
