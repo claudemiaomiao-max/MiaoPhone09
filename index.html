@@ -8472,6 +8472,52 @@
             document.getElementById('mlabOutputPreview').innerHTML = '<div class="mlab-placeholder">点击"提取叙事元"后在此显示结果</div>';
         }
 
+        // JSON 兜底修复：清理字符串值内部的未转义引号
+        function mlabFixJsonQuotes(text) {
+            // 逐字符扫描，在字符串值内部把裸引号替换掉
+            let result = '';
+            let inString = false;
+            let escaped = false;
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i];
+                if (escaped) {
+                    result += ch;
+                    escaped = false;
+                    continue;
+                }
+                if (ch === '\\') {
+                    result += ch;
+                    escaped = true;
+                    continue;
+                }
+                if (ch === '"') {
+                    if (!inString) {
+                        inString = true;
+                        result += ch;
+                    } else {
+                        // 判断这个引号是字符串结束还是字符串内部的裸引号
+                        // 看后面的字符：如果是 , ] } : 或空白+这些，则是结束引号
+                        const rest = text.substring(i + 1).trimStart();
+                        if (rest.length === 0 || /^[,\]\}:]/.test(rest)) {
+                            inString = false;
+                            result += ch;
+                        } else {
+                            // 字符串内部的裸引号，去掉
+                            // result += ''; // 直接吞掉
+                        }
+                    }
+                } else {
+                    // 中文引号也清理（在字符串内部时）
+                    if (inString && (ch === '\u201c' || ch === '\u201d' || ch === '\u2018' || ch === '\u2019')) {
+                        // 中文引号直接去掉
+                        continue;
+                    }
+                    result += ch;
+                }
+            }
+            return result;
+        }
+
         // 公共提取函数：调用 API + 解析 JSON，返回 { narratives, rawContent }
         async function mlabExtractChunk(messages, assistantName, userName, provider, modelId) {
             const dialogueText = messages.map(m => {
@@ -8506,12 +8552,21 @@
             console.log('Memory Lab 原始输出:', rawContent.substring(0, 200));
 
             let narratives = null;
+            // 先提取 JSON 数组部分
+            let jsonText = rawContent;
+            const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+            if (jsonMatch) jsonText = jsonMatch[0];
+
             try {
-                narratives = JSON.parse(rawContent);
+                narratives = JSON.parse(jsonText);
             } catch(e) {
-                const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
-                if (jsonMatch) {
-                    try { narratives = JSON.parse(jsonMatch[0]); } catch(e2) {}
+                // 兜底：清理字符串值内部的未转义引号
+                try {
+                    const cleaned = mlabFixJsonQuotes(jsonText);
+                    narratives = JSON.parse(cleaned);
+                    console.log('Memory Lab: JSON 兜底修复成功');
+                } catch(e2) {
+                    console.warn('Memory Lab: JSON 兜底修复也失败', e2.message);
                 }
             }
 
@@ -9067,10 +9122,13 @@
             const todayCount = mlabLogs.filter(l => new Date(l.triggerTime).toDateString() === today).length;
 
             let html = `<div class="mlab-section" style="padding-bottom:8px;">
-                <div style="display:flex;gap:16px;font-size:13px;color:#6b7280;">
-                    <span>今日提取: <b style="color:#7c3aed;">${todayCount}</b> 次</span>
-                    <span>总日志: <b style="color:#7c3aed;">${mlabLogs.length}</b> 条</span>
-                    <span>自动提取: ${mlabAutoTimer ? '<b style="color:#059669;">运行中</b>' : '<b style="color:#9ca3af;">未启动</b>'}</span>
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div style="display:flex;gap:12px;font-size:13px;color:#6b7280;flex-wrap:wrap;">
+                        <span>今日: <b style="color:#7c3aed;">${todayCount}</b></span>
+                        <span>总计: <b style="color:#7c3aed;">${mlabLogs.length}</b></span>
+                        <span>${mlabAutoTimer ? '<b style="color:#059669;">运行中</b>' : '<b style="color:#9ca3af;">未启动</b>'}</span>
+                    </div>
+                    <button class="mlab-btn mlab-btn-outline" onclick="mlabExportLogs()" style="font-size:11px;padding:4px 10px;flex-shrink:0;">导出</button>
                 </div>
             </div>`;
 
@@ -9097,6 +9155,18 @@
             html += '</div>';
 
             container.innerHTML = html;
+        }
+
+        function mlabExportLogs() {
+            if (mlabLogs.length === 0) { alert('暂无日志'); return; }
+            const data = JSON.stringify(mlabLogs, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mlab_logs_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function mlabToggleLogDetail(idx) {
@@ -9139,6 +9209,10 @@
                         });
                         const intensity = n.tags?.emotion_intensity || n.intensity;
                         if (intensity) detailHtml += `<span class="mlab-tag mlab-tag-intensity">intensity: ${intensity}</span>`;
+                        const keywords = n.tags?.topic_keywords || [];
+                        keywords.forEach(k => {
+                            detailHtml += `<span class="mlab-tag" style="background:#e0f2fe;color:#0284c7;">${escapeHtml(k)}</span>`;
+                        });
                         detailHtml += '</div></div>';
                     });
                 }
