@@ -9758,6 +9758,8 @@
             const provider = appData.providers.find(p => p.id === providerId);
             if (!provider) { alert('供应商未找到'); return; }
 
+            // 确保 wechatData 已加载（从主屏直接进 Memory Lab 时可能还没初始化）
+            await initWechatData();
             const conversations = wechatData?.conversations;
             if (!conversations) { alert('没有微信对话数据'); return; }
 
