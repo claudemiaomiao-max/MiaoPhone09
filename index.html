@@ -5198,6 +5198,47 @@
             color: #d97706;
             flex-shrink: 0;
         }
+        .mlab-narrative-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .mlab-narrative-edit-btn {
+            font-size: 11px;
+            padding: 2px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #fff;
+            color: #6b7280;
+            cursor: pointer;
+        }
+        .mlab-narrative-edit-btn:active {
+            background: #f3f4f6;
+        }
+        .mlab-narrative-edit-btn.primary {
+            background: #7c3aed;
+            color: #fff;
+            border-color: #7c3aed;
+        }
+        .mlab-narrative-edit-field {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: inherit;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        .mlab-narrative-edit-field:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+        .mlab-narrative.edited {
+            border-color: #a78bfa;
+            background: #faf5ff;
+        }
         .mlab-search-input {
             width: 100%;
             padding: 10px 12px;
@@ -7607,6 +7648,15 @@
                         <button class="mlab-btn mlab-btn-outline" onclick="mlabResetProgress()" style="margin-top:10px;font-size:12px;">重置提取进度（从当前位置重新开始）</button>
                     </div>
                     <div class="mlab-section">
+                        <div class="mlab-section-title">历史数据提取</div>
+                        <div style="font-size:12px;color:#9ca3af;margin-bottom:10px;">对所有已开启向量记忆的助手，从第一条消息开始按当前参数提取全部历史对话并存入向量库</div>
+                        <div style="display:flex;gap:8px;">
+                            <button class="mlab-btn mlab-btn-primary" onclick="mlabStartHistoryExtract()" id="mlabHistoryBtn" style="flex:1;">提取历史数据</button>
+                            <button class="mlab-btn mlab-btn-outline" onclick="mlabStopHistoryExtract()" id="mlabHistoryStopBtn" style="flex:0 0 auto;display:none;">暂停</button>
+                        </div>
+                        <div id="mlabHistoryStatus" style="font-size:12px;color:#9ca3af;margin-top:8px;"></div>
+                    </div>
+                    <div class="mlab-section">
                         <div class="mlab-section-title">SiliconFlow API Key</div>
                         <input type="password" class="form-input" id="mlabSiliconFlowKey" placeholder="sk-..." style="font-size:14px;" onchange="mlabSaveConfig()">
                         <div style="font-size:12px;color:#9ca3af;margin-top:6px;">用于 BGE-M3 embedding（免费），从 <span style="color:#8b5cf6;">cloud.siliconflow.cn</span> 获取</div>
@@ -9278,8 +9328,12 @@
                 // 叙事元卡片
                 if (log.outputNarratives && log.outputNarratives.length > 0) {
                     detailHtml += `<div style="font-size:12px;color:#7c3aed;margin-bottom:6px;font-weight:600;">提取到 ${log.outputNarratives.length} 个叙事元</div>`;
-                    log.outputNarratives.forEach(n => {
-                        detailHtml += '<div class="mlab-narrative">';
+                    log.outputNarratives.forEach((n, nIdx) => {
+                        const editedClass = n.manually_edited ? ' edited' : '';
+                        detailHtml += `<div class="mlab-narrative${editedClass}" id="mlabNarrative_${idx}_${nIdx}">`;
+                        if (n.manually_edited) {
+                            detailHtml += `<div style="font-size:10px;color:#a78bfa;margin-bottom:4px;">已手动编辑</div>`;
+                        }
                         if (n.split_reason) {
                             detailHtml += `<div class="mlab-split-reason">切分: ${escapeHtml(n.split_reason)}</div>`;
                         }
@@ -9303,7 +9357,9 @@
                         keywords.forEach(k => {
                             detailHtml += `<span class="mlab-tag" style="background:#e0f2fe;color:#0284c7;">${escapeHtml(k)}</span>`;
                         });
-                        detailHtml += '</div></div>';
+                        detailHtml += '</div>';
+                        detailHtml += `<div class="mlab-narrative-actions"><button class="mlab-narrative-edit-btn" onclick="mlabEditNarrative(${idx},${nIdx})">编辑</button></div>`;
+                        detailHtml += '</div>';
                     });
                 }
 
@@ -9520,6 +9576,247 @@
             });
 
             container.innerHTML = html;
+        }
+
+        // --- P0c: 叙事元手动编辑 ---
+
+        function mlabEditNarrative(logIdx, nIdx) {
+            const log = mlabLogs[logIdx];
+            if (!log || !log.outputNarratives || !log.outputNarratives[nIdx]) return;
+            const n = log.outputNarratives[nIdx];
+            const container = document.getElementById(`mlabNarrative_${logIdx}_${nIdx}`);
+            if (!container) return;
+
+            const quotes = n.user_quotes || n.miaomiao_says || [];
+            const tags = n.tags || {};
+            const tagTypes = Array.isArray(tags.type || tags) ? (tags.type || tags) : [tags.type || tags];
+            const keywords = tags.topic_keywords || [];
+
+            container.innerHTML = `
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:11px;color:#6b7280;margin-bottom:3px;">context（场景描述）</div>
+                    <textarea class="mlab-narrative-edit-field" id="mlabEditContext_${logIdx}_${nIdx}" rows="2">${escapeHtml(n.context || '')}</textarea>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:11px;color:#6b7280;margin-bottom:3px;">user_quotes（每行一条）</div>
+                    <textarea class="mlab-narrative-edit-field" id="mlabEditQuotes_${logIdx}_${nIdx}" rows="3">${escapeHtml(quotes.join('\n'))}</textarea>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:11px;color:#6b7280;margin-bottom:3px;">assistant_summary</div>
+                    <textarea class="mlab-narrative-edit-field" id="mlabEditSummary_${logIdx}_${nIdx}" rows="1">${escapeHtml(n.assistant_summary || n.chen_response || '')}</textarea>
+                </div>
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:11px;color:#6b7280;margin-bottom:3px;">emotion_label</div>
+                    <input class="mlab-narrative-edit-field" id="mlabEditEmotion_${logIdx}_${nIdx}" value="${escapeHtml(n.emotion_label || '')}">
+                </div>
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:11px;color:#6b7280;margin-bottom:3px;">memory_type</div>
+                    <input class="mlab-narrative-edit-field" id="mlabEditMemType_${logIdx}_${nIdx}" value="${escapeHtml(n.memory_type || '')}">
+                </div>
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:11px;color:#6b7280;margin-bottom:3px;">tags.type（逗号分隔）</div>
+                    <input class="mlab-narrative-edit-field" id="mlabEditTagTypes_${logIdx}_${nIdx}" value="${escapeHtml(tagTypes.filter(t => typeof t === 'string').join(', '))}">
+                </div>
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:11px;color:#6b7280;margin-bottom:3px;">topic_keywords（逗号分隔）</div>
+                    <input class="mlab-narrative-edit-field" id="mlabEditKeywords_${logIdx}_${nIdx}" value="${escapeHtml(keywords.join(', '))}">
+                </div>
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:11px;color:#6b7280;margin-bottom:3px;">emotion_intensity (1-10)</div>
+                    <input type="number" class="mlab-narrative-edit-field" id="mlabEditIntensity_${logIdx}_${nIdx}" value="${n.tags?.emotion_intensity || n.intensity || ''}" min="1" max="10" style="width:80px;">
+                </div>
+                <div class="mlab-narrative-actions">
+                    <button class="mlab-narrative-edit-btn" onclick="mlabCancelEditNarrative(${logIdx},${nIdx})">取消</button>
+                    <button class="mlab-narrative-edit-btn primary" onclick="mlabSaveEditNarrative(${logIdx},${nIdx})">保存</button>
+                </div>
+            `;
+        }
+
+        function mlabCancelEditNarrative(logIdx, nIdx) {
+            // 重新渲染整个日志详情
+            const detailEl = document.getElementById('mlabLogDetail_' + logIdx);
+            if (detailEl) {
+                detailEl.style.display = 'none';
+                mlabToggleLogDetail(logIdx);
+            }
+        }
+
+        async function mlabSaveEditNarrative(logIdx, nIdx) {
+            const log = mlabLogs[logIdx];
+            if (!log || !log.outputNarratives || !log.outputNarratives[nIdx]) return;
+
+            const n = log.outputNarratives[nIdx];
+            const get = (id) => document.getElementById(id)?.value || '';
+
+            // 读取编辑后的值
+            n.context = get(`mlabEditContext_${logIdx}_${nIdx}`).trim();
+            n.user_quotes = get(`mlabEditQuotes_${logIdx}_${nIdx}`).split('\n').map(s => s.trim()).filter(Boolean);
+            n.assistant_summary = get(`mlabEditSummary_${logIdx}_${nIdx}`).trim();
+            n.emotion_label = get(`mlabEditEmotion_${logIdx}_${nIdx}`).trim();
+            n.memory_type = get(`mlabEditMemType_${logIdx}_${nIdx}`).trim();
+
+            const tagTypesStr = get(`mlabEditTagTypes_${logIdx}_${nIdx}`);
+            const keywordsStr = get(`mlabEditKeywords_${logIdx}_${nIdx}`);
+            const intensityVal = parseInt(get(`mlabEditIntensity_${logIdx}_${nIdx}`)) || null;
+
+            if (!n.tags || typeof n.tags !== 'object' || Array.isArray(n.tags)) n.tags = {};
+            n.tags.type = tagTypesStr.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+            n.tags.topic_keywords = keywordsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+            if (intensityVal) n.tags.emotion_intensity = intensityVal;
+
+            n.manually_edited = true;
+
+            // 更新日志到 Supabase
+            if (cloudSyncEnabled()) {
+                cloudUpsert('mlab_log_' + log.id, log).catch(e =>
+                    console.warn('Memory Lab: 编辑后日志保存失败', e.message)
+                );
+            }
+
+            // 更新向量库（重新 embedding + 替换）
+            if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
+                try {
+                    const assistantId = log.assistantId || 'unknown';
+                    await mlabStoreNarrativeVector(n, assistantId, log.id);
+                    console.log('Memory Lab: 编辑后叙事元已同步到向量库');
+                } catch(e) {
+                    console.warn('Memory Lab: 编辑后向量同步失败', e.message);
+                }
+            }
+
+            // 刷新显示
+            mlabCancelEditNarrative(logIdx, nIdx);
+        }
+
+        // --- P0c: 历史数据提取 ---
+        let mlabHistoryRunning = false;
+        let mlabHistoryAbort = false;
+
+        async function mlabStartHistoryExtract() {
+            if (mlabHistoryRunning) return;
+            if (!mlabConfig.model) { alert('请先在"配置"页选择总结模型'); return; }
+            if (!mlabConfig.prompt || mlabConfig.prompt.trim().length < 10) { alert('请先填写提取提示词'); return; }
+
+            const [providerId, modelId] = mlabConfig.model.split('||');
+            const provider = appData.providers.find(p => p.id === providerId);
+            if (!provider) { alert('供应商未找到'); return; }
+
+            const conversations = wechatData?.conversations;
+            if (!conversations) { alert('没有微信对话数据'); return; }
+
+            // 收集所有开了向量记忆的助手
+            const targets = [];
+            for (const assistantId of Object.keys(conversations)) {
+                const assistant = appData.assistants.find(a => a.id === assistantId);
+                if (!assistant || !assistant.vectorMemoryEnabled) continue;
+                const conv = conversations[assistantId];
+                if (!conv || !conv.messages || conv.messages.length < 2) continue;
+                targets.push({ assistantId, assistant, messages: conv.messages });
+            }
+            if (targets.length === 0) { alert('没有开启向量记忆的助手，或没有对话数据'); return; }
+
+            mlabHistoryRunning = true;
+            mlabHistoryAbort = false;
+            const btn = document.getElementById('mlabHistoryBtn');
+            const stopBtn = document.getElementById('mlabHistoryStopBtn');
+            const statusEl = document.getElementById('mlabHistoryStatus');
+            btn.disabled = true;
+            btn.textContent = '提取中...';
+            stopBtn.style.display = 'block';
+
+            try {
+                for (const target of targets) {
+                    if (mlabHistoryAbort) break;
+                    const { assistantId, assistant, messages } = target;
+                    const assistantName = assistant.name || '助手';
+                    const userName = appData.settings.userName || '用户';
+
+                    statusEl.textContent = `[${assistantName}] 正在切分 ${messages.length} 条消息...`;
+                    const chunks = mlabPreSplit(messages);
+                    if (chunks.length === 0) {
+                        statusEl.textContent = `[${assistantName}] 消息不足最小门槛，跳过`;
+                        continue;
+                    }
+
+                    console.log(`Memory Lab 历史提取: [${assistantName}] ${messages.length} 条消息 → ${chunks.length} 个块`);
+
+                    for (let i = 0; i < chunks.length; i++) {
+                        if (mlabHistoryAbort) break;
+                        statusEl.textContent = `[${assistantName}] 正在提取第 ${i + 1}/${chunks.length} 块 (${chunks[i].length}条)...`;
+
+                        try {
+                            const chunk = chunks[i];
+                            const { narratives, rawContent } = await mlabExtractChunk(chunk, assistantName, userName, provider, modelId);
+                            const logId = 'mlog_hist_' + Date.now() + '_' + i;
+
+                            if (narratives) {
+                                mlabSaveLog({
+                                    id: logId,
+                                    assistantId,
+                                    assistantName,
+                                    triggerTime: new Date().toISOString(),
+                                    triggerReason: '历史数据提取',
+                                    chunkSize: chunk.length,
+                                    timeRange: { start: chunk[0].timestamp, end: chunk[chunk.length - 1].timestamp },
+                                    inputMessages: chunk,
+                                    outputNarratives: narratives,
+                                    rawOutput: rawContent,
+                                    status: 'success'
+                                });
+                                // 存入向量库
+                                if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
+                                    statusEl.textContent = `[${assistantName}] 第 ${i + 1}/${chunks.length} 块：存入向量库 (${narratives.length}条叙事元)...`;
+                                    await mlabBatchStoreVectors(narratives, assistantId, logId);
+                                }
+                                console.log(`Memory Lab 历史提取: [${assistantName}] 块${i + 1}/${chunks.length} 成功，${narratives.length}条叙事元`);
+                            } else {
+                                mlabSaveLog({
+                                    id: logId, assistantId, assistantName,
+                                    triggerTime: new Date().toISOString(),
+                                    triggerReason: '历史数据提取',
+                                    chunkSize: chunk.length,
+                                    timeRange: { start: chunk[0].timestamp, end: chunk[chunk.length - 1].timestamp },
+                                    inputMessages: chunk, outputNarratives: [], rawOutput: rawContent,
+                                    status: 'parse_error', error: 'JSON 解析失败'
+                                });
+                                console.warn(`Memory Lab 历史提取: [${assistantName}] 块${i + 1} JSON解析失败`);
+                            }
+                        } catch(e) {
+                            console.error(`Memory Lab 历史提取: 块${i + 1} 出错`, e);
+                            statusEl.textContent = `[${assistantName}] 第 ${i + 1} 块出错: ${e.message}，3秒后继续...`;
+                            await new Promise(r => setTimeout(r, 3000));
+                        }
+
+                        // 块间间隔，避免 API 限流
+                        if (i < chunks.length - 1 && !mlabHistoryAbort) {
+                            await new Promise(r => setTimeout(r, 1500));
+                        }
+                    }
+
+                    // 提取完，更新进度到末尾
+                    if (!mlabHistoryAbort) {
+                        mlabExtractProgress[assistantId] = messages.length - 1;
+                        saveMlabProgress();
+                    }
+                }
+
+                statusEl.textContent = mlabHistoryAbort ? '已暂停' : '全部提取完成！';
+                statusEl.style.color = mlabHistoryAbort ? '#d97706' : '#16a34a';
+            } catch(e) {
+                statusEl.textContent = `出错: ${e.message}`;
+                statusEl.style.color = '#ef4444';
+                console.error('Memory Lab 历史提取失败:', e);
+            } finally {
+                mlabHistoryRunning = false;
+                btn.disabled = false;
+                btn.textContent = '提取历史数据';
+                stopBtn.style.display = 'none';
+            }
+        }
+
+        function mlabStopHistoryExtract() {
+            mlabHistoryAbort = true;
+            document.getElementById('mlabHistoryStopBtn').textContent = '正在停止...';
         }
 
         // ==================== Memory Lab 结束 ====================
