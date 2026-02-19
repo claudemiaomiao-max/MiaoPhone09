@@ -5198,6 +5198,47 @@
             color: #d97706;
             flex-shrink: 0;
         }
+        .mlab-search-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        .mlab-search-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+        }
+        .mlab-search-result {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .mlab-search-result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .mlab-search-similarity {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 12px;
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+        .mlab-search-similarity.low {
+            background: #fef3c7;
+            color: #d97706;
+        }
 
         /* ==================== 语音通话模式 ==================== */
         /* 通讯录页面 */
@@ -7459,6 +7500,7 @@
                 <div class="mlab-tabs">
                     <button class="mlab-tab active" onclick="switchMlabTab('test')">手动测试</button>
                     <button class="mlab-tab" onclick="switchMlabTab('log')">提取日志</button>
+                    <button class="mlab-tab" onclick="switchMlabTab('search')">检索测试</button>
                     <button class="mlab-tab" onclick="switchMlabTab('config')">配置</button>
                 </div>
 
@@ -7491,6 +7533,32 @@
                     <div class="mlab-section">
                         <div class="mlab-placeholder" style="padding: 40px 0; text-align: center; color: #999;">
                             点击此标签加载日志
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 检索测试 -->
+                <div class="mlab-panel" id="mlabSearchPanel" style="display:none;">
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">检索参数</div>
+                        <div class="mlab-param-row">
+                            <span>上下文消息数</span>
+                            <input type="number" class="form-input mlab-param-input" id="mlabSearchContextN" value="5" min="0" max="50">
+                        </div>
+                        <div class="mlab-param-row">
+                            <span>返回叙事元数 (top-K)</span>
+                            <input type="number" class="form-input mlab-param-input" id="mlabSearchTopK" value="5" min="1" max="20">
+                        </div>
+                    </div>
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">模拟用户输入</div>
+                        <textarea class="mlab-search-input" id="mlabSearchQuery" placeholder="输入一句话，模拟聊天检索..." rows="3"></textarea>
+                        <button class="mlab-btn mlab-btn-primary" onclick="mlabRunSearch()" id="mlabSearchBtn" style="margin-top:10px;width:100%;">检索叙事元</button>
+                    </div>
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">检索结果</div>
+                        <div id="mlabSearchResults">
+                            <div class="mlab-placeholder">输入文字并点击"检索叙事元"查看匹配结果</div>
                         </div>
                     </div>
                 </div>
@@ -7537,6 +7605,11 @@
                         </div>
                         <div id="mlabAutoStatus" style="font-size:12px;color:#9ca3af;margin-top:4px;"></div>
                         <button class="mlab-btn mlab-btn-outline" onclick="mlabResetProgress()" style="margin-top:10px;font-size:12px;">重置提取进度（从当前位置重新开始）</button>
+                    </div>
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">SiliconFlow API Key</div>
+                        <input type="password" class="form-input" id="mlabSiliconFlowKey" placeholder="sk-..." style="font-size:14px;" onchange="mlabSaveConfig()">
+                        <div style="font-size:12px;color:#9ca3af;margin-top:6px;">用于 BGE-M3 embedding（免费），从 <span style="color:#8b5cf6;">cloud.siliconflow.cn</span> 获取</div>
                     </div>
                 </div>
             </div>
@@ -8346,7 +8419,8 @@
             prompt: '',
             silenceTimeout: 30, // 分钟
             msgLimit: 80,       // 消息累积上限
-            minThreshold: 40    // 最小条数门槛
+            minThreshold: 40,   // 最小条数门槛
+            siliconFlowKey: ''  // SiliconFlow API Key (BGE-M3 embedding)
         };
 
         function openMemoryLab() {
@@ -8362,6 +8436,7 @@
             document.getElementById('mlabSilenceTimeout').value = mlabConfig.silenceTimeout;
             document.getElementById('mlabMsgLimit').value = mlabConfig.msgLimit;
             document.getElementById('mlabMinThreshold').value = mlabConfig.minThreshold;
+            document.getElementById('mlabSiliconFlowKey').value = mlabConfig.siliconFlowKey || '';
             // 恢复自动提取开关状态
             try {
                 const saved = localStorage.getItem('miaomiao_mlab_auto_enabled');
@@ -8379,6 +8454,7 @@
             document.querySelector(`.mlab-tab[onclick*="${tab}"]`).classList.add('active');
             document.getElementById('mlabTestPanel').style.display = tab === 'test' ? 'block' : 'none';
             document.getElementById('mlabLogPanel').style.display = tab === 'log' ? 'block' : 'none';
+            document.getElementById('mlabSearchPanel').style.display = tab === 'search' ? 'block' : 'none';
             document.getElementById('mlabConfigPanel').style.display = tab === 'config' ? 'block' : 'none';
             if (tab === 'log') mlabRenderLogPanel();
         }
@@ -8404,6 +8480,7 @@
             mlabConfig.silenceTimeout = parseInt(document.getElementById('mlabSilenceTimeout').value) || 30;
             mlabConfig.msgLimit = parseInt(document.getElementById('mlabMsgLimit').value) || 80;
             mlabConfig.minThreshold = parseInt(document.getElementById('mlabMinThreshold').value) || 40;
+            mlabConfig.siliconFlowKey = document.getElementById('mlabSiliconFlowKey').value.trim();
             try { localStorage.setItem('miaomiao_mlab_config', JSON.stringify(mlabConfig)); } catch(e) {}
         }
 
@@ -8607,6 +8684,13 @@
 
                 if (narratives) {
                     mlabRenderNarratives(narratives, rawContent);
+                    // P0c: 手动测试成功 → 也存入向量库
+                    if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
+                        const assistantId = wechatData?.currentAssistantId || 'manual_test';
+                        mlabBatchStoreVectors(narratives, assistantId, 'manual_test').catch(e =>
+                            console.warn('Memory Lab P0c: 手动测试向量存储失败', e.message)
+                        );
+                    }
                 } else {
                     _mlabLastRawJson = rawContent;
                     outputDiv.innerHTML = `<div style="color:#ef4444;font-size:12px;margin-bottom:8px;">JSON 解析失败，显示原始输出：</div><button onclick="mlabCopyJson()" style="margin-bottom:6px;padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:12px;color:#374151;cursor:pointer;">复制原始输出</button><div class="mlab-raw-json">${escapeHtml(rawContent)}</div>`;
@@ -8971,8 +9055,9 @@
                     const { narratives, rawContent } = await mlabExtractChunk(chunk, assistantName, userName, provider, modelId);
 
                     if (narratives) {
+                        const logId = 'mlog_' + Date.now() + '_' + i;
                         mlabSaveLog({
-                            id: 'mlog_' + Date.now() + '_' + i,
+                            id: logId,
                             assistantId,
                             assistantName,
                             triggerTime,
@@ -8984,6 +9069,10 @@
                             rawOutput: rawContent,
                             status: 'success'
                         });
+                        // P0c: fire-and-forget 存入向量库
+                        mlabBatchStoreVectors(narratives, assistantId, logId).catch(e =>
+                            console.warn('Memory Lab P0c: 自动向量存储失败', e.message)
+                        );
                     } else {
                         // JSON 解析失败
                         mlabSaveLog({
@@ -9239,6 +9328,198 @@
             } else {
                 detailEl.style.display = 'none';
             }
+        }
+
+        // --- P0c: 向量存储与检索 ---
+
+        async function mlabGetEmbedding(text) {
+            const key = mlabConfig.siliconFlowKey;
+            if (!key) throw new Error('请先在 Memory Lab 配置页填写 SiliconFlow API Key');
+            const resp = await fetch('https://api.siliconflow.cn/v1/embeddings', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + key,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'BAAI/bge-m3',
+                    input: text,
+                    encoding_format: 'float'
+                })
+            });
+            if (!resp.ok) {
+                const errText = await resp.text().catch(() => resp.statusText);
+                throw new Error(`SiliconFlow ${resp.status}: ${errText}`);
+            }
+            const data = await resp.json();
+            return data.data[0].embedding;
+        }
+
+        async function mlabStoreNarrativeVector(narrative, assistantId, logId) {
+            const content = (narrative.context || '') + '\n' + (narrative.user_quotes || []).join('\n');
+            const embedding = await mlabGetEmbedding(content);
+
+            const url = appData.settings.supabaseUrl;
+            const key = appData.settings.supabaseKey;
+            if (!url || !key) throw new Error('Supabase 未配置');
+
+            const id = 'nv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+            const resp = await fetch(`${url}/rest/v1/mlab_narratives`, {
+                method: 'POST',
+                headers: {
+                    'apikey': key,
+                    'Authorization': 'Bearer ' + key,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'resolution=merge-duplicates'
+                },
+                body: JSON.stringify({
+                    id,
+                    assistant_id: assistantId,
+                    content,
+                    narrative,
+                    embedding: `[${embedding.join(',')}]`,
+                    log_id: logId || null
+                })
+            });
+            if (!resp.ok) {
+                const errText = await resp.text().catch(() => resp.statusText);
+                throw new Error(`存储向量失败 ${resp.status}: ${errText}`);
+            }
+            return id;
+        }
+
+        async function mlabBatchStoreVectors(narratives, assistantId, logId) {
+            if (!narratives || narratives.length === 0) return;
+            if (!mlabConfig.siliconFlowKey || !cloudSyncEnabled()) return;
+
+            console.log(`Memory Lab P0c: 开始存储 ${narratives.length} 条叙事元到向量库...`);
+            let stored = 0;
+            for (let i = 0; i < narratives.length; i++) {
+                try {
+                    await mlabStoreNarrativeVector(narratives[i], assistantId, logId);
+                    stored++;
+                    if (i < narratives.length - 1) {
+                        await new Promise(r => setTimeout(r, 200));
+                    }
+                } catch(e) {
+                    console.warn(`Memory Lab P0c: 第 ${i+1} 条存储失败:`, e.message);
+                }
+            }
+            console.log(`Memory Lab P0c: 叙事元已存入向量库 (${stored}/${narratives.length})`);
+        }
+
+        async function mlabSearchNarratives(queryText, topK, assistantId) {
+            const embedding = await mlabGetEmbedding(queryText);
+
+            const url = appData.settings.supabaseUrl;
+            const key = appData.settings.supabaseKey;
+            if (!url || !key) throw new Error('Supabase 未配置');
+
+            const resp = await fetch(`${url}/rest/v1/rpc/match_narratives`, {
+                method: 'POST',
+                headers: {
+                    'apikey': key,
+                    'Authorization': 'Bearer ' + key,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    query_embedding: `[${embedding.join(',')}]`,
+                    match_count: topK || 5,
+                    filter_assistant_id: assistantId || null
+                })
+            });
+            if (!resp.ok) {
+                const errText = await resp.text().catch(() => resp.statusText);
+                throw new Error(`检索失败 ${resp.status}: ${errText}`);
+            }
+            return resp.json();
+        }
+
+        async function mlabRunSearch() {
+            const queryText = document.getElementById('mlabSearchQuery').value.trim();
+            if (!queryText) { alert('请输入检索文字'); return; }
+
+            const btn = document.getElementById('mlabSearchBtn');
+            const resultsDiv = document.getElementById('mlabSearchResults');
+            btn.disabled = true;
+            btn.textContent = '检索中...';
+            resultsDiv.innerHTML = '<div class="mlab-placeholder">正在检索...</div>';
+
+            try {
+                const topK = parseInt(document.getElementById('mlabSearchTopK').value) || 5;
+                const contextN = parseInt(document.getElementById('mlabSearchContextN').value) || 0;
+                const assistantId = wechatData?.currentAssistantId || null;
+
+                // 可选：拼接最近 N 条对话上下文
+                let fullQuery = queryText;
+                if (contextN > 0 && wechatData?.currentAssistantId) {
+                    const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
+                    if (assistant?.chatHistory) {
+                        const recentMsgs = assistant.chatHistory.slice(-contextN);
+                        const contextStr = recentMsgs.map(m => {
+                            const role = m.role === 'user' ? '用户' : '助手';
+                            return `${role}: ${typeof m.content === 'string' ? m.content.slice(0, 200) : '[非文字]'}`;
+                        }).join('\n');
+                        fullQuery = contextStr + '\n用户: ' + queryText;
+                    }
+                }
+
+                const results = await mlabSearchNarratives(fullQuery, topK, assistantId);
+                mlabRenderSearchResults(results);
+            } catch(err) {
+                resultsDiv.innerHTML = `<div style="color:#ef4444;padding:10px;font-size:13px;">检索出错: ${escapeHtml(err.message)}</div>`;
+                console.error('Memory Lab 检索失败:', err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '检索叙事元';
+            }
+        }
+
+        function mlabRenderSearchResults(results) {
+            const container = document.getElementById('mlabSearchResults');
+            if (!results || results.length === 0) {
+                container.innerHTML = '<div class="mlab-placeholder">没有找到匹配的叙事元</div>';
+                return;
+            }
+
+            let html = '';
+            results.forEach((r, i) => {
+                const pct = (r.similarity * 100).toFixed(1);
+                const simClass = r.similarity >= 0.5 ? '' : ' low';
+                const n = r.narrative || {};
+                html += `<div class="mlab-search-result">`;
+                html += `<div class="mlab-search-result-header">`;
+                html += `<span style="font-size:12px;color:#9ca3af;">#${i + 1}</span>`;
+                html += `<span class="mlab-search-similarity${simClass}">${pct}%</span>`;
+                html += `</div>`;
+
+                if (n.context) html += `<div style="font-size:13px;color:#374151;margin-bottom:6px;">${escapeHtml(n.context)}</div>`;
+                if (n.user_quotes && n.user_quotes.length > 0) {
+                    html += `<div style="font-size:12px;color:#6b7280;margin-bottom:6px;">`;
+                    n.user_quotes.forEach(q => {
+                        html += `<div style="margin-bottom:2px;">「${escapeHtml(q)}」</div>`;
+                    });
+                    html += `</div>`;
+                }
+                if (n.emotion_label) html += `<span class="mlab-tag">${escapeHtml(n.emotion_label)}</span> `;
+                if (n.memory_type) html += `<span class="mlab-tag" style="background:#e0f2fe;color:#0284c7;">${escapeHtml(n.memory_type)}</span> `;
+
+                const tags = n.tags?.type || n.tags || [];
+                const tagArr = Array.isArray(tags) ? tags : [tags];
+                tagArr.forEach(t => {
+                    if (typeof t === 'string') html += `<span class="mlab-tag">${escapeHtml(t)}</span> `;
+                });
+                const intensity = n.tags?.emotion_intensity || n.intensity;
+                if (intensity) html += `<span class="mlab-tag mlab-tag-intensity">intensity: ${intensity}</span> `;
+                const keywords = n.tags?.topic_keywords || [];
+                keywords.forEach(k => {
+                    html += `<span class="mlab-tag" style="background:#e0f2fe;color:#0284c7;">${escapeHtml(k)}</span> `;
+                });
+
+                html += `</div>`;
+            });
+
+            container.innerHTML = html;
         }
 
         // ==================== Memory Lab 结束 ====================
@@ -10095,8 +10376,8 @@
                         <div class="form-section-title">向量记忆</div>
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
-                                <div style="font-size:14px;color:var(--text-primary);">启用向量记忆</div>
-                                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">微信模式聊天记录参与记忆提取</div>
+                                <div style="font-size:14px;color:var(--text-primary);">自动同步向量记忆</div>
+                                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">开启后自动提取聊天中的叙事元并同步到向量记忆库</div>
                             </div>
                             <div class="switch ${data.vectorMemoryEnabled ? 'on' : ''}" id="editVectorMemory" onclick="this.classList.toggle('on')"></div>
                         </div>
