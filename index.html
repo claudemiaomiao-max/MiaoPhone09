@@ -9691,6 +9691,9 @@
                     });
                     html += `</div>`;
                 }
+                if (n.assistant_summary || n.chen_response) {
+                    html += `<div class="mlab-narrative-summary">嗔: ${escapeHtml(n.assistant_summary || n.chen_response)}</div>`;
+                }
                 if (n.emotion_label) html += `<span class="mlab-tag">${escapeHtml(n.emotion_label)}</span> `;
                 if (n.memory_type) html += `<span class="mlab-tag" style="background:#e0f2fe;color:#0284c7;">${escapeHtml(n.memory_type)}</span> `;
 
