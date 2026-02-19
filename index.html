@@ -8809,12 +8809,13 @@
             const sw = document.getElementById('mlabAutoSwitch');
             mlabAutoEnabled = !mlabAutoEnabled;
             sw.classList.toggle('on', mlabAutoEnabled);
+            // 先存 localStorage，再调 start（start 里会读 localStorage）
+            try { localStorage.setItem('miaomiao_mlab_auto_enabled', mlabAutoEnabled ? '1' : '0'); } catch(e) {}
             if (mlabAutoEnabled) {
                 mlabStartAutoTimer();
             } else {
                 mlabStopAutoTimer();
             }
-            try { localStorage.setItem('miaomiao_mlab_auto_enabled', mlabAutoEnabled ? '1' : '0'); } catch(e) {}
             mlabUpdateAutoStatus();
         }
 
