@@ -7009,6 +7009,16 @@
                         每隔指定条数的新消息后，自动调用副模型总结对话记忆
                     </div>
                 </div>
+                <!-- 向量记忆设置 -->
+                <div class="wechat-settings-section">
+                    <div class="wechat-settings-item">
+                        <span class="wechat-settings-label">启用向量记忆</span>
+                        <div class="switch" id="wechatVectorMemoryChat" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div style="padding: 8px 16px; font-size: 12px; color: #999;">
+                        聊天时自动检索向量记忆库，将相关记忆注入对话（需配置 SiliconFlow Key 和 Supabase）
+                    </div>
+                </div>
                 <div class="wechat-settings-section">
                     <div class="wechat-settings-item" onclick="exportWechatChat()">
                         <span class="wechat-settings-label">导出聊天记录</span>
@@ -13603,7 +13613,7 @@
                 // 构建请求
                 let requestMessages;
                 try {
-                    requestMessages = buildWechatRequestMessages(conv, effectiveAssistant);
+                    requestMessages = await buildWechatRequestMessages(conv, effectiveAssistant);
                 } catch (buildError) {
                     console.error('构建请求消息失败:', buildError);
                     throw new Error('构建消息失败: ' + buildError.message);
@@ -13677,7 +13687,7 @@
             checkAutoSummary();
         }
 
-        function buildWechatRequestMessages(conv, assistant) {
+        async function buildWechatRequestMessages(conv, assistant) {
             const settings = conv.settings || {};
             
             // A风格：把所有内容拼成一条user消息
@@ -13822,11 +13832,61 @@ JSON数组的【第一个元素】必须是思维链对象：
 ${memoryText}`;
             }
 
+            // 向量记忆检索（如果开关开启）
+            let memoryCount = settings.memoryCount || 20;
+            if (settings.vectorMemoryChatEnabled && cloudSyncEnabled() && mlabConfig.siliconFlowKey) {
+                try {
+                    const lastUserMsg = [...conv.messages].reverse().find(m => m.role === 'user');
+                    if (lastUserMsg) {
+                        const queryText = typeof lastUserMsg.content === 'string'
+                            ? lastUserMsg.content.slice(0, 500)
+                            : '';
+                        if (queryText) {
+                            // 上下文去重：取上下文最早消息的时间戳
+                            const contextMessages = conv.messages.slice(-memoryCount);
+                            const earliestTimestamp = contextMessages[0]?.timestamp || null;
+
+                            const topK = 5;
+                            const results = await mlabSearchNarratives(queryText, topK * 2, assistant.id, {
+                                similarity: 0.5, recency: 0.3, importance: 0.2
+                            });
+
+                            if (results && results.length > 0) {
+                                // 过滤掉与上下文时间重叠的叙事元
+                                let filtered = results;
+                                if (earliestTimestamp) {
+                                    filtered = results.filter(r => {
+                                        const endTime = r.end_time || r.narrative?.end_time;
+                                        if (!endTime) return true; // 没有时间信息的保留
+                                        return new Date(endTime) < new Date(earliestTimestamp);
+                                    });
+                                }
+                                filtered = filtered.slice(0, topK);
+
+                                if (filtered.length > 0) {
+                                    const vectorMemoryText = filtered.map(r => {
+                                        const n = r.narrative || {};
+                                        let text = n.context || '';
+                                        if (n.assistant_summary) text += `（你当时：${n.assistant_summary}）`;
+                                        return `- ${text}`;
+                                    }).join('\n');
+                                    systemPart += `\n\n【向量记忆 - 相关历史记忆片段】\n以下是从记忆库中检索到的与当前话题相关的历史记忆，请自然地参考：\n${vectorMemoryText}`;
+                                    console.log(`向量记忆检索: 召回${results.length}条，去重后${filtered.length}条已注入`);
+                                } else {
+                                    console.log(`向量记忆检索: 召回${results.length}条，去重后全部过滤（均在上下文范围内）`);
+                                }
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('向量记忆检索失败，跳过:', err.message);
+                }
+            }
+
             fullContent += systemPart + '\n\n';
             fullContent += '=====对话记录=====\n';
 
             // 添加历史消息，A风格：每条加说话人前缀
-            let memoryCount = settings.memoryCount || 20;
             const assistantName = assistant.name || '助手';
 
             // 验证图片数据是否有效
@@ -17636,6 +17696,9 @@ ${chatContext}
             document.getElementById('wechatAutoSummaryEnabled').classList.toggle('on', settings.autoSummaryEnabled || false);
             document.getElementById('wechatAutoSummaryInterval').value = settings.autoSummaryInterval || 50;
 
+            // 向量记忆设置
+            document.getElementById('wechatVectorMemoryChat').classList.toggle('on', settings.vectorMemoryChatEnabled || false);
+
             // 背景图案
             const pattern = settings.pattern || 'none';
             document.querySelectorAll('.wechat-pattern-option').forEach(opt => {
@@ -17700,6 +17763,7 @@ ${chatContext}
                     longTermMemoryEnabled: document.getElementById('wechatLongTermMemoryEnabled').classList.contains('on'),
                     autoSummaryEnabled: document.getElementById('wechatAutoSummaryEnabled').classList.contains('on'),
                     autoSummaryInterval: parseInt(document.getElementById('wechatAutoSummaryInterval').value) || 50,
+                    vectorMemoryChatEnabled: document.getElementById('wechatVectorMemoryChat').classList.contains('on'),
                     proactiveEnabled: document.getElementById('wechatProactive').classList.contains('on'),
                     proactiveInterval: parseInt(document.getElementById('wechatProactiveInterval').value) || 15,
                     pattern: pattern,
