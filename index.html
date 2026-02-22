@@ -8562,7 +8562,7 @@
             document.getElementById('mlabLogPanel').style.display = tab === 'log' ? 'block' : 'none';
             document.getElementById('mlabSearchPanel').style.display = tab === 'search' ? 'block' : 'none';
             document.getElementById('mlabConfigPanel').style.display = tab === 'config' ? 'block' : 'none';
-            if (tab === 'log') mlabRenderLogPanel();
+            if (tab === 'log') { mlabLogShowCount = mlabLogPageSize; mlabRenderLogPanel(); }
         }
 
         function populateMlabModelDropdown() {
@@ -9311,6 +9311,9 @@
             mlabLogsLoaded = true;
         }
 
+        let mlabLogPageSize = 30;
+        let mlabLogShowCount = 30;
+
         // --- 日志面板渲染 ---
         async function mlabRenderLogPanel() {
             const container = document.getElementById('mlabLogPanel');
@@ -9330,12 +9333,14 @@
             // 统计
             const today = new Date().toDateString();
             const todayCount = mlabLogs.filter(l => new Date(l.triggerTime).toDateString() === today).length;
+            const showCount = Math.min(mlabLogShowCount, mlabLogs.length);
 
             let html = `<div class="mlab-section" style="padding-bottom:8px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
                     <div style="display:flex;gap:12px;font-size:13px;color:#6b7280;flex-wrap:wrap;">
                         <span>今日: <b style="color:#7c3aed;">${todayCount}</b></span>
                         <span>总计: <b style="color:#7c3aed;">${mlabLogs.length}</b></span>
+                        <span>显示: <b style="color:#7c3aed;">${showCount}</b></span>
                         <span>${mlabAutoTimer ? '<b style="color:#059669;">运行中</b>' : '<b style="color:#9ca3af;">未启动</b>'}</span>
                     </div>
                     <button class="mlab-btn mlab-btn-outline" onclick="mlabExportLogs()" style="font-size:11px;padding:4px 10px;flex-shrink:0;">导出</button>
@@ -9343,7 +9348,7 @@
             </div>`;
 
             html += '<div class="mlab-section" style="padding-top:0;">';
-            mlabLogs.forEach((log, idx) => {
+            mlabLogs.slice(0, showCount).forEach((log, idx) => {
                 const time = new Date(log.triggerTime);
                 const timeStr = time.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) + ' ' + time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
                 const reasonText = log.triggerReason === 'silence' ? '沉默超时' : log.triggerReason === 'accumulation' ? '累积上限' : (log.triggerReason || '手动');
@@ -9364,7 +9369,18 @@
             });
             html += '</div>';
 
+            if (showCount < mlabLogs.length) {
+                html += `<div style="text-align:center;padding:12px 0;">
+                    <button class="mlab-btn mlab-btn-outline" onclick="mlabLoadMoreLogs()" style="font-size:13px;padding:8px 24px;">加载更多（还有 ${mlabLogs.length - showCount} 条）</button>
+                </div>`;
+            }
+
             container.innerHTML = html;
+        }
+
+        function mlabLoadMoreLogs() {
+            mlabLogShowCount += mlabLogPageSize;
+            mlabRenderLogPanel();
         }
 
         function mlabExportLogs() {
@@ -9402,6 +9418,27 @@
 
                 // 叙事元卡片
                 if (log.outputNarratives && log.outputNarratives.length > 0) {
+                    // 显示时间范围信息（调试用）
+                    const tr = log.timeRange || {};
+                    const firstMsg = log.inputMessages?.[0];
+                    const lastMsg = log.inputMessages?.[log.inputMessages.length - 1];
+                    const fmtTime = (t) => { try { return new Date(t).toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e) { return String(t); } };
+
+                    let timeInfo = '';
+                    if (tr.start || tr.end) {
+                        timeInfo = `timeRange: ${tr.start ? fmtTime(tr.start) : '无'} ~ ${tr.end ? fmtTime(tr.end) : '无'}`;
+                    } else {
+                        timeInfo = 'timeRange: 无';
+                    }
+                    // 显示消息里的时间字段情况
+                    if (firstMsg) {
+                        const hasTs = firstMsg.timestamp ? 'timestamp=✓' : 'timestamp=✗';
+                        const hasTm = firstMsg.time ? 'time=✓' : 'time=✗';
+                        timeInfo += ` | 首条消息: ${hasTs}, ${hasTm}`;
+                    }
+
+                    detailHtml += `<div style="font-size:11px;color:#9ca3af;margin-bottom:6px;padding:4px 8px;background:#f9fafb;border-radius:4px;">${escapeHtml(timeInfo)}</div>`;
+
                     detailHtml += `<div style="font-size:12px;color:#7c3aed;margin-bottom:6px;font-weight:600;">提取到 ${log.outputNarratives.length} 个叙事元</div>`;
                     log.outputNarratives.forEach((n, nIdx) => {
                         const editedClass = n.manually_edited ? ' edited' : '';
