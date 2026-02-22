@@ -8537,12 +8537,12 @@
             // 恢复检索参数到UI
             document.getElementById('mlabSearchTopK').value = mlabConfig.searchTopK || 5;
             document.getElementById('mlabSearchContextN').value = mlabConfig.searchContextN || 20;
-            document.getElementById('mlabWSimSlider').value = mlabConfig.searchWSim || 0.5;
-            document.getElementById('mlabWSim').textContent = mlabConfig.searchWSim || 0.5;
-            document.getElementById('mlabWRecSlider').value = mlabConfig.searchWRec || 0.3;
-            document.getElementById('mlabWRec').textContent = mlabConfig.searchWRec || 0.3;
-            document.getElementById('mlabWImpSlider').value = mlabConfig.searchWImp || 0.2;
-            document.getElementById('mlabWImp').textContent = mlabConfig.searchWImp || 0.2;
+            document.getElementById('mlabWSimSlider').value = mlabConfig.searchWSim != null ? mlabConfig.searchWSim : 0.5;
+            document.getElementById('mlabWSim').textContent = mlabConfig.searchWSim != null ? mlabConfig.searchWSim : 0.5;
+            document.getElementById('mlabWRecSlider').value = mlabConfig.searchWRec != null ? mlabConfig.searchWRec : 0.3;
+            document.getElementById('mlabWRec').textContent = mlabConfig.searchWRec != null ? mlabConfig.searchWRec : 0.3;
+            document.getElementById('mlabWImpSlider').value = mlabConfig.searchWImp != null ? mlabConfig.searchWImp : 0.2;
+            document.getElementById('mlabWImp').textContent = mlabConfig.searchWImp != null ? mlabConfig.searchWImp : 0.2;
             // 恢复自动提取开关状态
             try {
                 const saved = localStorage.getItem('miaomiao_mlab_auto_enabled');
@@ -8592,10 +8592,13 @@
 
         function mlabSaveSearchParams() {
             mlabConfig.searchTopK = parseInt(document.getElementById('mlabSearchTopK').value) || 5;
-            mlabConfig.searchContextN = parseInt(document.getElementById('mlabSearchContextN').value) || 20;
-            mlabConfig.searchWSim = parseFloat(document.getElementById('mlabWSimSlider').value) || 0.5;
-            mlabConfig.searchWRec = parseFloat(document.getElementById('mlabWRecSlider').value) || 0.3;
-            mlabConfig.searchWImp = parseFloat(document.getElementById('mlabWImpSlider').value) || 0.2;
+            mlabConfig.searchContextN = parseInt(document.getElementById('mlabSearchContextN').value) ?? 20;
+            const wSim = parseFloat(document.getElementById('mlabWSimSlider').value);
+            const wRec = parseFloat(document.getElementById('mlabWRecSlider').value);
+            const wImp = parseFloat(document.getElementById('mlabWImpSlider').value);
+            mlabConfig.searchWSim = isNaN(wSim) ? 0.5 : wSim;
+            mlabConfig.searchWRec = isNaN(wRec) ? 0.3 : wRec;
+            mlabConfig.searchWImp = isNaN(wImp) ? 0.2 : wImp;
             try { localStorage.setItem('miaomiao_mlab_config', JSON.stringify(mlabConfig)); } catch(e) {}
         }
 
@@ -8802,8 +8805,8 @@
                     // P0c: 手动测试成功 → 也存入向量库
                     if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
                         const assistantId = wechatData?.currentAssistantId || 'manual_test';
-                        const tStart = mlabTestMessages[0]?.timestamp;
-                        const tEnd = mlabTestMessages[mlabTestMessages.length - 1]?.timestamp;
+                        const tStart = mlabTestMessages[0]?.timestamp || mlabTestMessages[0]?.time;
+                        const tEnd = mlabTestMessages[mlabTestMessages.length - 1]?.timestamp || mlabTestMessages[mlabTestMessages.length - 1]?.time;
                         mlabBatchStoreVectors(narratives, assistantId, 'manual_test', tStart, tEnd).catch(e =>
                             console.warn('Memory Lab P0c: 手动测试向量存储失败', e.message)
                         );
@@ -9501,8 +9504,8 @@
                 // 删除旧向量 → 存入新向量
                 if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
                     await mlabDeleteVectorsByLogId(log.id);
-                    const tStart = log.timeRange?.start || log.inputMessages[0]?.timestamp;
-                    const tEnd = log.timeRange?.end || log.inputMessages[log.inputMessages.length - 1]?.timestamp;
+                    const tStart = log.timeRange?.start || log.inputMessages[0]?.timestamp || log.inputMessages[0]?.time;
+                    const tEnd = log.timeRange?.end || log.inputMessages[log.inputMessages.length - 1]?.timestamp || log.inputMessages[log.inputMessages.length - 1]?.time;
                     await mlabBatchStoreVectors(narratives, log.assistantId, log.id, tStart, tEnd);
                 }
 
@@ -9682,9 +9685,9 @@
                 const assistantId = wechatData?.currentAssistantId || null;
 
                 const weights = {
-                    similarity: mlabConfig.searchWSim || 0.5,
-                    recency: mlabConfig.searchWRec || 0.3,
-                    importance: mlabConfig.searchWImp || 0.2
+                    similarity: mlabConfig.searchWSim != null ? mlabConfig.searchWSim : 0.5,
+                    recency: mlabConfig.searchWRec != null ? mlabConfig.searchWRec : 0.3,
+                    importance: mlabConfig.searchWImp != null ? mlabConfig.searchWImp : 0.2
                 };
 
                 // 多召回再过滤
@@ -13988,9 +13991,9 @@ ${memoryText}`;
                         const topK = mlabConfig.searchTopK || 5;
                         const contextN = mlabConfig.searchContextN || 20;
                         const weights = {
-                            similarity: mlabConfig.searchWSim || 0.5,
-                            recency: mlabConfig.searchWRec || 0.3,
-                            importance: mlabConfig.searchWImp || 0.2
+                            similarity: mlabConfig.searchWSim != null ? mlabConfig.searchWSim : 0.5,
+                            recency: mlabConfig.searchWRec != null ? mlabConfig.searchWRec : 0.3,
+                            importance: mlabConfig.searchWImp != null ? mlabConfig.searchWImp : 0.2
                         };
 
                         // 上下文去重：取最近N条消息的最早时间戳
