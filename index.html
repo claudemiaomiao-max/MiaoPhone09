@@ -9146,10 +9146,17 @@
             }
 
             // 切分
-            const chunks = mlabPreSplit(unprocessedMsgs);
+            let chunks = mlabPreSplit(unprocessedMsgs);
             if (chunks.length === 0) {
-                console.log(`Memory Lab: [${assistantName}] 消息不足最小门槛，跳过`);
-                return;
+                // 切分后全部被过滤（碎块都不够门槛），但总量够触发条件
+                // 回退：把整批消息当作一个块处理，避免死循环
+                if (unprocessedMsgs.length >= (mlabConfig.minThreshold || 40)) {
+                    console.log(`Memory Lab: [${assistantName}] 切分后无有效块，回退为整批处理 (${unprocessedMsgs.length}条)`);
+                    chunks.push(unprocessedMsgs);
+                } else {
+                    console.log(`Memory Lab: [${assistantName}] 消息不足最小门槛，跳过`);
+                    return;
+                }
             }
 
             console.log(`Memory Lab: [${assistantName}] 切分为 ${chunks.length} 个块`);
