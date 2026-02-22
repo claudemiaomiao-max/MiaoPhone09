@@ -7593,34 +7593,37 @@
                     <div class="mlab-section">
                         <div class="mlab-section-title">检索参数</div>
                         <div class="mlab-param-row">
-                            <span>上下文消息数</span>
-                            <input type="number" class="form-input mlab-param-input" id="mlabSearchContextN" value="5" min="0" max="50">
+                            <span>去重上下文条数</span>
+                            <input type="number" class="form-input mlab-param-input" id="mlabSearchContextN" value="20" min="0" max="100" onchange="mlabSaveSearchParams()">
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;margin-top:-6px;margin-bottom:6px;">
+                            过滤掉最近N条消息时间范围内的叙事元，避免重复
                         </div>
                         <div class="mlab-param-row">
                             <span>返回叙事元数 (top-K)</span>
-                            <input type="number" class="form-input mlab-param-input" id="mlabSearchTopK" value="5" min="1" max="20">
+                            <input type="number" class="form-input mlab-param-input" id="mlabSearchTopK" value="5" min="1" max="20" onchange="mlabSaveSearchParams()">
                         </div>
                     </div>
                     <div class="mlab-section">
-                        <div class="mlab-section-title">排序权重</div>
+                        <div class="mlab-section-title">排序权重（测试台与聊天注入共用）</div>
                         <div class="mlab-param-row">
                             <span>语义相关度</span>
                             <div style="display:flex;align-items:center;gap:6px;">
-                                <input type="range" style="width:80px;" id="mlabWSimSlider" min="0" max="1" step="0.1" value="0.5" oninput="document.getElementById('mlabWSim').textContent=this.value">
+                                <input type="range" style="width:80px;" id="mlabWSimSlider" min="0" max="1" step="0.1" value="0.5" oninput="document.getElementById('mlabWSim').textContent=this.value" onchange="mlabSaveSearchParams()">
                                 <span id="mlabWSim" style="font-size:12px;min-width:24px;">0.5</span>
                             </div>
                         </div>
                         <div class="mlab-param-row">
                             <span>时间新鲜度</span>
                             <div style="display:flex;align-items:center;gap:6px;">
-                                <input type="range" style="width:80px;" id="mlabWRecSlider" min="0" max="1" step="0.1" value="0.3" oninput="document.getElementById('mlabWRec').textContent=this.value">
+                                <input type="range" style="width:80px;" id="mlabWRecSlider" min="0" max="1" step="0.1" value="0.3" oninput="document.getElementById('mlabWRec').textContent=this.value" onchange="mlabSaveSearchParams()">
                                 <span id="mlabWRec" style="font-size:12px;min-width:24px;">0.3</span>
                             </div>
                         </div>
                         <div class="mlab-param-row">
                             <span>标签重要度</span>
                             <div style="display:flex;align-items:center;gap:6px;">
-                                <input type="range" style="width:80px;" id="mlabWImpSlider" min="0" max="1" step="0.1" value="0.2" oninput="document.getElementById('mlabWImp').textContent=this.value">
+                                <input type="range" style="width:80px;" id="mlabWImpSlider" min="0" max="1" step="0.1" value="0.2" oninput="document.getElementById('mlabWImp').textContent=this.value" onchange="mlabSaveSearchParams()">
                                 <span id="mlabWImp" style="font-size:12px;min-width:24px;">0.2</span>
                             </div>
                         </div>
@@ -7761,6 +7764,7 @@
             updateThinkingDisplay();
             updateTtsStatus();
             initDisplaySettings();
+            loadMlabConfig(); // 加载Memory Lab配置（含检索参数），确保聊天时可用
         }
 
         function setupTextareaAutoResize() {
@@ -8507,7 +8511,13 @@
             silenceTimeout: 30, // 分钟
             msgLimit: 80,       // 消息累积上限
             minThreshold: 40,   // 最小条数门槛
-            siliconFlowKey: ''  // SiliconFlow API Key (BGE-M3 embedding)
+            siliconFlowKey: '', // SiliconFlow API Key (BGE-M3 embedding)
+            // 检索参数（测试台和正式注入共用）
+            searchTopK: 5,
+            searchWSim: 0.5,
+            searchWRec: 0.3,
+            searchWImp: 0.2,
+            searchContextN: 20  // 去重：上下文消息条数，过滤掉这个范围内的叙事元
         };
 
         function openMemoryLab() {
@@ -8524,6 +8534,15 @@
             document.getElementById('mlabMsgLimit').value = mlabConfig.msgLimit;
             document.getElementById('mlabMinThreshold').value = mlabConfig.minThreshold;
             document.getElementById('mlabSiliconFlowKey').value = mlabConfig.siliconFlowKey || '';
+            // 恢复检索参数到UI
+            document.getElementById('mlabSearchTopK').value = mlabConfig.searchTopK || 5;
+            document.getElementById('mlabSearchContextN').value = mlabConfig.searchContextN || 20;
+            document.getElementById('mlabWSimSlider').value = mlabConfig.searchWSim || 0.5;
+            document.getElementById('mlabWSim').textContent = mlabConfig.searchWSim || 0.5;
+            document.getElementById('mlabWRecSlider').value = mlabConfig.searchWRec || 0.3;
+            document.getElementById('mlabWRec').textContent = mlabConfig.searchWRec || 0.3;
+            document.getElementById('mlabWImpSlider').value = mlabConfig.searchWImp || 0.2;
+            document.getElementById('mlabWImp').textContent = mlabConfig.searchWImp || 0.2;
             // 恢复自动提取开关状态
             try {
                 const saved = localStorage.getItem('miaomiao_mlab_auto_enabled');
@@ -8568,6 +8587,15 @@
             mlabConfig.msgLimit = parseInt(document.getElementById('mlabMsgLimit').value) || 80;
             mlabConfig.minThreshold = parseInt(document.getElementById('mlabMinThreshold').value) || 40;
             mlabConfig.siliconFlowKey = document.getElementById('mlabSiliconFlowKey').value.trim();
+            try { localStorage.setItem('miaomiao_mlab_config', JSON.stringify(mlabConfig)); } catch(e) {}
+        }
+
+        function mlabSaveSearchParams() {
+            mlabConfig.searchTopK = parseInt(document.getElementById('mlabSearchTopK').value) || 5;
+            mlabConfig.searchContextN = parseInt(document.getElementById('mlabSearchContextN').value) || 20;
+            mlabConfig.searchWSim = parseFloat(document.getElementById('mlabWSimSlider').value) || 0.5;
+            mlabConfig.searchWRec = parseFloat(document.getElementById('mlabWRecSlider').value) || 0.3;
+            mlabConfig.searchWImp = parseFloat(document.getElementById('mlabWImpSlider').value) || 0.2;
             try { localStorage.setItem('miaomiao_mlab_config', JSON.stringify(mlabConfig)); } catch(e) {}
         }
 
@@ -9620,32 +9648,40 @@
             resultsDiv.innerHTML = '<div class="mlab-placeholder">正在检索...</div>';
 
             try {
-                const topK = parseInt(document.getElementById('mlabSearchTopK').value) || 5;
-                const contextN = parseInt(document.getElementById('mlabSearchContextN').value) || 0;
+                // 先保存当前UI参数到mlabConfig
+                mlabSaveSearchParams();
+
+                const topK = mlabConfig.searchTopK || 5;
+                const contextN = mlabConfig.searchContextN || 20;
                 const assistantId = wechatData?.currentAssistantId || null;
 
-                // 可选：拼接最近 N 条对话上下文
-                let fullQuery = queryText;
-                if (contextN > 0 && wechatData?.currentAssistantId) {
-                    const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
-                    if (assistant?.chatHistory) {
-                        const recentMsgs = assistant.chatHistory.slice(-contextN);
-                        const contextStr = recentMsgs.map(m => {
-                            const role = m.role === 'user' ? '用户' : '助手';
-                            return `${role}: ${typeof m.content === 'string' ? m.content.slice(0, 200) : '[非文字]'}`;
-                        }).join('\n');
-                        fullQuery = contextStr + '\n用户: ' + queryText;
-                    }
-                }
-
                 const weights = {
-                    similarity: parseFloat(document.getElementById('mlabWSimSlider').value) || 0.5,
-                    recency: parseFloat(document.getElementById('mlabWRecSlider').value) || 0.3,
-                    importance: parseFloat(document.getElementById('mlabWImpSlider').value) || 0.2
+                    similarity: mlabConfig.searchWSim || 0.5,
+                    recency: mlabConfig.searchWRec || 0.3,
+                    importance: mlabConfig.searchWImp || 0.2
                 };
 
-                const results = await mlabSearchNarratives(fullQuery, topK, assistantId, weights);
-                mlabRenderSearchResults(results);
+                // 多召回再过滤
+                const results = await mlabSearchNarratives(queryText, topK * 2, assistantId, weights);
+
+                // 上下文去重：过滤掉最近N条消息时间范围内的叙事元
+                let filtered = results || [];
+                if (contextN > 0 && assistantId && wechatData?.conversations?.[assistantId]) {
+                    const conv = wechatData.conversations[assistantId];
+                    const contextMessages = conv.messages.slice(-contextN);
+                    const earliestTimestamp = contextMessages[0]?.timestamp || null;
+                    if (earliestTimestamp) {
+                        filtered = filtered.filter(r => {
+                            const endTime = r.end_time || r.narrative?.end_time;
+                            if (!endTime) return true;
+                            return new Date(endTime) < new Date(earliestTimestamp);
+                        });
+                    }
+                }
+                filtered = filtered.slice(0, topK);
+
+                console.log(`Memory Lab 检索: 召回${(results||[]).length}条，去重后${filtered.length}条`);
+                mlabRenderSearchResults(filtered);
             } catch(err) {
                 resultsDiv.innerHTML = `<div style="color:#ef4444;padding:10px;font-size:13px;">检索出错: ${escapeHtml(err.message)}</div>`;
                 console.error('Memory Lab 检索失败:', err);
@@ -12973,8 +13009,8 @@
                 return;
             }
 
-            // 如果不是加载更多且不是跳转模式，重置页数
-            if (!loadMore && !wechatJumpToMsgId) {
+            // 如果不是加载更多且不是跳转模式且不是保持位置模式，重置页数
+            if (!loadMore && !wechatJumpToMsgId && wechatKeepScrollPosition === null) {
                 wechatCurrentPage = 1;
             }
 
@@ -13907,45 +13943,74 @@ ${memoryText}`;
             let memoryCount = settings.memoryCount || 20;
             if (settings.vectorMemoryChatEnabled && cloudSyncEnabled() && mlabConfig.siliconFlowKey) {
                 try {
-                    const lastUserMsg = [...conv.messages].reverse().find(m => m.role === 'user');
-                    if (lastUserMsg) {
-                        const queryText = typeof lastUserMsg.content === 'string'
-                            ? lastUserMsg.content.slice(0, 500)
-                            : '';
-                        if (queryText) {
-                            // 上下文去重：取上下文最早消息的时间戳
-                            const contextMessages = conv.messages.slice(-memoryCount);
-                            const earliestTimestamp = contextMessages[0]?.timestamp || null;
+                    // 合并最近连续的用户消息作为query（用户习惯一条一条发）
+                    const msgs = conv.messages;
+                    let queryParts = [];
+                    for (let i = msgs.length - 1; i >= 0 && queryParts.length < 10; i--) {
+                        if (msgs[i].role === 'user' && typeof msgs[i].content === 'string' && msgs[i].content.trim()) {
+                            queryParts.unshift(msgs[i].content.trim());
+                        } else if (msgs[i].role === 'assistant') {
+                            // 遇到助手消息就停止，只合并最近一轮的用户消息
+                            if (queryParts.length > 0) break;
+                        }
+                    }
+                    const queryText = queryParts.join(' ').slice(0, 500);
 
-                            const topK = 5;
-                            const results = await mlabSearchNarratives(queryText, topK * 2, assistant.id, {
-                                similarity: 0.5, recency: 0.3, importance: 0.2
-                            });
+                    if (queryText) {
+                        // 读取mlabConfig的检索参数（测试台和正式注入共用）
+                        const topK = mlabConfig.searchTopK || 5;
+                        const contextN = mlabConfig.searchContextN || 20;
+                        const weights = {
+                            similarity: mlabConfig.searchWSim || 0.5,
+                            recency: mlabConfig.searchWRec || 0.3,
+                            importance: mlabConfig.searchWImp || 0.2
+                        };
 
-                            if (results && results.length > 0) {
-                                // 过滤掉与上下文时间重叠的叙事元
-                                let filtered = results;
-                                if (earliestTimestamp) {
-                                    filtered = results.filter(r => {
-                                        const endTime = r.end_time || r.narrative?.end_time;
-                                        if (!endTime) return true; // 没有时间信息的保留
-                                        return new Date(endTime) < new Date(earliestTimestamp);
-                                    });
-                                }
-                                filtered = filtered.slice(0, topK);
+                        // 上下文去重：取最近N条消息的最早时间戳
+                        const contextMessages = conv.messages.slice(-contextN);
+                        const earliestTimestamp = contextMessages[0]?.timestamp || null;
 
-                                if (filtered.length > 0) {
-                                    const vectorMemoryText = filtered.map(r => {
-                                        const n = r.narrative || {};
-                                        let text = n.context || '';
-                                        if (n.assistant_summary) text += `（你当时：${n.assistant_summary}）`;
-                                        return `- ${text}`;
-                                    }).join('\n');
-                                    systemPart += `\n\n【向量记忆 - 相关历史记忆片段】\n以下是从记忆库中检索到的与当前话题相关的历史记忆，请自然地参考：\n${vectorMemoryText}`;
-                                    console.log(`向量记忆检索: 召回${results.length}条，去重后${filtered.length}条已注入`);
-                                } else {
-                                    console.log(`向量记忆检索: 召回${results.length}条，去重后全部过滤（均在上下文范围内）`);
-                                }
+                        const results = await mlabSearchNarratives(queryText, topK * 2, assistant.id, weights);
+
+                        if (results && results.length > 0) {
+                            // 过滤掉与上下文时间重叠的叙事元
+                            let filtered = results;
+                            if (earliestTimestamp) {
+                                filtered = results.filter(r => {
+                                    const endTime = r.end_time || r.narrative?.end_time;
+                                    if (!endTime) return true; // 没有时间信息的保留
+                                    return new Date(endTime) < new Date(earliestTimestamp);
+                                });
+                            }
+                            filtered = filtered.slice(0, topK);
+
+                            if (filtered.length > 0) {
+                                const vectorMemoryText = filtered.map(r => {
+                                    const n = r.narrative || {};
+                                    let parts = [];
+                                    // 时间
+                                    const timeStr = r.start_time || r.end_time
+                                        ? (() => {
+                                            const fmt = t => { try { return new Date(t).toLocaleDateString('zh-CN', {month:'long',day:'numeric'}); } catch(e) { return ''; } };
+                                            return r.start_time ? fmt(r.start_time) + (r.end_time && r.end_time !== r.start_time ? '~' + fmt(r.end_time) : '') : fmt(r.end_time);
+                                        })()
+                                        : '';
+                                    if (timeStr) parts.push(`[${timeStr}]`);
+                                    // 概述
+                                    if (n.context) parts.push(n.context);
+                                    // 用户原文
+                                    const quotes = n.user_quotes || [];
+                                    if (quotes.length > 0) {
+                                        parts.push('用户说：' + quotes.map(q => `「${q}」`).join(' '));
+                                    }
+                                    // 助手回应
+                                    if (n.assistant_summary) parts.push(`你当时：${n.assistant_summary}`);
+                                    return `- ${parts.join(' ')}`;
+                                }).join('\n');
+                                systemPart += `\n\n【向量记忆 - 相关历史记忆片段】\n以下是从记忆库中检索到的与当前话题相关的历史记忆，请自然地参考：\n${vectorMemoryText}`;
+                                console.log(`向量记忆检索: query="${queryText.slice(0,50)}..." 召回${results.length}条，去重后${filtered.length}条已注入`);
+                            } else {
+                                console.log(`向量记忆检索: 召回${results.length}条，去重后全部过滤（均在上下文范围内）`);
                             }
                         }
                     }
@@ -14064,9 +14129,8 @@ ${memoryText}`;
                     const speaker = msg.role === 'user' ? '用户' : assistantName;
                     let content = msg.content;
 
-                    // 拍一拍消息（优先处理，因为content可能为空）
+                    // 拍一拍消息：不塞进上下文，节省token
                     if (msg.type === 'pat_message') {
-                        fullContent += `[拍一拍] ${content || ''}\n`;
                         return;
                     }
                     // 转账消息（优先处理，因为content可能为空）
@@ -14120,9 +14184,8 @@ ${memoryText}`;
                             content = '[无法解析的内容]';
                         }
                     }
-                    if (msg.type === 'voice_message') {
-                        content = `[语音消息] ${content}`;
-                    }
+                    // 语音消息：直接使用转文字内容，不加前缀，节省token
+                    // (voice_message和text在上下文中无需区分)
                     // 如果消息包含引用
                     if (msg.quote) {
                         fullContent += `${speaker}: [引用 ${msg.quote.senderName}："${msg.quote.content}"] ${content}\n`;
@@ -17052,13 +17115,13 @@ ${memoryText}`;
                 if (msg.type === 'image') {
                     content = '[发送了一张图片]';
                 } else if (msg.type === 'voice_message') {
-                    content = `[语音] ${content}`;
+                    // voice_message: 直接使用转文字内容，不加前缀
                 } else if (msg.type === 'transfer') {
                     content = `[转账 ¥${msg.amount}]`;
                 } else if (msg.type === 'transfer_receipt') {
                     content = msg.action === 'accepted' ? `[收款 ¥${msg.amount}]` : `[拒收 ¥${msg.amount}]`;
                 } else if (msg.type === 'pat_message') {
-                    content = `[${content}]`;
+                    content = ''; // pat_message: 跳过，节省token
                 }
 
                 // 过滤掉时间间隔标记（避免日记中出现"过了几天"等描述）
@@ -17104,13 +17167,13 @@ ${memoryText}`;
                     if (msg.type === 'image') {
                         content = '[发送了一张图片]';
                     } else if (msg.type === 'voice_message') {
-                        content = `[语音] ${content}`;
+                        // voice_message: 直接使用转文字内容，不加前缀
                     } else if (msg.type === 'transfer') {
                         content = `[转账 ¥${msg.amount}]`;
                     } else if (msg.type === 'transfer_receipt') {
                         content = msg.action === 'accepted' ? `[收款 ¥${msg.amount}]` : `[拒收 ¥${msg.amount}]`;
                     } else if (msg.type === 'pat_message') {
-                        content = `[${content}]`;
+                        content = ''; // pat_message: 跳过，节省token
                     }
 
                     // 过滤掉时间间隔标记
@@ -17169,13 +17232,13 @@ ${memoryText}`;
                 if (msg.type === 'image') {
                     content = '[发送了一张图片]';
                 } else if (msg.type === 'voice_message') {
-                    content = `[语音] ${content}`;
+                    // voice_message: 直接使用转文字内容，不加前缀
                 } else if (msg.type === 'transfer') {
                     content = `[转账 ¥${msg.amount}]`;
                 } else if (msg.type === 'transfer_receipt') {
                     content = msg.action === 'accepted' ? `[收款 ¥${msg.amount}]` : `[拒收 ¥${msg.amount}]`;
                 } else if (msg.type === 'pat_message') {
-                    content = `[${content}]`;
+                    content = ''; // pat_message: 跳过，节省token
                 }
 
                 // 过滤掉时间间隔标记
@@ -18159,11 +18222,11 @@ ${chatContext}
             const dialogueSummary = recentMessages.map(msg => {
                 const role = msg.role === 'user' ? '用户' : assistantName;
                 if (msg.type === 'image') return `${role}: [图片]`;
-                if (msg.type === 'voice_message') return `${role}: [语音] ${msg.content || ''}`;
-                if (msg.type === 'pat_message') return `[拍一拍] ${msg.content || ''}`;
+                if (msg.type === 'voice_message') return `${role}: ${msg.content || ''}`;
+                if (msg.type === 'pat_message') return null;
                 if (msg.type === 'transfer') return `[转账] ${msg.senderName} 向 ${msg.receiverName} 转账 ¥${msg.amount}`;
                 return `${role}: ${msg.content || ''}`;
-            }).join('\n');
+            }).filter(Boolean).join('\n');
 
             // 计算时间间隔信息
             const now = new Date();
