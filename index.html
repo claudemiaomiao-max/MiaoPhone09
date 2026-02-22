@@ -9498,8 +9498,9 @@
                     );
                 }
 
-                // 重新存入向量库
+                // 删除旧向量 → 存入新向量
                 if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
+                    await mlabDeleteVectorsByLogId(log.id);
                     const tStart = log.timeRange?.start || log.inputMessages[0]?.timestamp;
                     const tEnd = log.timeRange?.end || log.inputMessages[log.inputMessages.length - 1]?.timestamp;
                     await mlabBatchStoreVectors(narratives, log.assistantId, log.id, tStart, tEnd);
@@ -9601,6 +9602,31 @@
                 }
             }
             console.log(`Memory Lab P0c: 叙事元已存入向量库 (${stored}/${narratives.length})`);
+        }
+
+        // 按 log_id 删除旧向量（重新提取 / 编辑前调用，防止重复）
+        async function mlabDeleteVectorsByLogId(logId) {
+            if (!logId) return 0;
+            const url = appData.settings.supabaseUrl;
+            const key = appData.settings.supabaseKey;
+            if (!url || !key) return 0;
+
+            const resp = await fetch(`${url}/rest/v1/mlab_narratives?log_id=eq.${encodeURIComponent(logId)}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': key,
+                    'Authorization': 'Bearer ' + key,
+                    'Prefer': 'return=representation'
+                }
+            });
+            if (!resp.ok) {
+                const errText = await resp.text().catch(() => resp.statusText);
+                console.warn(`Memory Lab: 删除旧向量失败 ${resp.status}: ${errText}`);
+                return 0;
+            }
+            const deleted = await resp.json().catch(() => []);
+            console.log(`Memory Lab: 已删除 log_id=${logId} 的旧向量 ${deleted.length} 条`);
+            return deleted.length;
         }
 
         async function mlabSearchNarratives(queryText, topK, assistantId, weights) {
@@ -9846,13 +9872,14 @@
                 );
             }
 
-            // 更新向量库（重新 embedding + 替换）
+            // 删除旧向量 → 重新存储该日志下所有叙事元
             if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
                 try {
                     const assistantId = log.assistantId || 'unknown';
                     const tr = log.timeRange || {};
-                    await mlabStoreNarrativeVector(n, assistantId, log.id, tr.start, tr.end);
-                    console.log('Memory Lab: 编辑后叙事元已同步到向量库');
+                    await mlabDeleteVectorsByLogId(log.id);
+                    await mlabBatchStoreVectors(log.outputNarratives, assistantId, log.id, tr.start, tr.end);
+                    console.log('Memory Lab: 编辑后叙事元已全量同步到向量库');
                 } catch(e) {
                     console.warn('Memory Lab: 编辑后向量同步失败', e.message);
                 }
