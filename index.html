@@ -10316,11 +10316,23 @@
             }
 
             // 显示缺口统计
-            const totalMissing = allGaps.reduce((s, g) => s + g.count, 0);
-            const gapSummary = allGaps.map(g => `#${g.startIdx}~${g.endIdx} (${g.count}条)`).join('\n');
+            const gapMinThreshold = mlabConfig.minThreshold != null ? mlabConfig.minThreshold : 40;
+            const extractGaps = allGaps.filter(g => g.count >= gapMinThreshold);
+            const skipGaps = allGaps.filter(g => g.count < gapMinThreshold);
+            const totalMissing = extractGaps.reduce((s, g) => s + g.count, 0);
+            const totalSkipped = skipGaps.reduce((s, g) => s + g.count, 0);
+            let gapSummary = extractGaps.map(g => `#${g.startIdx}~${g.endIdx} (${g.count}条)`).join('\n');
+            if (skipGaps.length > 0) {
+                gapSummary += `\n\n以下 ${skipGaps.length} 个小缺口不足${gapMinThreshold}条，将跳过：\n` + skipGaps.map(g => `#${g.startIdx}~${g.endIdx} (${g.count}条)`).join('\n');
+            }
 
-            if (!confirm(`发现 ${allGaps.length} 个缺口，共 ${totalMissing} 条消息未提取：\n\n${gapSummary.substring(0, 500)}${gapSummary.length > 500 ? '\n...' : ''}\n\n开始补提取？`)) {
-                statusEl.textContent = `发现 ${allGaps.length} 个缺口，${totalMissing} 条消息，已取消`;
+            if (extractGaps.length === 0) {
+                statusEl.innerHTML = `<span style="color:#059669;">✓ 有 ${skipGaps.length} 个小缺口（共${totalSkipped}条）不足门槛，无需补提取</span>`;
+                return;
+            }
+
+            if (!confirm(`发现 ${extractGaps.length} 个需补提取的缺口，共 ${totalMissing} 条消息：\n\n${gapSummary.substring(0, 800)}${gapSummary.length > 800 ? '\n...' : ''}\n\n开始补提取？`)) {
+                statusEl.textContent = `发现 ${extractGaps.length} 个缺口，${totalMissing} 条消息，已取消`;
                 return;
             }
 
@@ -10338,6 +10350,11 @@
                 const gap = allGaps[g];
                 const gapMessages = gap.messages.slice(gap.startIdx, gap.endIdx + 1);
                 if (gapMessages.length === 0) continue;
+                const gapMinThreshold = mlabConfig.minThreshold != null ? mlabConfig.minThreshold : 40;
+                if (gapMessages.length < gapMinThreshold) {
+                    console.log(`Memory Lab 补漏: 缺口${g + 1} #${gap.startIdx}~${gap.endIdx} 仅${gapMessages.length}条，不足${gapMinThreshold}条门槛，跳过`);
+                    continue;
+                }
 
                 const assistantName = gap.assistant.name || '助手';
                 const userName = appData.settings.userName || '用户';
