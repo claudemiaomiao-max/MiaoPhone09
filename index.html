@@ -7686,6 +7686,11 @@
                         </div>
                         <div id="mlabAutoStatus" style="font-size:12px;color:#9ca3af;margin-top:4px;"></div>
                         <button class="mlab-btn mlab-btn-outline" onclick="mlabResetProgress()" style="margin-top:10px;font-size:12px;">重置提取进度（从当前位置重新开始）</button>
+                        <div id="mlabProgressInfo" style="margin-top:8px;font-size:11px;color:#9ca3af;"></div>
+                        <div style="margin-top:6px;display:flex;gap:6px;align-items:center;">
+                            <button class="mlab-btn mlab-btn-outline" onclick="mlabShowProgress()" style="font-size:11px;padding:2px 8px;">查看进度</button>
+                            <button class="mlab-btn mlab-btn-outline" onclick="mlabManualRewind()" style="font-size:11px;padding:2px 8px;color:#f59e0b;border-color:#fcd34d;">手动回退进度</button>
+                        </div>
                     </div>
                     <div class="mlab-section">
                         <div class="mlab-section-title">历史数据提取</div>
@@ -9049,6 +9054,72 @@
             }
         }
 
+        async function mlabShowProgress() {
+            await initWechatData();
+            const el = document.getElementById('mlabProgressInfo');
+            if (!el) return;
+            const conversations = wechatData?.conversations;
+            if (!conversations) { el.textContent = '无对话数据'; return; }
+
+            let html = '';
+            for (const assistantId of Object.keys(conversations)) {
+                const assistant = appData.assistants.find(a => a.id === assistantId);
+                if (!assistant || !assistant.vectorMemoryEnabled) continue;
+                const conv = conversations[assistantId];
+                if (!conv?.messages) continue;
+                const progress = mlabExtractProgress[assistantId];
+                if (progress == null) { html += `${assistant.name}: 未初始化<br>`; continue; }
+                const total = conv.messages.length - 1;
+                const unprocessed = total - progress;
+                const progressMsg = conv.messages[progress];
+                const progressTime = progressMsg?.timestamp ? new Date(progressMsg.timestamp).toLocaleString('zh-CN') : '未知';
+                html += `${assistant.name}: 进度 ${progress}/${total} (未处理${unprocessed}条) · 截止 ${progressTime}<br>`;
+            }
+            el.innerHTML = html || '无已启用向量记忆的助手';
+        }
+
+        async function mlabManualRewind() {
+            await initWechatData();
+            const conversations = wechatData?.conversations;
+            if (!conversations) { alert('无对话数据'); return; }
+
+            // 找到有向量记忆的助手
+            const targets = [];
+            for (const assistantId of Object.keys(conversations)) {
+                const assistant = appData.assistants.find(a => a.id === assistantId);
+                if (!assistant || !assistant.vectorMemoryEnabled) continue;
+                const conv = conversations[assistantId];
+                if (!conv?.messages) continue;
+                targets.push({ assistantId, assistant, conv });
+            }
+            if (targets.length === 0) { alert('无已启用向量记忆的助手'); return; }
+
+            // 简单起见取第一个
+            const target = targets[0];
+            const progress = mlabExtractProgress[target.assistantId] || 0;
+            const total = target.conv.messages.length - 1;
+
+            const input = prompt(`当前进度: ${progress}/${total}\n\n输入要回退的条数（例如输入 200 = 回退200条）：`);
+            if (!input) return;
+            const rewindBy = parseInt(input);
+            if (isNaN(rewindBy) || rewindBy <= 0) { alert('请输入正整数'); return; }
+
+            const newProgress = Math.max(0, progress - rewindBy);
+            const newMsg = target.conv.messages[newProgress];
+            const newTime = newMsg?.timestamp ? new Date(newMsg.timestamp).toLocaleString('zh-CN') : '未知';
+
+            if (rewindBy > 500) {
+                if (!confirm(`⚠️ 将回退 ${rewindBy} 条消息！\n\n进度: ${progress} → ${newProgress}\n截止时间将变为: ${newTime}\n\n这会导致大量消息被重新提取，确定吗？`)) return;
+            } else {
+                if (!confirm(`进度: ${progress} → ${newProgress}\n截止时间将变为: ${newTime}\n\n确定回退吗？`)) return;
+            }
+
+            mlabExtractProgress[target.assistantId] = newProgress;
+            saveMlabProgress();
+            mlabShowProgress();
+            console.log(`Memory Lab: 手动回退 [${target.assistant.name}] ${progress} → ${newProgress}`);
+        }
+
         function mlabResetProgress() {
             if (!confirm('确定重置所有助手的提取进度？\n这会让自动提取从"当前位置"重新开始，不会回溯老数据。')) return;
             const conversations = wechatData?.conversations;
@@ -9354,10 +9425,30 @@
                 return;
             }
 
+            // 确保wechatData可用（用于计算消息序号）
+            try { await initWechatData(); } catch(e) {}
+
             // 统计
             const today = new Date().toDateString();
             const todayCount = mlabLogs.filter(l => new Date(l.triggerTime).toDateString() === today).length;
             const showCount = Math.min(mlabLogShowCount, mlabLogs.length);
+            const conversations = wechatData?.conversations;
+
+            // 当前进度
+            let progressStr = '';
+            if (conversations) {
+                for (const assistantId of Object.keys(conversations)) {
+                    const assistant = appData.assistants.find(a => a.id === assistantId);
+                    if (!assistant || !assistant.vectorMemoryEnabled) continue;
+                    const conv = conversations[assistantId];
+                    if (!conv?.messages) continue;
+                    const p = mlabExtractProgress[assistantId];
+                    if (p != null) {
+                        const total = conv.messages.length - 1;
+                        progressStr += `<span>进度: <b style="color:#7c3aed;">${p}/${total}</b></span>`;
+                    }
+                }
+            }
 
             let html = `<div class="mlab-section" style="padding-bottom:8px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -9365,11 +9456,31 @@
                         <span>今日: <b style="color:#7c3aed;">${todayCount}</b></span>
                         <span>总计: <b style="color:#7c3aed;">${mlabLogs.length}</b></span>
                         <span>显示: <b style="color:#7c3aed;">${showCount}</b></span>
+                        ${progressStr}
                         <span>${mlabAutoTimer ? '<b style="color:#059669;">运行中</b>' : '<b style="color:#9ca3af;">未启动</b>'}</span>
                     </div>
                     <button class="mlab-btn mlab-btn-outline" onclick="mlabExportLogs()" style="font-size:11px;padding:4px 10px;flex-shrink:0;">导出</button>
                 </div>
             </div>`;
+
+            // 计算每条日志的消息序号范围（需要wechatData）
+            let msgIndexCache = {};
+            function findMsgIdx(assistantId, timeStr) {
+                if (!conversations || !timeStr) return null;
+                const conv = conversations[assistantId];
+                if (!conv?.messages) return null;
+                const cacheKey = assistantId + '_' + timeStr;
+                if (msgIndexCache[cacheKey] != null) return msgIndexCache[cacheKey];
+                const t = new Date(timeStr).getTime();
+                for (let i = 0; i < conv.messages.length; i++) {
+                    if (new Date(conv.messages[i].timestamp).getTime() >= t) {
+                        msgIndexCache[cacheKey] = i;
+                        return i;
+                    }
+                }
+                msgIndexCache[cacheKey] = conv.messages.length - 1;
+                return conv.messages.length - 1;
+            }
 
             html += '<div class="mlab-section" style="padding-top:0;">';
             mlabLogs.slice(0, showCount).forEach((log, idx) => {
@@ -9380,11 +9491,21 @@
                 const statusText = log.status === 'success' ? '成功' : log.status === 'parse_error' ? '解析失败' : '错误';
                 const narrativeCount = log.outputNarratives?.length || 0;
 
+                // 消息序号范围
+                let rangeStr = '';
+                if (log.timeRange && log.assistantId) {
+                    const startIdx = findMsgIdx(log.assistantId, log.timeRange.start);
+                    const endIdx = findMsgIdx(log.assistantId, log.timeRange.end);
+                    if (startIdx != null && endIdx != null) {
+                        rangeStr = ` · #${startIdx}~${endIdx}`;
+                    }
+                }
+
                 html += `<div class="mlab-log-entry" onclick="mlabToggleLogDetail(${idx})">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:14px;font-weight:500;color:#1f2937;">${escapeHtml(log.assistantName || '未知助手')}</div>
-                            <div style="font-size:12px;color:#9ca3af;margin-top:2px;">${timeStr} · ${reasonText} · ${log.totalUnprocessed ? log.totalUnprocessed + '条触发→' : ''}${log.chunkSize || 0}条入块${narrativeCount > 0 ? ' · ' + narrativeCount + '个叙事元' : ''}</div>
+                            <div style="font-size:12px;color:#9ca3af;margin-top:2px;">${timeStr} · ${reasonText} · ${log.totalUnprocessed ? log.totalUnprocessed + '条触发→' : ''}${log.chunkSize || 0}条入块${narrativeCount > 0 ? ' · ' + narrativeCount + '个叙事元' : ''}${rangeStr}</div>
                         </div>
                         <span class="${statusClass}">${statusText}</span>
                     </div>
@@ -9435,14 +9556,16 @@
                     detailHtml += `<div style="color:#ef4444;font-size:12px;margin-bottom:8px;">错误: ${escapeHtml(log.error)}</div>`;
                 }
 
-                // 重新提取按钮 + 删除按钮（日志里有原始对话数据才显示重新提取）
+                // 重新提取按钮 + 删除按钮 + 重置进度按钮
                 if (log.inputMessages && log.inputMessages.length > 0) {
-                    detailHtml += `<div style="margin-bottom:8px;display:flex;gap:8px;">
+                    detailHtml += `<div style="margin-bottom:8px;display:flex;gap:8px;flex-wrap:wrap;">
                         <button class="mlab-btn mlab-btn-outline" id="mlabReExtractBtn_${idx}" onclick="mlabReExtract(${idx})" style="font-size:12px;padding:4px 12px;">重新提取</button>
+                        <button class="mlab-btn mlab-btn-outline" onclick="mlabRewindToLog(${idx})" style="font-size:12px;padding:4px 12px;color:#f59e0b;border-color:#fcd34d;">从这里重新同步</button>
                         <button class="mlab-btn mlab-btn-outline" onclick="mlabDeleteLog(${idx})" style="font-size:12px;padding:4px 12px;color:#ef4444;border-color:#fca5a5;">删除日志</button>
                     </div>`;
                 } else {
-                    detailHtml += `<div style="margin-bottom:8px;">
+                    detailHtml += `<div style="margin-bottom:8px;display:flex;gap:8px;">
+                        <button class="mlab-btn mlab-btn-outline" onclick="mlabRewindToLog(${idx})" style="font-size:12px;padding:4px 12px;color:#f59e0b;border-color:#fcd34d;">从这里重新同步</button>
                         <button class="mlab-btn mlab-btn-outline" onclick="mlabDeleteLog(${idx})" style="font-size:12px;padding:4px 12px;color:#ef4444;border-color:#fca5a5;">删除日志</button>
                     </div>`;
                 }
@@ -9518,6 +9641,60 @@
         }
 
         // 重新提取日志中的叙事元
+        // 从某条日志的位置重新开始同步
+        async function mlabRewindToLog(logIdx) {
+            const log = mlabLogs[logIdx];
+            if (!log || !log.assistantId || !log.timeRange?.start) {
+                alert('这条日志缺少时间或助手信息，无法定位');
+                return;
+            }
+
+            await initWechatData();
+            const conv = wechatData?.conversations?.[log.assistantId];
+            if (!conv?.messages) { alert('找不到对话数据'); return; }
+
+            // 找到这条日志起始时间对应的消息位置
+            const logStartTime = new Date(log.timeRange.start).getTime();
+            let targetIdx = 0;
+            for (let i = 0; i < conv.messages.length; i++) {
+                const msgTime = new Date(conv.messages[i].timestamp).getTime();
+                if (msgTime >= logStartTime) {
+                    targetIdx = Math.max(0, i - 1);
+                    break;
+                }
+            }
+
+            const currentProgress = mlabExtractProgress[log.assistantId] || 0;
+            const rewindAmount = currentProgress - targetIdx;
+            const targetTime = new Date(log.timeRange.start).toLocaleString('zh-CN');
+
+            // 统计这条日志及之后有多少条日志
+            const logsAfter = mlabLogs.filter((l, i) => i <= logIdx && l.assistantId === log.assistantId).length;
+
+            if (rewindAmount <= 0) {
+                alert('当前进度已经在这条日志之前了，不需要回退。');
+                return;
+            }
+
+            let msg = `将进度回退到这条日志之前\n\n`;
+            msg += `回退: ${rewindAmount} 条消息\n`;
+            msg += `起点: ${targetTime}\n\n`;
+            msg += `回退后，这个时间之后的消息会被自动重新提取。\n`;
+            msg += `建议手动删除这条及之后的旧日志，避免向量重复。`;
+
+            if (rewindAmount > 500) {
+                msg = `⚠️ 将回退 ${rewindAmount} 条消息！\n\n` + msg;
+            }
+
+            if (!confirm(msg)) return;
+
+            mlabExtractProgress[log.assistantId] = targetIdx;
+            saveMlabProgress();
+            console.log(`Memory Lab: 从日志位置重新同步 [${log.assistantName}] 进度 ${currentProgress} → ${targetIdx}`);
+            alert(`进度已回退到 ${targetTime} 之前。\n\n下次心跳会自动开始重新提取。\n记得删除旧日志中这个时间之后的条目。`);
+            mlabShowProgress();
+        }
+
         // 删除日志（连带删除向量库数据，可选回退进度）
         async function mlabDeleteLog(logIdx) {
             const log = mlabLogs[logIdx];
