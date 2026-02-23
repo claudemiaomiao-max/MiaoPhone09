@@ -3131,7 +3131,7 @@
         }
 
         .wechat-msg-body {
-            max-width: 70%;
+            max-width: 80%;
             margin: 0 10px;
         }
 
@@ -7022,7 +7022,7 @@
                 <div class="wechat-settings-section">
                     <div class="wechat-settings-item" onclick="exportWechatChat()">
                         <span class="wechat-settings-label">导出聊天记录</span>
-                        <span class="wechat-settings-value" style="font-size: 11px; color: #999;">不含图片</span>
+                        <span class="wechat-settings-value" style="font-size: 11px; color: #999;">JSON / MD</span>
                     </div>
                     <div class="wechat-settings-item" onclick="importWechatChat()">
                         <span class="wechat-settings-label">导入聊天记录</span>
@@ -15034,7 +15034,25 @@ ${memoryText}`;
                     conv.messages.push(msgToAdd);
 
                     // 增量渲染：只追加新消息的HTML，不重绘整个列表
-                    const msgHtml = renderWechatMessage(msgToAdd, assistant);
+                    // 时间戳逻辑：只有同角色连续消息的最后一条才显示时间戳
+                    const isLastInBatch = index === replies.length - 1;
+                    const nextReply = replies[index + 1];
+                    const nextIsSameRole = nextReply && (nextReply.type !== 'pat' && nextReply.type !== 'pat_message');
+                    const showTs = isLastInBatch || !nextIsSameRole;
+
+                    // 隐藏前一条同角色消息的时间戳
+                    const allMsgEls = container.querySelectorAll('.wechat-msg');
+                    if (allMsgEls.length > 0) {
+                        const lastEl = allMsgEls[allMsgEls.length - 1];
+                        if (lastEl && lastEl.classList.contains(msgToAdd.role)) {
+                            const prevTime = lastEl.querySelector('.wechat-msg-time');
+                            if (prevTime) prevTime.style.display = 'none';
+                        }
+                    }
+
+                    const userAvatarHtml = getCachedUserAvatarHtml();
+                    const assistantAvatarHtml = getCachedAssistantAvatarHtml(assistant);
+                    const msgHtml = renderWechatMessageFast(msgToAdd, assistant, userAvatarHtml, assistantAvatarHtml, false, showTs);
                     container.insertAdjacentHTML('beforeend', msgHtml);
                     container.scrollTop = container.scrollHeight;
 
@@ -19247,38 +19265,70 @@ ${dialogueText}
             }
 
             const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
-            // 导出时排除图片base64数据，只保留基本信息
-            const messagesWithoutImages = conv.messages.map(msg => {
-                if (msg.type === 'image') {
-                    return {
-                        ...msg,
-                        content: '[图片已移除]', // 移除base64图片数据
-                        thumbnail: msg.thumbnail || null // 保留缩略图（如果有）
-                    };
+            const assistantName = assistant?.name || 'chat';
+            const format = prompt('导出格式：输入 1 导出 JSON，输入 2 导出 MD（Markdown）', '1');
+            if (!format) return;
+
+            if (format.trim() === '2') {
+                // Markdown 格式
+                let md = `# 聊天记录 - ${assistantName}\n\n`;
+                // 导出长期记忆
+                if (conv.settings?.longTermMemory?.length > 0) {
+                    md += `## 长期记忆\n\n${conv.settings.longTermMemory}\n\n---\n\n`;
                 }
-                return msg;
-            });
+                let lastDate = '';
+                for (const m of conv.messages) {
+                    if (m.type === 'pat_message' || m.type === 'system') {
+                        md += `> ${m.content || ''}\n\n`;
+                        continue;
+                    }
+                    const dt = new Date(m.timestamp);
+                    const date = dt.toLocaleDateString('zh-CN');
+                    if (date !== lastDate) {
+                        md += `## ${date}\n\n`;
+                        lastDate = date;
+                    }
+                    const time = dt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                    const name = m.role === 'user' ? '我' : assistantName;
+                    let content = '';
+                    if (m.type === 'image') {
+                        content = '[图片]';
+                    } else if (m.type === 'voice_message') {
+                        content = `🎤 ${m.content || ''}`;
+                    } else if (m.type === 'transfer') {
+                        content = `💰 转账 ¥${m.amount?.toFixed(2) || '0.00'}${m.note ? ' ' + m.note : ''}`;
+                    } else {
+                        content = m.content || '';
+                    }
+                    md += `**${name}** (${time})\n\n${content}\n\n---\n\n`;
+                }
+                downloadFile(md, `wechat_${assistantName}_${new Date().toISOString().slice(0, 10)}.md`, 'text/markdown');
+            } else {
+                // JSON 格式（原逻辑）
+                const messagesWithoutImages = conv.messages.map(msg => {
+                    if (msg.type === 'image') {
+                        return {
+                            ...msg,
+                            content: '[图片已移除]',
+                            thumbnail: msg.thumbnail || null
+                        };
+                    }
+                    return msg;
+                });
 
-            const exportObj = {
-                assistant: assistant?.name,
-                exportTime: new Date().toISOString(),
-                messages: messagesWithoutImages
-            };
+                const exportObj = {
+                    assistant: assistantName,
+                    exportTime: new Date().toISOString(),
+                    messages: messagesWithoutImages
+                };
 
-            // 导出长期记忆
-            if (conv.settings?.longTermMemory?.length > 0) {
-                exportObj.longTermMemory = conv.settings.longTermMemory;
+                if (conv.settings?.longTermMemory?.length > 0) {
+                    exportObj.longTermMemory = conv.settings.longTermMemory;
+                }
+
+                const dataStr = JSON.stringify(exportObj, null, 2);
+                downloadFile(dataStr, `wechat_${assistantName}_${new Date().toISOString().slice(0, 10)}.json`, 'application/json');
             }
-
-            const dataStr = JSON.stringify(exportObj, null, 2);
-
-            const blob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `wechat_${assistant?.name || 'chat'}_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
         }
 
         // 清除图片缓存（图片数据在msg.content中）
