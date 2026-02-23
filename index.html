@@ -9518,13 +9518,15 @@
         }
 
         // 重新提取日志中的叙事元
-        // 删除日志（连带删除向量库数据 + 回退进度）
+        // 删除日志（连带删除向量库数据，可选回退进度）
         async function mlabDeleteLog(logIdx) {
             const log = mlabLogs[logIdx];
             if (!log) return;
 
             const timeStr = log.timeRange ? `${new Date(log.timeRange.start).toLocaleString('zh-CN')} ~ ${new Date(log.timeRange.end).toLocaleString('zh-CN')}` : '未知时间';
-            if (!confirm(`确认删除这条日志？\n\n${log.assistantName} · ${timeStr}\n${log.chunkSize || 0}条消息 · ${log.outputNarratives?.length || 0}个叙事元\n\n向量库中对应的叙事元也会一起删除，提取进度会回退。`)) return;
+            if (!confirm(`确认删除这条日志？\n\n${log.assistantName} · ${timeStr}\n${log.chunkSize || 0}条消息 · ${log.outputNarratives?.length || 0}个叙事元\n\n向量库中对应的叙事元也会一起删除。`)) return;
+
+            const shouldRewind = confirm('是否回退提取进度？\n\n选「好」→ 进度回退，这段消息会被自动重新提取\n选「取消」→ 只删日志和向量，不回退进度（适合删重复日志）');
 
             try {
                 // 1. 删除向量库中的关联数据
@@ -9542,13 +9544,12 @@
                     });
                 }
 
-                // 3. 回退进度：找到这条日志对应的消息起始位置
-                if (log.assistantId && log.timeRange?.start) {
+                // 3. 可选：回退进度
+                if (shouldRewind && log.assistantId && log.timeRange?.start) {
                     await initWechatData();
                     const conv = wechatData?.conversations?.[log.assistantId];
                     if (conv?.messages) {
                         const logStartTime = new Date(log.timeRange.start).getTime();
-                        // 找到第一条 >= logStartTime 的消息的前一个位置
                         let rewindIdx = 0;
                         for (let i = 0; i < conv.messages.length; i++) {
                             const msgTime = new Date(conv.messages[i].timestamp).getTime();
@@ -9558,10 +9559,21 @@
                             }
                         }
                         const currentProgress = mlabExtractProgress[log.assistantId] || 0;
+                        const rewindAmount = currentProgress - rewindIdx;
                         if (rewindIdx < currentProgress) {
-                            mlabExtractProgress[log.assistantId] = rewindIdx;
-                            saveMlabProgress();
-                            console.log(`Memory Lab: 进度回退 [${log.assistantName}] ${currentProgress} → ${rewindIdx}`);
+                            if (rewindAmount > 500) {
+                                if (!confirm(`⚠️ 进度将回退 ${rewindAmount} 条消息！\n\n这会导致大量消息被重新提取，确定要回退吗？`)) {
+                                    console.log('Memory Lab: 用户取消了大幅回退');
+                                } else {
+                                    mlabExtractProgress[log.assistantId] = rewindIdx;
+                                    saveMlabProgress();
+                                    console.log(`Memory Lab: 进度回退 [${log.assistantName}] ${currentProgress} → ${rewindIdx} (回退${rewindAmount}条)`);
+                                }
+                            } else {
+                                mlabExtractProgress[log.assistantId] = rewindIdx;
+                                saveMlabProgress();
+                                console.log(`Memory Lab: 进度回退 [${log.assistantName}] ${currentProgress} → ${rewindIdx} (回退${rewindAmount}条)`);
+                            }
                         }
                     }
                 }
@@ -9571,7 +9583,7 @@
 
                 // 5. 重新渲染
                 mlabRenderLogPanel();
-                console.log(`Memory Lab: 日志已删除 ${log.id}`);
+                console.log(`Memory Lab: 日志已删除 ${log.id}${shouldRewind ? '（已回退进度）' : '（未回退进度）'}`);
 
             } catch(err) {
                 console.error('Memory Lab: 删除日志失败', err);
