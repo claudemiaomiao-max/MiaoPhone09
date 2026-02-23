@@ -7700,6 +7700,8 @@
                             <button class="mlab-btn mlab-btn-outline" onclick="mlabStopHistoryExtract()" id="mlabHistoryStopBtn" style="flex:0 0 auto;display:none;">暂停</button>
                         </div>
                         <div id="mlabHistoryStatus" style="font-size:12px;color:#9ca3af;margin-top:8px;"></div>
+                        <button class="mlab-btn mlab-btn-outline" onclick="mlabScanGaps()" id="mlabGapBtn" style="margin-top:10px;font-size:12px;width:100%;">扫描补漏（检测并补提取缺口）</button>
+                        <div id="mlabGapStatus" style="font-size:12px;color:#9ca3af;margin-top:6px;"></div>
                     </div>
                     <div class="mlab-section">
                         <div class="mlab-section-title">SiliconFlow API Key</div>
@@ -10206,6 +10208,207 @@
         // --- P0c: 历史数据提取 ---
         let mlabHistoryRunning = false;
         let mlabHistoryAbort = false;
+
+        // 扫描日志缺口并补提取
+        async function mlabScanGaps() {
+            if (mlabHistoryRunning) { alert('正在提取中，请等待完成'); return; }
+            if (!mlabConfig.model) { alert('请先在"配置"页选择总结模型'); return; }
+            if (!mlabConfig.prompt || mlabConfig.prompt.trim().length < 10) { alert('请先填写提取提示词'); return; }
+
+            const [providerId, modelId] = mlabConfig.model.split('||');
+            const provider = appData.providers.find(p => p.id === providerId);
+            if (!provider) { alert('供应商未找到'); return; }
+
+            await initWechatData();
+            const conversations = wechatData?.conversations;
+            if (!conversations) { alert('没有微信对话数据'); return; }
+
+            const statusEl = document.getElementById('mlabGapStatus');
+            const btn = document.getElementById('mlabGapBtn');
+
+            // 收集所有开了向量记忆的助手
+            const targets = [];
+            for (const assistantId of Object.keys(conversations)) {
+                const assistant = appData.assistants.find(a => a.id === assistantId);
+                if (!assistant || !assistant.vectorMemoryEnabled) continue;
+                const conv = conversations[assistantId];
+                if (!conv || !conv.messages || conv.messages.length < 2) continue;
+                targets.push({ assistantId, assistant, messages: conv.messages });
+            }
+            if (targets.length === 0) { alert('没有开启向量记忆的助手'); return; }
+
+            // 1. 扫描缺口
+            statusEl.textContent = '正在扫描缺口...';
+            let allGaps = [];
+
+            for (const target of targets) {
+                const { assistantId, assistant, messages } = target;
+
+                // 收集该助手的所有日志覆盖范围
+                const coveredRanges = [];
+                for (const log of mlabLogs) {
+                    if (log.assistantId !== assistantId || !log.timeRange) continue;
+                    const startTime = new Date(log.timeRange.start).getTime();
+                    const endTime = new Date(log.timeRange.end).getTime();
+                    // 找对应的消息索引
+                    let startIdx = -1, endIdx = -1;
+                    for (let i = 0; i < messages.length; i++) {
+                        const t = new Date(messages[i].timestamp).getTime();
+                        if (startIdx === -1 && t >= startTime) startIdx = i;
+                        if (t <= endTime) endIdx = i;
+                    }
+                    if (startIdx >= 0 && endIdx >= 0) {
+                        coveredRanges.push({ start: startIdx, end: endIdx });
+                    }
+                }
+
+                if (coveredRanges.length === 0) continue;
+
+                // 排序并合并重叠范围
+                coveredRanges.sort((a, b) => a.start - b.start);
+                const merged = [coveredRanges[0]];
+                for (let i = 1; i < coveredRanges.length; i++) {
+                    const last = merged[merged.length - 1];
+                    if (coveredRanges[i].start <= last.end + 1) {
+                        last.end = Math.max(last.end, coveredRanges[i].end);
+                    } else {
+                        merged.push({ ...coveredRanges[i] });
+                    }
+                }
+
+                // 找缺口（在已覆盖的最小~最大范围之间）
+                const minCovered = merged[0].start;
+                const maxCovered = merged[merged.length - 1].end;
+                const progress = mlabExtractProgress[assistantId] || 0;
+                const scanEnd = Math.max(maxCovered, progress);
+
+                for (let i = 0; i < merged.length - 1; i++) {
+                    const gapStart = merged[i].end + 1;
+                    const gapEnd = merged[i + 1].start - 1;
+                    if (gapEnd >= gapStart) {
+                        allGaps.push({
+                            assistantId,
+                            assistant,
+                            messages,
+                            startIdx: gapStart,
+                            endIdx: gapEnd,
+                            count: gapEnd - gapStart + 1
+                        });
+                    }
+                }
+
+                // 检查最后一个覆盖范围到进度之间的缺口
+                if (scanEnd > maxCovered + 1) {
+                    allGaps.push({
+                        assistantId,
+                        assistant,
+                        messages,
+                        startIdx: maxCovered + 1,
+                        endIdx: scanEnd,
+                        count: scanEnd - maxCovered
+                    });
+                }
+            }
+
+            if (allGaps.length === 0) {
+                statusEl.innerHTML = '<span style="color:#059669;">✓ 未发现缺口，所有消息都已覆盖</span>';
+                return;
+            }
+
+            // 显示缺口统计
+            const totalMissing = allGaps.reduce((s, g) => s + g.count, 0);
+            const gapSummary = allGaps.map(g => `#${g.startIdx}~${g.endIdx} (${g.count}条)`).join('\n');
+
+            if (!confirm(`发现 ${allGaps.length} 个缺口，共 ${totalMissing} 条消息未提取：\n\n${gapSummary.substring(0, 500)}${gapSummary.length > 500 ? '\n...' : ''}\n\n开始补提取？`)) {
+                statusEl.textContent = `发现 ${allGaps.length} 个缺口，${totalMissing} 条消息，已取消`;
+                return;
+            }
+
+            // 2. 逐个补提取
+            mlabHistoryRunning = true;
+            mlabHistoryAbort = false;
+            btn.disabled = true;
+            btn.textContent = '补提取中...';
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (let g = 0; g < allGaps.length; g++) {
+                if (mlabHistoryAbort) break;
+                const gap = allGaps[g];
+                const gapMessages = gap.messages.slice(gap.startIdx, gap.endIdx + 1);
+                if (gapMessages.length === 0) continue;
+
+                const assistantName = gap.assistant.name || '助手';
+                const userName = appData.settings.userName || '用户';
+
+                statusEl.textContent = `补提取 ${g + 1}/${allGaps.length}: #${gap.startIdx}~${gap.endIdx} (${gap.count}条)...`;
+
+                // 切分（用沉默超时模式，按30分钟切）
+                let chunks = mlabPreSplit(gapMessages);
+                // 如果切分后为空但消息数 > 0，整批处理
+                if (chunks.length === 0 && gapMessages.length > 0) {
+                    chunks = [gapMessages];
+                }
+
+                for (let i = 0; i < chunks.length; i++) {
+                    if (mlabHistoryAbort) break;
+                    const chunk = chunks[i];
+
+                    try {
+                        const { narratives, rawContent } = await mlabExtractChunk(chunk, assistantName, userName, provider, modelId);
+                        const logId = 'mlog_gap_' + Date.now() + '_' + g + '_' + i;
+
+                        if (narratives) {
+                            mlabSaveLog({
+                                id: logId,
+                                assistantId: gap.assistantId,
+                                assistantName,
+                                triggerTime: new Date().toISOString(),
+                                triggerReason: '补漏提取',
+                                chunkSize: chunk.length,
+                                timeRange: { start: chunk[0].timestamp, end: chunk[chunk.length - 1].timestamp },
+                                inputMessages: chunk,
+                                outputNarratives: narratives,
+                                rawOutput: rawContent,
+                                status: 'success'
+                            });
+                            if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
+                                await mlabBatchStoreVectors(narratives, gap.assistantId, logId, chunk[0].timestamp, chunk[chunk.length - 1].timestamp);
+                            }
+                            successCount++;
+                        } else {
+                            mlabSaveLog({
+                                id: logId,
+                                assistantId: gap.assistantId,
+                                assistantName,
+                                triggerTime: new Date().toISOString(),
+                                triggerReason: '补漏提取',
+                                chunkSize: chunk.length,
+                                timeRange: { start: chunk[0].timestamp, end: chunk[chunk.length - 1].timestamp },
+                                inputMessages: chunk,
+                                outputNarratives: [],
+                                rawOutput: rawContent,
+                                status: 'parse_error',
+                                error: 'JSON 解析失败'
+                            });
+                            failCount++;
+                        }
+                    } catch(err) {
+                        console.error(`Memory Lab 补漏: 缺口${g + 1} chunk${i} 失败`, err);
+                        failCount++;
+                        statusEl.textContent = `缺口${g + 1} chunk${i} 出错: ${err.message}，3秒后继续...`;
+                        await new Promise(r => setTimeout(r, 3000));
+                    }
+                }
+            }
+
+            mlabHistoryRunning = false;
+            btn.disabled = false;
+            btn.textContent = '扫描补漏（检测并补提取缺口）';
+            statusEl.innerHTML = `<span style="color:#059669;">补漏完成！成功 ${successCount} 块${failCount > 0 ? '，失败 ' + failCount + ' 块' : ''}</span>`;
+            mlabRenderLogPanel();
+        }
 
         async function mlabStartHistoryExtract() {
             if (mlabHistoryRunning) return;
