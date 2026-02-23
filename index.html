@@ -8802,15 +8802,6 @@
 
                 if (narratives) {
                     mlabRenderNarratives(narratives, rawContent);
-                    // P0c: 手动测试成功 → 也存入向量库
-                    if (mlabConfig.siliconFlowKey && cloudSyncEnabled()) {
-                        const assistantId = wechatData?.currentAssistantId || 'manual_test';
-                        const tStart = mlabTestMessages[0]?.timestamp || mlabTestMessages[0]?.time;
-                        const tEnd = mlabTestMessages[mlabTestMessages.length - 1]?.timestamp || mlabTestMessages[mlabTestMessages.length - 1]?.time;
-                        mlabBatchStoreVectors(narratives, assistantId, 'manual_test', tStart, tEnd).catch(e =>
-                            console.warn('Memory Lab P0c: 手动测试向量存储失败', e.message)
-                        );
-                    }
                 } else {
                     _mlabLastRawJson = rawContent;
                     outputDiv.innerHTML = `<div style="color:#ef4444;font-size:12px;margin-bottom:8px;">JSON 解析失败，显示原始输出：</div><button onclick="mlabCopyJson()" style="margin-bottom:6px;padding:6px 14px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:12px;color:#374151;cursor:pointer;">复制原始输出</button><div class="mlab-raw-json">${escapeHtml(rawContent)}</div>`;
@@ -8957,40 +8948,44 @@
             return result;
         }
 
-        function mlabPreSplit(messages) {
-            const minThreshold = mlabConfig.minThreshold || 40;
-            const msgLimit = mlabConfig.msgLimit || 80;
+        function mlabPreSplit(messages, skipTimeSplit) {
+            const minThreshold = mlabConfig.minThreshold != null ? mlabConfig.minThreshold : 40;
+            const msgLimit = mlabConfig.msgLimit != null ? mlabConfig.msgLimit : 80;
 
             if (messages.length <= msgLimit) {
                 return messages.length >= minThreshold ? [messages] : [];
             }
 
-            // 按时间间隔 >30分钟 找断点
-            const gaps = [];
-            for (let i = 1; i < messages.length; i++) {
-                const prev = new Date(messages[i - 1].timestamp).getTime();
-                const curr = new Date(messages[i].timestamp).getTime();
-                if (curr - prev > 30 * 60 * 1000) {
-                    gaps.push(i);
-                }
-            }
-
-            // 调整断点到轮次边界
-            const breakpoints = gaps.map(idx => mlabFindTurnBoundary(messages, idx));
-            // 去重并排序
-            const uniqueBreaks = [...new Set(breakpoints)].sort((a, b) => a - b);
-
-            // 切块
             let chunks = [];
-            let start = 0;
-            for (const bp of uniqueBreaks) {
-                if (bp > start && bp < messages.length) {
-                    chunks.push(messages.slice(start, bp));
-                    start = bp;
+
+            if (!skipTimeSplit) {
+                // 沉默超时 / 历史提取：按时间间隔 >30分钟 找断点
+                const gaps = [];
+                for (let i = 1; i < messages.length; i++) {
+                    const prev = new Date(messages[i - 1].timestamp).getTime();
+                    const curr = new Date(messages[i].timestamp).getTime();
+                    if (curr - prev > 30 * 60 * 1000) {
+                        gaps.push(i);
+                    }
                 }
-            }
-            if (start < messages.length) {
-                chunks.push(messages.slice(start));
+
+                // 调整断点到轮次边界
+                const breakpoints = gaps.map(idx => mlabFindTurnBoundary(messages, idx));
+                const uniqueBreaks = [...new Set(breakpoints)].sort((a, b) => a - b);
+
+                let start = 0;
+                for (const bp of uniqueBreaks) {
+                    if (bp > start && bp < messages.length) {
+                        chunks.push(messages.slice(start, bp));
+                        start = bp;
+                    }
+                }
+                if (start < messages.length) {
+                    chunks.push(messages.slice(start));
+                }
+            } else {
+                // 累积上限：不按时间切，整批作为一个块
+                chunks = [messages];
             }
 
             // 拆分过大的块
@@ -9000,8 +8995,25 @@
                 finalChunks.push(...splits);
             }
 
-            // 过滤掉小于 minThreshold 的碎块
-            finalChunks = finalChunks.filter(c => c.length >= minThreshold);
+            // 小于 minThreshold 的碎块合并到相邻块（不丢弃，防止进度跳过导致消息丢失）
+            if (finalChunks.length > 1) {
+                let merged = [];
+                for (let i = 0; i < finalChunks.length; i++) {
+                    if (finalChunks[i].length < minThreshold) {
+                        // 合并到前一个块（优先）或后一个块
+                        if (merged.length > 0) {
+                            merged[merged.length - 1] = merged[merged.length - 1].concat(finalChunks[i]);
+                        } else if (i + 1 < finalChunks.length) {
+                            finalChunks[i + 1] = finalChunks[i].concat(finalChunks[i + 1]);
+                        } else {
+                            merged.push(finalChunks[i]); // 只有一个碎块，保留
+                        }
+                    } else {
+                        merged.push(finalChunks[i]);
+                    }
+                }
+                finalChunks = merged;
+            }
 
             return finalChunks;
         }
@@ -9086,6 +9098,7 @@
             if (!mlabConfig.model || !mlabConfig.prompt || mlabConfig.prompt.trim().length < 10) return;
 
             mlabAutoRunning = true;
+            loadMlabConfig(); // 每次心跳都重新读配置，防止内存中的值过时
             try {
                 const conversations = wechatData?.conversations;
                 if (!conversations) return;
@@ -9108,13 +9121,13 @@
                     const totalMsgs = conv.messages.length - 1;
                     const unprocessed = totalMsgs - lastExtractedIndex;
 
-                    if (unprocessed < (mlabConfig.minThreshold || 40)) continue;
+                    if (unprocessed < (mlabConfig.minThreshold != null ? mlabConfig.minThreshold : 40)) continue;
 
                     // 检查触发条件
                     const lastMsg = conv.messages[conv.messages.length - 1];
                     const silenceMs = Date.now() - new Date(lastMsg.timestamp).getTime();
-                    const silenceTimeout = (mlabConfig.silenceTimeout || 30) * 60 * 1000;
-                    const msgLimit = mlabConfig.msgLimit || 80;
+                    const silenceTimeout = ((mlabConfig.silenceTimeout != null ? mlabConfig.silenceTimeout : 30)) * 60 * 1000;
+                    const msgLimit = mlabConfig.msgLimit != null ? mlabConfig.msgLimit : 80;
 
                     let triggerReason = null;
                     if (silenceMs >= silenceTimeout) {
@@ -9124,7 +9137,7 @@
                     }
 
                     if (triggerReason) {
-                        console.log(`Memory Lab: 触发自动提取 [${assistant.name}] 原因=${triggerReason} 未处理=${unprocessed}条`);
+                        console.log(`Memory Lab: 触发自动提取 [${assistant.name}] 原因=${triggerReason} 未处理=${unprocessed}条 (配置: msgLimit=${msgLimit}, silence=${mlabConfig.silenceTimeout}min, minThreshold=${mlabConfig.minThreshold})`);
                         await mlabAutoExtract(assistantId, conv, assistant, triggerReason);
                     }
                 }
@@ -9143,6 +9156,7 @@
 
             if (unprocessedMsgs.length === 0) return;
 
+            const totalUnprocessed = unprocessedMsgs.length;
             const assistantName = assistant.name || '助手';
             const userName = appData.settings.userName || '用户';
 
@@ -9155,10 +9169,17 @@
             }
 
             // 切分
-            const chunks = mlabPreSplit(unprocessedMsgs);
+            let chunks = mlabPreSplit(unprocessedMsgs, triggerReason === 'accumulation');
             if (chunks.length === 0) {
-                console.log(`Memory Lab: [${assistantName}] 消息不足最小门槛，跳过`);
-                return;
+                // 切分后全部被过滤（碎块都不够门槛），但总量够触发条件
+                // 回退：把整批消息当作一个块处理，避免死循环
+                if (unprocessedMsgs.length >= (mlabConfig.minThreshold != null ? mlabConfig.minThreshold : 40)) {
+                    console.log(`Memory Lab: [${assistantName}] 切分后无有效块，回退为整批处理 (${unprocessedMsgs.length}条)`);
+                    chunks.push(unprocessedMsgs);
+                } else {
+                    console.log(`Memory Lab: [${assistantName}] 消息不足最小门槛，跳过`);
+                    return;
+                }
             }
 
             console.log(`Memory Lab: [${assistantName}] 切分为 ${chunks.length} 个块`);
@@ -9183,6 +9204,7 @@
                             triggerTime,
                             triggerReason,
                             chunkSize: chunk.length,
+                            totalUnprocessed,
                             timeRange: { start: firstMsg.timestamp, end: lastMsg.timestamp },
                             inputMessages: chunk,
                             outputNarratives: narratives,
@@ -9202,6 +9224,7 @@
                             triggerTime,
                             triggerReason,
                             chunkSize: chunk.length,
+                            totalUnprocessed,
                             timeRange: { start: firstMsg.timestamp, end: lastMsg.timestamp },
                             inputMessages: chunk,
                             outputNarratives: [],
@@ -9226,6 +9249,7 @@
                         triggerTime,
                         triggerReason,
                         chunkSize: chunk.length,
+                        totalUnprocessed,
                         timeRange: { start: firstMsg.timestamp, end: lastMsg.timestamp },
                         inputMessages: chunk,
                         outputNarratives: [],
@@ -9360,7 +9384,7 @@
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:14px;font-weight:500;color:#1f2937;">${escapeHtml(log.assistantName || '未知助手')}</div>
-                            <div style="font-size:12px;color:#9ca3af;margin-top:2px;">${timeStr} · ${reasonText} · ${log.chunkSize || 0}条消息${narrativeCount > 0 ? ' · ' + narrativeCount + '个叙事元' : ''}</div>
+                            <div style="font-size:12px;color:#9ca3af;margin-top:2px;">${timeStr} · ${reasonText} · ${log.totalUnprocessed ? log.totalUnprocessed + '条触发→' : ''}${log.chunkSize || 0}条入块${narrativeCount > 0 ? ' · ' + narrativeCount + '个叙事元' : ''}</div>
                         </div>
                         <span class="${statusClass}">${statusText}</span>
                     </div>
@@ -9411,33 +9435,28 @@
                     detailHtml += `<div style="color:#ef4444;font-size:12px;margin-bottom:8px;">错误: ${escapeHtml(log.error)}</div>`;
                 }
 
-                // 重新提取按钮（日志里有原始对话数据才显示）
+                // 重新提取按钮 + 删除按钮（日志里有原始对话数据才显示重新提取）
                 if (log.inputMessages && log.inputMessages.length > 0) {
-                    detailHtml += `<div style="margin-bottom:8px;"><button class="mlab-btn mlab-btn-outline" id="mlabReExtractBtn_${idx}" onclick="mlabReExtract(${idx})" style="font-size:12px;padding:4px 12px;">重新提取</button></div>`;
+                    detailHtml += `<div style="margin-bottom:8px;display:flex;gap:8px;">
+                        <button class="mlab-btn mlab-btn-outline" id="mlabReExtractBtn_${idx}" onclick="mlabReExtract(${idx})" style="font-size:12px;padding:4px 12px;">重新提取</button>
+                        <button class="mlab-btn mlab-btn-outline" onclick="mlabDeleteLog(${idx})" style="font-size:12px;padding:4px 12px;color:#ef4444;border-color:#fca5a5;">删除日志</button>
+                    </div>`;
+                } else {
+                    detailHtml += `<div style="margin-bottom:8px;">
+                        <button class="mlab-btn mlab-btn-outline" onclick="mlabDeleteLog(${idx})" style="font-size:12px;padding:4px 12px;color:#ef4444;border-color:#fca5a5;">删除日志</button>
+                    </div>`;
                 }
 
                 // 叙事元卡片
                 if (log.outputNarratives && log.outputNarratives.length > 0) {
-                    // 显示时间范围信息（调试用）
+                    // 日志级别时间信息
                     const tr = log.timeRange || {};
                     const firstMsg = log.inputMessages?.[0];
-                    const lastMsg = log.inputMessages?.[log.inputMessages.length - 1];
                     const fmtTime = (t) => { try { return new Date(t).toLocaleString('zh-CN', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e) { return String(t); } };
-
-                    let timeInfo = '';
-                    if (tr.start || tr.end) {
-                        timeInfo = `timeRange: ${tr.start ? fmtTime(tr.start) : '无'} ~ ${tr.end ? fmtTime(tr.end) : '无'}`;
-                    } else {
-                        timeInfo = 'timeRange: 无';
-                    }
-                    // 显示消息里的时间字段情况
-                    if (firstMsg) {
-                        const hasTs = firstMsg.timestamp ? 'timestamp=✓' : 'timestamp=✗';
-                        const hasTm = firstMsg.time ? 'time=✓' : 'time=✗';
-                        timeInfo += ` | 首条消息: ${hasTs}, ${hasTm}`;
-                    }
-
-                    detailHtml += `<div style="font-size:11px;color:#9ca3af;margin-bottom:6px;padding:4px 8px;background:#f9fafb;border-radius:4px;">${escapeHtml(timeInfo)}</div>`;
+                    const hasTs = firstMsg?.timestamp ? '✓' : '✗';
+                    const hasTm = firstMsg?.time ? '✓' : '✗';
+                    const trStr = (tr.start || tr.end) ? `${tr.start ? fmtTime(tr.start) : '无'} ~ ${tr.end ? fmtTime(tr.end) : '无'}` : '无';
+                    detailHtml += `<div style="font-size:11px;color:#9ca3af;margin-bottom:6px;padding:4px 8px;background:#f9fafb;border-radius:4px;">timeRange: ${escapeHtml(trStr)} | timestamp=${hasTs} time=${hasTm} | log_id: ${escapeHtml(log.id || '无')}</div>`;
 
                     detailHtml += `<div style="font-size:12px;color:#7c3aed;margin-bottom:6px;font-weight:600;">提取到 ${log.outputNarratives.length} 个叙事元</div>`;
                     log.outputNarratives.forEach((n, nIdx) => {
@@ -9499,6 +9518,67 @@
         }
 
         // 重新提取日志中的叙事元
+        // 删除日志（连带删除向量库数据 + 回退进度）
+        async function mlabDeleteLog(logIdx) {
+            const log = mlabLogs[logIdx];
+            if (!log) return;
+
+            const timeStr = log.timeRange ? `${new Date(log.timeRange.start).toLocaleString('zh-CN')} ~ ${new Date(log.timeRange.end).toLocaleString('zh-CN')}` : '未知时间';
+            if (!confirm(`确认删除这条日志？\n\n${log.assistantName} · ${timeStr}\n${log.chunkSize || 0}条消息 · ${log.outputNarratives?.length || 0}个叙事元\n\n向量库中对应的叙事元也会一起删除，提取进度会回退。`)) return;
+
+            try {
+                // 1. 删除向量库中的关联数据
+                if (cloudSyncEnabled()) {
+                    await mlabDeleteVectorsByLogId(log.id);
+                }
+
+                // 2. 删除 Supabase 中的日志
+                if (cloudSyncEnabled()) {
+                    const url = appData.settings.supabaseUrl;
+                    const key = appData.settings.supabaseKey;
+                    await fetch(`${url}/rest/v1/data_store?key=eq.mlab_log_${encodeURIComponent(log.id)}`, {
+                        method: 'DELETE',
+                        headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+                    });
+                }
+
+                // 3. 回退进度：找到这条日志对应的消息起始位置
+                if (log.assistantId && log.timeRange?.start) {
+                    await initWechatData();
+                    const conv = wechatData?.conversations?.[log.assistantId];
+                    if (conv?.messages) {
+                        const logStartTime = new Date(log.timeRange.start).getTime();
+                        // 找到第一条 >= logStartTime 的消息的前一个位置
+                        let rewindIdx = 0;
+                        for (let i = 0; i < conv.messages.length; i++) {
+                            const msgTime = new Date(conv.messages[i].timestamp).getTime();
+                            if (msgTime >= logStartTime) {
+                                rewindIdx = Math.max(0, i - 1);
+                                break;
+                            }
+                        }
+                        const currentProgress = mlabExtractProgress[log.assistantId] || 0;
+                        if (rewindIdx < currentProgress) {
+                            mlabExtractProgress[log.assistantId] = rewindIdx;
+                            saveMlabProgress();
+                            console.log(`Memory Lab: 进度回退 [${log.assistantName}] ${currentProgress} → ${rewindIdx}`);
+                        }
+                    }
+                }
+
+                // 4. 从内存中移除
+                mlabLogs.splice(logIdx, 1);
+
+                // 5. 重新渲染
+                mlabRenderLogPanel();
+                console.log(`Memory Lab: 日志已删除 ${log.id}`);
+
+            } catch(err) {
+                console.error('Memory Lab: 删除日志失败', err);
+                alert('删除失败: ' + err.message);
+            }
+        }
+
         async function mlabReExtract(logIdx) {
             const log = mlabLogs[logIdx];
             if (!log || !log.inputMessages || log.inputMessages.length === 0) {
@@ -9778,12 +9858,17 @@
                 html += `<span class="mlab-search-similarity${simClass}">${finalPct}%</span>`;
                 html += `</div></div>`;
 
-                // 时间范围
+                // 时间范围 + log_id（始终显示，方便排查）
+                const fmt = (t) => { try { return new Date(t).toLocaleDateString('zh-CN', {month:'short',day:'numeric'}); } catch(e) { return ''; } };
+                let metaInfo = '';
                 if (r.start_time || r.end_time) {
-                    const fmt = (t) => { try { return new Date(t).toLocaleDateString('zh-CN', {month:'short',day:'numeric'}); } catch(e) { return ''; } };
                     const timeStr = r.start_time ? fmt(r.start_time) + (r.end_time && r.end_time !== r.start_time ? ' ~ ' + fmt(r.end_time) : '') : '';
-                    if (timeStr) html += `<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">${timeStr}</div>`;
+                    metaInfo += timeStr;
+                } else {
+                    metaInfo += '<span style="color:#ef4444;">无时间</span>';
                 }
+                if (r.log_id) metaInfo += ` · ${r.log_id.substring(0, 12)}`;
+                html += `<div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">${metaInfo}</div>`;
 
                 if (n.context) html += `<div style="font-size:13px;color:#374151;margin-bottom:6px;">${escapeHtml(n.context)}</div>`;
                 if (n.user_quotes && n.user_quotes.length > 0) {
