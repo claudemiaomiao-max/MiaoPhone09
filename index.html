@@ -6206,6 +6206,70 @@
         .insp-input-row textarea:focus {
             border-color: #f59e0b;
         }
+        .insp-voice-btn {
+            background: none;
+            border: none;
+            padding: 2px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+        }
+        .insp-voice-btn:hover {
+            color: #07c160;
+        }
+        .insp-voice-btn:active {
+            color: #06ae56;
+        }
+        .insp-voice-btn.recording {
+            color: #ff4444;
+            animation: voicePulse 1s ease-in-out infinite;
+        }
+        .insp-send-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: #07c160;
+            color: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .insp-send-btn:active {
+            background: #06ae56;
+            transform: scale(0.95);
+        }
+        .insp-link-subtabs {
+            display: flex;
+            gap: 6px;
+            padding: 6px 12px 8px;
+            background: #f8f8f8;
+            overflow-x: auto;
+        }
+        .insp-subtab {
+            padding: 4px 10px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+            font-size: 12px;
+            color: #666;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .insp-subtab.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
         .insp-input-btn {
             width: 36px;
             height: 36px;
@@ -8194,11 +8258,15 @@
                     <button class="insp-tab" onclick="setInspFilter('idea')">灵感</button>
                     <button class="insp-tab" onclick="setInspFilter('bug')">BUG</button>
                     <button class="insp-tab" onclick="setInspFilter('chen')">嗔嗔</button>
-                    <button class="insp-tab" onclick="setInspFilter('link_tutorial')">教程</button>
-                    <button class="insp-tab" onclick="setInspFilter('link_resource')">素材</button>
-                    <button class="insp-tab" onclick="setInspFilter('link_tool')">工具</button>
-                    <button class="insp-tab" onclick="setInspFilter('link_beauty')">美化</button>
-                    <button class="insp-tab" onclick="setInspFilter('link_inspo')">灵感参考</button>
+                    <button class="insp-tab" onclick="setInspFilter('link')">网址</button>
+                </div>
+                <div class="insp-link-subtabs" id="inspLinkSubtabs" style="display:none;">
+                    <button class="insp-subtab active" onclick="setInspLinkSubFilter('all')">全部网址</button>
+                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_tutorial')">教程</button>
+                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_resource')">素材</button>
+                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_tool')">工具</button>
+                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_beauty')">美化</button>
+                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_inspo')">灵感参考</button>
                 </div>
                 <div class="insp-list" id="inspList"></div>
                 <div class="insp-bottom">
@@ -8206,9 +8274,13 @@
                         <input type="text" id="inspUrlInput" placeholder="粘贴链接（可选）">
                     </div>
                     <div class="insp-input-row">
+                        <button class="insp-voice-btn" id="inspVoiceBtn" onclick="startInspirationVoiceInput()" title="语音输入">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        </button>
                         <textarea id="inspirationInput" rows="1" placeholder="想到什么就写什么..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';checkInspInputForUrl();"></textarea>
-                        <button class="insp-input-btn" onclick="startInspirationVoiceInput()" title="语音输入">🎤</button>
-                        <button class="insp-input-btn" onclick="toggleInspUrl()" title="附加链接">🔗</button>
+                        <button class="insp-send-btn" id="inspSendBtn" onclick="quickSaveInspiration()" title="发送">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
                     </div>
                     <div class="insp-tag-row" id="inspTagRow">
                         <button class="insp-tag-btn todo" onclick="saveInspiration('todo')">TODO</button>
@@ -15716,7 +15788,7 @@ ${memoryText}`;
 
         function getVoiceTargetBtn() {
             if (voiceInputTarget === 'api') return document.querySelector('#chatPage .wechat-voice-btn');
-            if (voiceInputTarget === 'inspiration') return document.querySelector('#inspirationPage .insp-input-btn');
+            if (voiceInputTarget === 'inspiration') return document.querySelector('#inspirationPage .insp-voice-btn');
             return document.querySelector('#wechatChatPage .wechat-voice-btn');
         }
 
@@ -15850,7 +15922,7 @@ ${memoryText}`;
                     // 60秒到期：结束录音，图标变灰，用户想继续说可以再点麦克风
                     if (voiceRecognition?.type === 'xfyun') {
                         voiceRecognition = null;
-                        document.querySelectorAll('.wechat-voice-btn.recording, .insp-input-btn.recording').forEach(b => b.classList.remove('recording'));
+                        document.querySelectorAll('.wechat-voice-btn.recording, .insp-voice-btn.recording').forEach(b => b.classList.remove('recording'));
                         resetAudioRoute();
                         console.log('讯飞识别已结束，点击麦克风可继续');
                     }
@@ -16074,7 +16146,7 @@ ${memoryText}`;
             voiceRecognition = null;
             voicePendingText = '';
             // 移除录音视觉状态
-            document.querySelectorAll('.wechat-voice-btn.recording, .insp-input-btn.recording').forEach(b => b.classList.remove('recording'));
+            document.querySelectorAll('.wechat-voice-btn.recording, .insp-voice-btn.recording').forEach(b => b.classList.remove('recording'));
             // 重置音频路由
             resetAudioRoute();
         }
@@ -18984,10 +19056,28 @@ ${chatContext}
         }
 
         // 筛选切换
+        let inspLinkSubFilter = 'all';
         function setInspFilter(tag) {
             inspCurrentFilter = tag;
+            inspLinkSubFilter = 'all';
             // 更新 tab 样式
             document.querySelectorAll('#inspTabs .insp-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            // 显示/隐藏链接子标签
+            const subtabs = document.getElementById('inspLinkSubtabs');
+            if (tag === 'link') {
+                subtabs.style.display = 'flex';
+                document.querySelectorAll('.insp-subtab').forEach(t => t.classList.remove('active'));
+                subtabs.querySelector('.insp-subtab').classList.add('active');
+            } else {
+                subtabs.style.display = 'none';
+            }
+            renderInspirationList();
+        }
+
+        function setInspLinkSubFilter(subtag) {
+            inspLinkSubFilter = subtag;
+            document.querySelectorAll('.insp-subtab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
             renderInspirationList();
         }
@@ -19017,10 +19107,23 @@ ${chatContext}
             const text = input.value || '';
             const hasUrl = /(https?:\/\/[^\s]+)/i.test(text);
             const tagRow = document.getElementById('inspTagRow');
-            const tags = hasUrl ? LINK_TAGS : TEXT_TAGS;
-            tagRow.innerHTML = tags.map(t =>
-                `<button class="insp-tag-btn ${t}" onclick="saveInspiration('${t}')">${INSP_TAGS[t].label}</button>`
-            ).join('');
+            if (hasUrl) {
+                tagRow.innerHTML = LINK_TAGS.map(t =>
+                    `<button class="insp-tag-btn ${t}" onclick="saveInspiration('${t}')">${INSP_TAGS[t].label}</button>`
+                ).join('');
+            } else {
+                tagRow.innerHTML = TEXT_TAGS.map(t =>
+                    `<button class="insp-tag-btn ${t}" onclick="saveInspiration('${t}')">${INSP_TAGS[t].label}</button>`
+                ).join('');
+            }
+        }
+
+        // 快速发送（发送按钮）：有链接默认归网址clip，无链接默认clip
+        function quickSaveInspiration() {
+            const input = document.getElementById('inspirationInput');
+            const text = input.value || '';
+            const hasUrl = /(https?:\/\/[^\s]+)/i.test(text);
+            saveInspiration(hasUrl ? 'link_resource' : 'clip');
         }
 
         // 存灵感（独立入口）
@@ -19131,7 +19234,12 @@ ${chatContext}
             let items = inspirationData.items || [];
 
             // 筛选
-            if (inspCurrentFilter !== 'all') {
+            if (inspCurrentFilter === 'link') {
+                items = items.filter(i => LINK_TAGS.includes(i.tag));
+                if (inspLinkSubFilter !== 'all') {
+                    items = items.filter(i => i.tag === inspLinkSubFilter);
+                }
+            } else if (inspCurrentFilter !== 'all') {
                 items = items.filter(i => i.tag === inspCurrentFilter);
             }
 
