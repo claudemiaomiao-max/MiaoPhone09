@@ -6017,400 +6017,345 @@
             background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
         }
 
-        /* ==================== 碎碎念 ==================== */
+        /* ==================== 碎碎念 Y2K复古风 ==================== */
         .insp-page {
             display: flex;
             flex-direction: column;
             height: 100%;
-            background: #f5f5f5;
+            background: var(--insp-bg, #eae6f0);
+            --insp-bg: #eae6f0;
+            --insp-cream: #fdf8f0;
+            --insp-pink: #f8e2ea;
+            --insp-purple: #c0a8d8;
+            --insp-purple-lt: #ddd0e8;
+            --insp-purple-dk: #a888c0;
+            --insp-txt: #b098c8;
+            --insp-txt-dk: #6a5880;
+            --insp-txt-body: #7a6890;
+            --insp-txt-lt: #c8b8d8;
+            --insp-bar-blue: #dce8f4;
+            --insp-bar-yellow: #f4ecd8;
         }
         .insp-header {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            background: #fff;
-            border-bottom: 1px solid #e5e5e5;
-            gap: 12px;
-            flex-shrink: 0;
+            display: flex; align-items: center;
+            padding: 14px 16px;
+            background: var(--insp-pink);
+            border-bottom: 2px dashed var(--insp-purple);
+            gap: 12px; flex-shrink: 0;
         }
+        .insp-header .page-back { color: var(--insp-purple); }
         .insp-header-title {
-            flex: 1;
-            font-size: 17px;
-            font-weight: 600;
+            flex: 1; font-size: 18px; font-weight: 600;
+            color: var(--insp-txt-dk);
+            letter-spacing: 2px;
+            font-family: "ZLabsBitmap", "Courier New", monospace;
         }
         .insp-header-search-btn {
-            font-size: 20px;
-            cursor: pointer;
-            padding: 4px;
+            cursor: pointer; padding: 4px;
+            display: flex; align-items: center; justify-content: center;
         }
         .insp-search-bar {
-            display: none;
-            padding: 8px 16px;
-            background: #fff;
-            border-bottom: 1px solid #e5e5e5;
+            display: none; padding: 8px 16px;
+            background: var(--insp-pink);
+            border-bottom: 2px dashed var(--insp-purple);
             flex-shrink: 0;
         }
-        .insp-search-bar.show {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .insp-search-bar.show { display: flex; align-items: center; gap: 8px; }
         .insp-search-bar input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
+            flex: 1; padding: 8px 12px;
+            border: 2px solid var(--insp-purple);
+            border-radius: 8px; background: var(--insp-cream);
+            font-size: 14px; font-family: "ZLabsBitmap", monospace;
+            outline: none; color: var(--insp-txt-dk);
         }
-        .insp-search-bar input:focus {
-            border-color: #f59e0b;
-        }
+        .insp-search-bar input::placeholder { color: var(--insp-txt-lt); }
+        .insp-search-bar input:focus { border-color: var(--insp-purple-dk); }
         .insp-search-close {
-            cursor: pointer;
-            font-size: 18px;
-            color: #999;
-            padding: 4px;
+            cursor: pointer; font-size: 16px;
+            color: var(--insp-txt); padding: 4px;
+            font-family: "ZLabsBitmap", monospace;
         }
         .insp-tabs {
-            display: flex;
-            padding: 8px 12px;
-            gap: 8px;
-            background: #fff;
-            border-bottom: 1px solid #e5e5e5;
-            overflow-x: auto;
-            flex-shrink: 0;
+            display: flex; padding: 8px 12px; gap: 6px;
+            background: var(--insp-pink);
+            border-bottom: 3px solid var(--insp-purple);
+            overflow-x: auto; flex-shrink: 0;
             -webkit-overflow-scrolling: touch;
         }
         .insp-tabs::-webkit-scrollbar { display: none; }
         .insp-tab {
-            padding: 6px 14px;
-            border-radius: 16px;
-            font-size: 13px;
-            white-space: nowrap;
-            cursor: pointer;
-            background: #f0f0f0;
-            color: #666;
-            border: none;
+            padding: 5px 14px; font-size: 13px;
+            white-space: nowrap; cursor: pointer;
+            background: var(--insp-cream);
+            color: var(--insp-txt);
+            border: 2px solid var(--insp-purple-lt);
+            border-radius: 14px;
             transition: all 0.2s;
+            font-family: "ZLabsBitmap", monospace;
+            letter-spacing: 1px;
         }
+        .insp-tab:active { transform: scale(0.96); }
         .insp-tab.active {
-            background: #f59e0b;
-            color: #fff;
+            background: var(--insp-purple);
+            color: #fff; border-color: var(--insp-purple-dk);
         }
         .insp-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
+            flex: 1; overflow-y: auto; padding: 12px;
             -webkit-overflow-scrolling: touch;
         }
         .insp-empty {
-            text-align: center;
-            color: #999;
-            padding: 60px 20px;
-            font-size: 14px;
+            text-align: center; color: var(--insp-txt-lt);
+            padding: 60px 20px; font-size: 14px;
+            font-family: "ZLabsBitmap", monospace;
         }
+        /* 卡片 - 双线窗口 */
         .insp-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            background: var(--insp-cream);
+            border: 2px solid var(--insp-purple);
+            border-radius: 4px;
+            margin-bottom: 14px;
             animation: inspCardIn 0.3s ease;
+            position: relative;
+        }
+        .insp-card::before {
+            content: '';
+            position: absolute;
+            top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border: 2px solid var(--insp-purple-lt);
+            border-radius: 6px;
+            pointer-events: none;
         }
         @keyframes inspCardIn {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .insp-card-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
+        .insp-card-titlebar {
+            display: flex; align-items: center;
+            padding: 4px 8px; gap: 6px;
+            border-bottom: 2px solid var(--insp-purple);
+            min-height: 28px;
+            border-radius: 2px 2px 0 0;
         }
+        .insp-card-titlebar.link-bar { background: var(--insp-bar-blue); }
+        .insp-card-titlebar.text-bar { background: var(--insp-bar-yellow); }
         .insp-tag {
             display: inline-block;
-            padding: 2px 10px;
+            padding: 1px 10px; font-size: 11px; font-weight: 500;
+            font-family: "ZLabsBitmap", monospace;
+            border: 1.5px solid var(--insp-purple);
             border-radius: 10px;
-            font-size: 11px;
-            font-weight: 500;
-            color: #fff;
+            background: var(--insp-cream); color: var(--insp-txt-dk);
         }
-        .insp-tag.todo { background: #3b82f6; }
-        .insp-tag.clip { background: #22c55e; }
-        .insp-tag.idea { background: #f59e0b; }
-        .insp-tag.bug { background: #ef4444; }
-        .insp-tag.chen { background: #c084fc; }
-        .insp-tag.link_tutorial { background: #0ea5e9; }
-        .insp-tag.link_resource { background: #f97316; }
-        .insp-tag.link_tool { background: #14b8a6; }
-        .insp-tag.link_beauty { background: #e879f9; }
-        .insp-tag.link_inspo { background: #ec4899; }
+        .insp-tag.todo { background: #dce0f0; color: #7888a8; border-color: #c0c8e0; }
+        .insp-tag.clip { background: #e8e4dc; color: #908878; border-color: #c8c0b8; }
+        .insp-tag.idea { background: #f0e8d4; color: #a89060; border-color: #d8c8a0; }
+        .insp-tag.bug { background: #f0d8d4; color: #b08070; border-color: #d8b0a8; }
+        .insp-tag.chen { background: #e8d8f0; color: #9878a8; border-color: #c8a8d8; }
+        .insp-tag.link_tutorial { background: #d4e4f0; color: #6890b0; border-color: #a8c8d8; }
+        .insp-tag.link_resource { background: #f0e0cc; color: #b09868; border-color: #d8c8a8; }
+        .insp-tag.link_tool { background: #d0e8e0; color: #68a090; border-color: #a0d0c0; }
+        .insp-tag.link_beauty { background: #ecdcf0; color: #a078b0; border-color: #c8a8d0; }
+        .insp-tag.link_inspo { background: #f0d0e0; color: #b07888; border-color: #d8a8b8; }
         .insp-card-time {
-            font-size: 11px;
-            color: #aaa;
-            margin-left: auto;
+            font-size: 11px; color: var(--insp-txt);
+            font-family: "ZLabsBitmap", monospace;
         }
-        .insp-card-source {
-            font-size: 11px;
-            color: #ccc;
+        .insp-card-source { font-size: 11px; color: var(--insp-txt-lt); display: none; }
+        .insp-card-actions { margin-left: auto; display: flex; gap: 6px; }
+        .insp-card-action-btn {
+            width: 22px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; background: var(--insp-cream);
+            border: 1.5px solid var(--insp-purple);
+            border-radius: 3px; color: var(--insp-txt);
+            font-size: 10px; padding: 0;
+            transition: background 0.15s;
         }
+        .insp-card-action-btn:active { background: var(--insp-purple-lt); }
+        .insp-card-action-btn svg { width: 10px; height: 10px; }
+        .insp-card-body { padding: 10px 12px; }
         .insp-card-content {
-            font-size: 14px;
-            line-height: 1.6;
-            color: #333;
-            word-break: break-word;
-            white-space: pre-wrap;
-        }
-        .insp-card-footer {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .insp-card-url {
-            font-size: 12px;
-            color: #3b82f6;
-            text-decoration: none;
+            font-size: 14px; line-height: 1.7;
+            color: var(--insp-txt-body);
+            word-break: break-word; white-space: pre-wrap;
+            font-family: "ZLabsBitmap", monospace;
+            display: -webkit-box;
+            -webkit-line-clamp: 10;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 200px;
         }
+        .insp-card-footer { padding: 0 12px 10px; }
+        .insp-card-url {
+            display: block; font-size: 12px;
+            color: var(--insp-txt); text-decoration: none;
+            overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: "ZLabsBitmap", monospace;
+            border-top: 1px dashed var(--insp-purple-lt);
+            padding-top: 8px;
+        }
+        .insp-card-url:active { color: var(--insp-purple-dk); }
+        /* 操作菜单 */
         .insp-action-sheet {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 1100;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(90,72,112,0.35); z-index: 1100;
+            display: flex; align-items: flex-end; justify-content: center;
             animation: inspSheetBgIn 0.2s ease;
         }
-        @keyframes inspSheetBgIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
+        @keyframes inspSheetBgIn { from { opacity: 0; } to { opacity: 1; } }
         .insp-action-sheet-content {
-            background: #fff;
-            border-radius: 14px 14px 0 0;
-            width: 100%;
-            max-width: 420px;
+            background: var(--insp-cream);
+            border: 2px solid var(--insp-purple);
+            border-radius: 8px 8px 0 0;
+            width: 100%; max-width: 420px;
             padding: 8px 0;
             padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
             animation: inspSheetSlideUp 0.25s ease;
         }
-        @keyframes inspSheetSlideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
+        @keyframes inspSheetSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .insp-action-sheet-item {
-            padding: 14px 20px;
-            font-size: 16px;
-            text-align: center;
-            cursor: pointer;
-            color: #333;
-            transition: background 0.15s;
+            padding: 14px 20px; font-size: 15px;
+            text-align: center; cursor: pointer;
+            color: var(--insp-txt-dk);
+            font-family: "ZLabsBitmap", monospace;
         }
-        .insp-action-sheet-item:active {
-            background: #f0f0f0;
-        }
-        .insp-action-sheet-item.danger {
-            color: #ef4444;
-        }
+        .insp-action-sheet-item:active { background: var(--insp-purple-lt); }
+        .insp-action-sheet-item.danger { color: #c06060; }
         .insp-action-sheet-cancel {
-            padding: 14px 20px;
-            font-size: 16px;
-            text-align: center;
-            cursor: pointer;
-            color: #999;
-            border-top: 8px solid #f5f5f5;
+            padding: 14px 20px; font-size: 15px;
+            text-align: center; cursor: pointer;
+            color: var(--insp-txt-lt);
+            font-family: "ZLabsBitmap", monospace;
+            border-top: 2px solid var(--insp-purple-lt);
         }
-        .insp-action-sheet-cancel:active {
-            background: #f0f0f0;
-        }
+        .insp-action-sheet-cancel:active { background: var(--insp-purple-lt); }
         .insp-bottom {
-            background: #fff;
-            border-top: 1px solid #e5e5e5;
+            background: var(--insp-pink);
+            border-top: 3px solid var(--insp-purple);
             padding: 10px 12px;
             padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
             flex-shrink: 0;
         }
         .insp-input-row {
-            display: flex;
-            align-items: flex-end;
-            gap: 8px;
-            margin-bottom: 8px;
+            display: flex; align-items: flex-end;
+            gap: 8px; margin-bottom: 8px;
         }
         .insp-input-box {
-            flex: 1;
-            background: #fff;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            padding: 8px 12px;
-            min-height: 36px;
-            max-height: 100px;
-            overflow-y: auto;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            flex: 1; background: var(--insp-cream);
+            border: 2px solid var(--insp-purple);
+            border-radius: 8px; padding: 8px 12px;
+            min-height: 36px; max-height: 100px;
+            overflow-y: auto; display: flex;
+            align-items: center; gap: 8px;
             transition: border-color 0.2s;
         }
-        .insp-input-box:focus-within {
-            border-color: #f59e0b;
-        }
+        .insp-input-box:focus-within { border-color: var(--insp-purple-dk); }
         .insp-input-box textarea {
-            flex: 1;
-            border: none;
-            background: none;
-            resize: none;
-            font-size: 14px;
-            line-height: 1.4;
-            outline: none;
-            font-family: inherit;
-            min-height: 20px;
-            max-height: 80px;
-            padding: 0;
+            flex: 1; border: none; background: none;
+            resize: none; font-size: 14px; line-height: 1.4;
+            outline: none; font-family: "ZLabsBitmap", monospace;
+            min-height: 20px; max-height: 80px; padding: 0;
+            color: var(--insp-txt-dk);
         }
+        .insp-input-box textarea::placeholder { color: var(--insp-txt-lt); }
         .insp-voice-btn {
-            background: none;
-            border: none;
-            padding: 2px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            flex-shrink: 0;
-            width: 28px;
-            height: 28px;
+            background: none; border: none; padding: 2px;
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            color: var(--insp-txt);
+            flex-shrink: 0; width: 28px; height: 28px;
         }
-        .insp-voice-btn:hover {
-            color: #07c160;
-        }
-        .insp-voice-btn:active {
-            color: #06ae56;
-        }
+        .insp-voice-btn:active { color: var(--insp-purple-dk); }
         .insp-voice-btn.recording {
-            color: #ff4444;
-            animation: voicePulse 1s ease-in-out infinite;
+            color: #d87088;
+            animation: voicePulse 0.8s ease-in-out infinite;
         }
+        @keyframes voicePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
         .insp-send-btn {
-            width: 36px;
-            height: 36px;
-            border: none;
-            background: #07c160;
-            color: #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            transition: all 0.2s;
+            width: 38px; height: 38px;
+            border: none; background: none;
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            flex-shrink: 0; padding: 0;
+            transition: transform 0.15s;
         }
-        .insp-send-btn:active {
-            background: #06ae56;
-            transform: scale(0.95);
-        }
+        .insp-send-btn:active { transform: scale(0.9); }
         .insp-link-subtabs {
-            display: flex;
-            gap: 6px;
-            padding: 6px 12px 8px;
-            background: #f8f8f8;
+            display: flex; gap: 6px; padding: 6px 12px 8px;
+            background: var(--insp-bg);
             overflow-x: auto;
+            border-bottom: 3px solid var(--insp-purple-lt);
         }
         .insp-subtab {
             padding: 4px 10px;
+            border: 2px solid var(--insp-purple-lt);
             border-radius: 12px;
-            border: 1px solid #ddd;
-            background: #fff;
-            font-size: 12px;
-            color: #666;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
+            background: var(--insp-cream);
+            font-size: 12px; color: var(--insp-txt);
+            cursor: pointer; white-space: nowrap; flex-shrink: 0;
+            font-family: "ZLabsBitmap", monospace;
         }
         .insp-subtab.active {
-            background: var(--accent);
-            color: #fff;
-            border-color: var(--accent);
+            background: var(--insp-purple);
+            color: #fff; border-color: var(--insp-purple-dk);
         }
+        .insp-subtab.link_tutorial { background: #dce0f0; color: #7888a8; border-color: #c0c8e0; }
+        .insp-subtab.link_resource { background: #e8e4dc; color: #908878; border-color: #c8c0b8; }
+        .insp-subtab.link_tool { background: #f0e8d4; color: #a89060; border-color: #d8c8a0; }
+        .insp-subtab.link_beauty { background: #f0d8d4; color: #b08070; border-color: #d8b0a8; }
+        .insp-subtab.link_inspo { background: #e8d8f0; color: #9878a8; border-color: #c8a8d8; }
+        .insp-subtab.active.link_tutorial { background: #7888a8; color: #fff; border-color: #6878a0; }
+        .insp-subtab.active.link_resource { background: #908878; color: #fff; border-color: #807868; }
+        .insp-subtab.active.link_tool { background: #a89060; color: #fff; border-color: #988050; }
+        .insp-subtab.active.link_beauty { background: #b08070; color: #fff; border-color: #a07060; }
+        .insp-subtab.active.link_inspo { background: #9878a8; color: #fff; border-color: #886898; }
         .insp-input-btn {
-            width: 36px;
-            height: 36px;
-            border: none;
-            background: none;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            flex-shrink: 0;
+            width: 36px; height: 36px;
+            border: none; background: none;
+            font-size: 20px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; flex-shrink: 0;
         }
-        .insp-input-btn:active {
-            background: #f0f0f0;
-        }
+        .insp-input-btn:active { background: var(--insp-purple-lt); }
         .insp-input-btn.recording {
-            color: #ef4444;
-            animation: inspRecPulse 1s infinite;
+            color: #d87088; animation: inspRecPulse 1s infinite;
         }
-        @keyframes inspRecPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-        .insp-url-row {
-            display: none;
-            margin-bottom: 8px;
-        }
-        .insp-url-row.show {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        @keyframes inspRecPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .insp-url-row { display: none; margin-bottom: 8px; }
+        .insp-url-row.show { display: flex; align-items: center; gap: 8px; }
         .insp-url-row input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 13px;
-            outline: none;
+            flex: 1; padding: 8px 12px;
+            border: 2px solid var(--insp-purple);
+            border-radius: 8px; background: var(--insp-cream);
+            font-size: 13px; font-family: "ZLabsBitmap", monospace;
+            outline: none; color: var(--insp-txt-dk);
         }
-        .insp-url-row input:focus {
-            border-color: #f59e0b;
-        }
+        .insp-url-row input::placeholder { color: var(--insp-txt-lt); }
+        .insp-url-row input:focus { border-color: var(--insp-purple-dk); }
         .insp-tag-row {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
+            display: flex; gap: 6px; overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
         .insp-tag-row::-webkit-scrollbar { display: none; }
         .insp-tag-btn {
-            padding: 8px 16px;
-            border-radius: 18px;
-            font-size: 13px;
-            font-weight: 500;
-            border: none;
-            cursor: pointer;
-            white-space: nowrap;
-            color: #fff;
-            transition: transform 0.1s;
+            padding: 6px 14px; font-size: 12px; font-weight: 500;
+            border: 2px solid var(--insp-purple-lt);
+            border-radius: 14px; cursor: pointer;
+            white-space: nowrap; transition: transform 0.1s;
+            font-family: "ZLabsBitmap", monospace;
+            letter-spacing: 1px;
         }
-        .insp-tag-btn:active {
-            transform: scale(0.95);
-        }
-        .insp-tag-btn.todo { background: #3b82f6; }
-        .insp-tag-btn.clip { background: #22c55e; }
-        .insp-tag-btn.idea { background: #f59e0b; }
-        .insp-tag-btn.bug { background: #ef4444; }
-        .insp-tag-btn.chen { background: #c084fc; }
-        .insp-tag-btn.link_tutorial { background: #0ea5e9; }
-        .insp-tag-btn.link_resource { background: #f97316; }
-        .insp-tag-btn.link_tool { background: #14b8a6; }
-        .insp-tag-btn.link_beauty { background: #e879f9; }
-        .insp-tag-btn.link_inspo { background: #ec4899; }
+        .insp-tag-btn:active { transform: scale(0.95); }
+        .insp-tag-btn.todo { background: #dce0f0; color: #7888a8; border-color: #c0c8e0; }
+        .insp-tag-btn.clip { background: #e8e4dc; color: #908878; border-color: #c8c0b8; }
+        .insp-tag-btn.idea { background: #f0e8d4; color: #a89060; border-color: #d8c8a0; }
+        .insp-tag-btn.bug { background: #f0d8d4; color: #b08070; border-color: #d8b0a8; }
+        .insp-tag-btn.chen { background: #e8d8f0; color: #9878a8; border-color: #c8a8d8; }
+        .insp-tag-btn.link_tutorial { background: #d4e4f0; color: #6890b0; border-color: #a8c8d8; }
+        .insp-tag-btn.link_resource { background: #f0e0cc; color: #b09868; border-color: #d8c8a8; }
+        .insp-tag-btn.link_tool { background: #d0e8e0; color: #68a090; border-color: #a0d0c0; }
+        .insp-tag-btn.link_beauty { background: #ecdcf0; color: #a078b0; border-color: #c8a8d0; }
+        .insp-tag-btn.link_inspo { background: #f0d0e0; color: #b07888; border-color: #d8a8b8; }
 
         /* 存灵感浮层 */
         /* 导出格式选择弹窗 */
@@ -6488,7 +6433,7 @@
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(90,72,112,0.35);
             z-index: 99999;
             justify-content: center;
             align-items: flex-end;
@@ -6497,9 +6442,10 @@
             display: flex;
         }
         .insp-save-modal-content {
-            background: #fff;
+            background: #fdf8f0;
             width: 100%;
-            border-radius: 16px 16px 0 0;
+            border: 2px solid #c0a8d8;
+            border-radius: 8px 8px 0 0;
             padding: 20px 16px;
             padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
             animation: inspModalUp 0.3s ease;
@@ -6517,11 +6463,13 @@
         .insp-save-modal-header span {
             font-size: 16px;
             font-weight: 600;
+            color: #6a5880;
+            font-family: "ZLabsBitmap", monospace;
         }
         .insp-save-modal-close {
             font-size: 22px;
             cursor: pointer;
-            color: #999;
+            color: #b098c8;
             padding: 4px;
         }
         .insp-save-modal textarea {
@@ -6529,18 +6477,20 @@
             min-height: 80px;
             max-height: 150px;
             padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
+            border: 2px solid #c0a8d8;
+            border-radius: 8px;
             font-size: 14px;
             resize: none;
             outline: none;
             margin-bottom: 12px;
             box-sizing: border-box;
-            font-family: inherit;
+            font-family: "ZLabsBitmap", monospace;
             line-height: 1.5;
+            background: #fdf8f0;
+            color: #6a5880;
         }
         .insp-save-modal textarea:focus {
-            border-color: #f59e0b;
+            border-color: #a888c0;
         }
         .insp-save-modal .insp-tag-row {
             justify-content: center;
@@ -7983,6 +7933,10 @@
                     <span class="vc-settings-label">上下文条数</span>
                     <input type="number" class="vc-settings-input" id="vcContextCount" min="5" max="100" value="30">
                 </div>
+                <div class="vc-settings-item">
+                    <span class="vc-settings-label">启用向量记忆</span>
+                    <div class="switch" id="vcVectorMemory" onclick="this.classList.toggle('on')"></div>
+                </div>
                 <div class="vc-settings-item" id="vcVoiceIdRow">
                     <span class="vc-settings-label">语音 ID</span>
                     <input type="text" class="vc-settings-input" id="vcVoiceId" placeholder="male-qn-qingse" style="width: 160px;">
@@ -8310,9 +8264,9 @@
         <div class="page" id="inspirationPage">
             <div class="insp-page">
                 <div class="insp-header">
-                    <button class="page-back" onclick="closeInspirationPage()"><span class="icon-back"></span></button>
+                    <button class="page-back" onclick="closeInspirationPage()"><svg width="28" height="28" viewBox="0 0 100 100" fill="#c0a8d8" style="image-rendering:pixelated"><path d="m5.5547 83.332h-5.5547v-72.223h5.5547zm0-72.223v-5.5547h5.5547v5.5547zm5.5547-5.5547v-5.5547h77.777v5.5547zm77.777 0h5.5547v5.5547h-5.5547zm5.5547 5.5547h5.5547v72.223h-5.5547zm0 72.223v11.109h-11.109v5.5547h-66.668v-5.5547h-11.109v-11.109h11.109v5.5547h66.668v-5.5547zm-72.918-61.805v9.3047h-9.3047v-9.3047zv-9.3047h9.3047v9.3047zm8.1953 22.918v-5.5547h5.5547v-5.5547h5.5547v-5.5547h5.5547v15h27.777v1.668h1.668v11.109h-1.668v1.668h-27.777v15h-5.5547v-5.5547h-5.5547v-5.5547h-5.5547v-5.5547h-5.5547v-11.109h5.5547z" fill-rule="evenodd"/></svg></button>
                     <div class="insp-header-title">碎碎念</div>
-                    <div class="insp-header-search-btn" onclick="toggleInspSearch()">🔍</div>
+                    <div class="insp-header-search-btn" onclick="toggleInspSearch()"><svg width="28" height="28" viewBox="0 0 100 100" fill="#c0a8d8" style="image-rendering:pixelated"><path d="M5.014,49.956h5.598V27.477H5.014V49.956z M10.639,61.228h5.598V49.998h-5.598V61.228z M16.264,66.852h11.224V61.25H16.264V66.852z M66.834,16.251h-5.598v11.226h5.598V16.251z M72.485,27.477H66.89v22.479h5.596V27.477z M16.208,16.227h-5.597v11.229h5.597V16.227z M94.959,78.103l0.027,11.25h-5.625v5.603h-5.626V95H78.11v-5.627h-5.625v-5.669h-5.624v-5.581h-5.625v-5.67h-5.599v-5.602h-5.624V61.25h11.223v-5.625h0.027v-5.669h5.598v5.669h5.624v5.625h5.625v5.602h5.625v5.602l5.626,0.025v5.624H94.959z M61.21,10.624H49.985v5.603H61.21V10.624z M27.515,72.453h22.471v-5.602H27.515V72.453z M49.958,5h-22.47v5.603h22.47V5z M16.264,16.205v-5.603h11.224v5.603H16.264z"/></svg></div>
                 </div>
                 <div class="insp-search-bar" id="inspSearchBar">
                     <input type="text" id="inspSearchInput" placeholder="搜索碎碎念..." oninput="renderInspirationList()">
@@ -8329,11 +8283,11 @@
                 </div>
                 <div class="insp-link-subtabs" id="inspLinkSubtabs" style="display:none;">
                     <button class="insp-subtab active" onclick="setInspLinkSubFilter('all')">全部网址</button>
-                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_tutorial')">教程</button>
-                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_resource')">素材</button>
-                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_tool')">工具</button>
-                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_beauty')">美化</button>
-                    <button class="insp-subtab" onclick="setInspLinkSubFilter('link_inspo')">灵感参考</button>
+                    <button class="insp-subtab link_tutorial" onclick="setInspLinkSubFilter('link_tutorial')">教程</button>
+                    <button class="insp-subtab link_resource" onclick="setInspLinkSubFilter('link_resource')">素材</button>
+                    <button class="insp-subtab link_tool" onclick="setInspLinkSubFilter('link_tool')">工具</button>
+                    <button class="insp-subtab link_beauty" onclick="setInspLinkSubFilter('link_beauty')">美化</button>
+                    <button class="insp-subtab link_inspo" onclick="setInspLinkSubFilter('link_inspo')">灵感参考</button>
                 </div>
                 <div class="insp-list" id="inspList"></div>
                 <div class="insp-bottom">
@@ -8343,12 +8297,12 @@
                     <div class="insp-input-row">
                         <div class="insp-input-box">
                             <button class="insp-voice-btn" id="inspVoiceBtn" onclick="startInspirationVoiceInput()" title="语音输入">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                                <svg width="22" height="22" viewBox="0 0 16 16" fill="currentColor" style="image-rendering:pixelated"><rect x="1" y="6" width="3" height="4"/><rect x="4" y="5" width="2" height="6"/><rect x="6" y="4" width="2" height="8"/><rect x="8" y="3" width="1" height="10"/><rect x="11" y="5" width="1" height="2" opacity=".5"/><rect x="11" y="9" width="1" height="2" opacity=".5"/><rect x="13" y="4" width="1" height="2" opacity=".3"/><rect x="13" y="10" width="1" height="2" opacity=".3"/><rect x="13" y="7" width="1" height="2" opacity=".3"/><rect x="11" y="7" width="1" height="2" opacity=".5"/></svg>
                             </button>
                             <textarea id="inspirationInput" rows="1" placeholder="想到什么就写什么..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';checkInspInputForUrl();"></textarea>
                         </div>
                         <button class="insp-send-btn" id="inspSendBtn" onclick="quickSaveInspiration()" title="发送">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            <svg width="26" height="26" viewBox="-2 -2 104 104" style="image-rendering:pixelated"><rect x="9" y="22" width="10" height="10" rx="0" fill="#fdf8f0"/><path fill="#c0a8d8" fill-rule="evenodd" d="m0.023438 53.852c2.4844 0 5.2617-0.10547 7.7188 0.050782v7.6992c2.5664 0.027344 5.125 0.03125 7.6914 0.007813v7.6289c2.5508 0 5.1094-0.027343 7.6562 0.046875 0.019531 2.5547 0.015625 5.1094-0.007813 7.668 2.5742-0.007813 5.1484 0 7.7266 0.027344v7.6523c2.543-0.019531 5.1094-0.082031 7.6445 0.027344 0.023437 2.5469 0.03125 5.0977 0.019531 7.6445 2.5469 0 5.1172-0.066407 7.6602 0.03125v7.6328l7.75 0.003906c0-2.543-0.027343-5.0859 0.03125-7.6289 2.5469 0 5.1016-0.042969 7.6484 0 0.007812-2.5664-0.015625-5.1328 0.035156-7.6953 2.5469-0.007813 5.1055-0.078126 7.6523-0.015626 0-2.5508-0.035156-5.1055 0.023438-7.6523 2.5469-0.007813 5.0977-0.050781 7.6367-0.015625 0.078125-0.8125 0.023438-1.668 0.023438-2.4922 0-1.7422-0.019532-3.4844 0-5.2266 2.5586-0.027344 5.125-0.03125 7.6836-0.015625 0-2.5547-0.027344-5.1211 0.015624-7.6758 2.5547-0.023438 5.1172-0.027344 7.6719-0.019532 0-2.5234-0.027344-5.0508 0.019531-7.5742h7.6758l-0.015625-38.539h-7.6836v-7.7031h-7.7461v-7.6953h-23s-0.003907 7.6953-0.003907 7.6953c-2.5547 0-5.1211-0.03125-7.6758 0.007812l-0.007812 7.7344h-7.6836l-0.007813-7.7422h-7.6211s-0.027344-7.6992-0.027344-7.6992h-23.098c0 2.5703 0.027343 5.1367-0.035157 7.6992l-7.6523 0.007812-0.007813 7.7109-7.7109 0.042969c-0.046875 3.8828 0 7.7617-0.0039063 11.645l0.0078126 26.711zm9.7031-26.902h9.4883s0.03125-6.3867 0.074218-9.5742l5.8359-0.03125c1.2383 0 2.4844-0.027344 3.7188 0.03125 0.023438 3.1914 0.023438 6.3828-0.007812 9.5742h-9.5664v9.5625c-3.1797 0.046875-6.3789 0.046875-9.5547 0.003906-0.015625-3.1875-0.015625-6.3711 0.007812-9.5625z"/></svg>
                         </button>
                     </div>
                     <div class="insp-tag-row" id="inspTagRow">
@@ -19407,6 +19361,29 @@ ${chatContext}
             showWechatToast('已删除', 'info');
         }
 
+        function confirmDeleteInspiration(id) {
+            if (confirm('确定删除这条碎碎念吗？')) {
+                deleteInspiration(id);
+            }
+        }
+
+        function showInspDeleteConfirm(id) {
+            const existing = document.querySelector('.insp-action-sheet');
+            if (existing) existing.remove();
+            const sheet = document.createElement('div');
+            sheet.className = 'insp-action-sheet';
+            sheet.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(90,72,112,0.35);z-index:1100;display:flex;align-items:flex-end;justify-content:center;';
+            sheet.onclick = function(e) { if (e.target === sheet) sheet.remove(); };
+            sheet.innerHTML = `
+                <div style="background:#fdf8f0;border:2px solid #c0a8d8;border-radius:8px 8px 0 0;width:100%;max-width:420px;padding:8px 0;padding-bottom:max(8px,env(safe-area-inset-bottom,0px));animation:inspSheetSlideUp 0.25s ease;">
+                    <div style="padding:14px 20px;font-size:13px;text-align:center;color:#c8b8d8;font-family:ZLabsBitmap,monospace;">确定要删除这条碎碎念吗？</div>
+                    <div style="padding:14px 20px;font-size:15px;text-align:center;cursor:pointer;color:#c06060;font-family:ZLabsBitmap,monospace;" onclick="this.closest('.insp-action-sheet').remove();deleteInspiration('${id}')">删除</div>
+                    <div style="padding:14px 20px;font-size:15px;text-align:center;cursor:pointer;color:#b098c8;font-family:ZLabsBitmap,monospace;border-top:2px solid #ddd0e8;" onclick="this.closest('.insp-action-sheet').remove()">取消</div>
+                </div>
+            `;
+            document.body.appendChild(sheet);
+        }
+
         // 碎碎念长按操作菜单
         function showInspActionSheet(id) {
             const item = (inspirationData.items || []).find(i => i.id === id);
@@ -19551,12 +19528,18 @@ ${chatContext}
                 const urlHtml = item.url ? `<a class="insp-card-url" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">🔗 ${escapeHtml(item.url)}</a>` : '';
 
                 html += `<div class="insp-card" data-insp-id="${item.id}" oncontextmenu="event.preventDefault();showInspActionSheet('${item.id}')" ontouchstart="this._lt=setTimeout(()=>{showInspActionSheet('${item.id}')},600)" ontouchend="clearTimeout(this._lt)" ontouchmove="clearTimeout(this._lt)">
-                    <div class="insp-card-header">
+                    <div class="insp-card-titlebar ${LINK_TAGS.includes(item.tag) ? 'link-bar' : 'text-bar'}">
                         <span class="insp-tag ${item.tag}">${tagInfo.label}</span>
                         <span class="insp-card-time">${timeStr}</span>
-                        <span class="insp-card-source">${sourceIcon} ${sourceLabel}</span>
+                        <div class="insp-card-actions">
+                            <button class="insp-card-action-btn" title="复制" onclick="event.stopPropagation();copyInspiration('${item.id}')"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="3" y="0" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="0" y="3" width="7" height="7" fill="#fdf8f0" stroke="currentColor" stroke-width="1.2"/></svg></button>
+                            <button class="insp-card-action-btn" title="编辑" onclick="event.stopPropagation();editInspiration('${item.id}')"><svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor"><rect x="2" y="10" width="8" height="1.2"/><rect x="8" y="1" width="2" height="2"/><rect x="3" y="6" width="2" height="2"/><rect x="5" y="4" width="2" height="2"/><rect x="7" y="2" width="2" height="2"/><rect x="2" y="8" width="2" height="2"/></svg></button>
+                            <button class="insp-card-action-btn" title="删除" onclick="event.stopPropagation();showInspDeleteConfirm('${item.id}')"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="2" height="2"/><rect x="7" y="1" width="2" height="2"/><rect x="3" y="3" width="2" height="2"/><rect x="5" y="3" width="2" height="2"/><rect x="4" y="4" width="2" height="2"/><rect x="3" y="5" width="2" height="2"/><rect x="5" y="5" width="2" height="2"/><rect x="1" y="7" width="2" height="2"/><rect x="7" y="7" width="2" height="2"/></svg></button>
+                        </div>
                     </div>
-                    <div class="insp-card-content">${contentPreview}</div>
+                    <div class="insp-card-body">
+                        <div class="insp-card-content">${contentPreview}</div>
+                    </div>
                     ${urlHtml ? `<div class="insp-card-footer">${urlHtml}</div>` : ''}
                 </div>`;
             }
@@ -21509,7 +21492,7 @@ ${dialogueText}
                 if (!provider) throw new Error('找不到供应商配置');
 
                 // 构建请求
-                const requestMessages = buildVcRequestMessages();
+                const requestMessages = await buildVcRequestMessages();
                 const requestBody = {
                     model: modelId,
                     messages: requestMessages,
@@ -21584,7 +21567,7 @@ ${dialogueText}
         }
 
         // 构建语音通话请求消息
-        function buildVcRequestMessages() {
+        async function buildVcRequestMessages() {
             const assistant = vcState.assistant;
             let systemPrompt = assistant.systemPrompt || '';
 
@@ -21635,6 +21618,92 @@ ${dialogueText}
             const longTermMemory = conv?.settings?.longTermMemory || [];
             if (longTermMemory.length > 0) {
                 systemPrompt += `\n\n【长期记忆】\n` + longTermMemory.map(m => `- ${m.content}`).join('\n');
+            }
+
+            // 向量记忆检索
+            if (voiceCallData.settings.vectorMemoryEnabled && cloudSyncEnabled() && mlabConfig.siliconFlowKey) {
+                try {
+                    // 构建query：合并当前通话最近的用户消息
+                    let queryParts = [];
+                    for (let i = vcState.messages.length - 1; i >= 0 && queryParts.length < 10; i--) {
+                        if (vcState.messages[i].role === 'user' && vcState.messages[i].content?.trim()) {
+                            queryParts.unshift(vcState.messages[i].content.trim());
+                        } else if (vcState.messages[i].role === 'assistant') {
+                            if (queryParts.length > 0) break;
+                        }
+                    }
+                    // 也合并微信上下文最近的用户消息（如果开了携带微信上下文）
+                    if (voiceCallData.settings.carryWechatContext && conv?.messages?.length) {
+                        const wMsgs = conv.messages;
+                        let wParts = [];
+                        for (let i = wMsgs.length - 1; i >= 0 && wParts.length < 5; i--) {
+                            if (wMsgs[i].role === 'user' && typeof wMsgs[i].content === 'string' && wMsgs[i].content.trim()) {
+                                wParts.unshift(wMsgs[i].content.trim());
+                            } else if (wMsgs[i].role === 'assistant') {
+                                if (wParts.length > 0) break;
+                            }
+                        }
+                        queryParts = wParts.concat(queryParts);
+                    }
+                    const queryText = queryParts.join(' ').slice(0, 500);
+
+                    if (queryText) {
+                        const topK = mlabConfig.searchTopK || 5;
+                        const contextN = mlabConfig.searchContextN || 20;
+                        const weights = {
+                            similarity: mlabConfig.searchWSim != null ? mlabConfig.searchWSim : 0.5,
+                            recency: mlabConfig.searchWRec != null ? mlabConfig.searchWRec : 0.3,
+                            importance: mlabConfig.searchWImp != null ? mlabConfig.searchWImp : 0.2
+                        };
+
+                        const results = await mlabSearchNarratives(queryText, topK * 2, vcState.assistantId, weights);
+
+                        if (results && results.length > 0) {
+                            // 时间去重：如果开了微信上下文，用微信上下文做时间窗口去重
+                            let filtered = results;
+                            if (voiceCallData.settings.carryWechatContext && conv?.messages?.length) {
+                                const ctxCount = voiceCallData.settings.contextCount || 30;
+                                const contextMessages = conv.messages.slice(-ctxCount);
+                                const earliestTimestamp = contextMessages[0]?.timestamp || null;
+                                if (earliestTimestamp) {
+                                    filtered = results.filter(r => {
+                                        const endTime = r.end_time || r.narrative?.end_time;
+                                        if (!endTime) return true;
+                                        return new Date(endTime) < new Date(earliestTimestamp);
+                                    });
+                                }
+                            }
+                            filtered = filtered.slice(0, topK);
+
+                            if (filtered.length > 0) {
+                                const vectorMemoryText = filtered.map(r => {
+                                    const n = r.narrative || {};
+                                    let parts = [];
+                                    const timeStr = r.start_time || r.end_time
+                                        ? (() => {
+                                            const fmt = t => { try { return new Date(t).toLocaleDateString('zh-CN', {month:'long',day:'numeric'}); } catch(e) { return ''; } };
+                                            return r.start_time ? fmt(r.start_time) + (r.end_time && r.end_time !== r.start_time ? '~' + fmt(r.end_time) : '') : fmt(r.end_time);
+                                        })()
+                                        : '';
+                                    if (timeStr) parts.push(`[${timeStr}]`);
+                                    if (n.context) parts.push(n.context);
+                                    const quotes = n.user_quotes || [];
+                                    if (quotes.length > 0) {
+                                        parts.push('用户说：' + quotes.map(q => `「${q}」`).join(' '));
+                                    }
+                                    if (n.assistant_summary) parts.push(`你当时：${n.assistant_summary}`);
+                                    return `- ${parts.join(' ')}`;
+                                }).join('\n');
+                                systemPrompt += `\n\n【向量记忆 - 相关历史记忆片段】\n以下是从记忆库中检索到的与当前话题相关的历史记忆，请自然地参考：\n${vectorMemoryText}`;
+                                console.log(`语音通话向量记忆: query="${queryText.slice(0,50)}..." 召回${results.length}条，去重后${filtered.length}条已注入`);
+                            } else {
+                                console.log(`语音通话向量记忆: 召回${results.length}条，去重后全部过滤`);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('语音通话向量记忆检索失败，跳过:', err.message);
+                }
             }
 
             let fullContent = systemPrompt + '\n\n=====对话记录=====\n';
@@ -21912,6 +21981,10 @@ ${dialogueText}
             document.getElementById('vcContextCount').value = s.contextCount || 30;
             document.getElementById('vcContextCountRow').style.display = s.carryWechatContext ? 'flex' : 'none';
 
+            const vmEl = document.getElementById('vcVectorMemory');
+            if (s.vectorMemoryEnabled) vmEl.classList.add('on');
+            else vmEl.classList.remove('on');
+
             document.getElementById('vcVoiceId').value = s.voiceId || '';
 
             // Edge TTS 音色 UI
@@ -21942,6 +22015,7 @@ ${dialogueText}
             voiceCallData.settings.contextCount = parseInt(document.getElementById('vcContextCount').value) || 30;
             voiceCallData.settings.voiceId = document.getElementById('vcVoiceId').value.trim();
             voiceCallData.settings.edgeVoiceId = document.getElementById('vcEdgeVoice').value || 'zh-CN-XiaoxiaoNeural';
+            voiceCallData.settings.vectorMemoryEnabled = document.getElementById('vcVectorMemory').classList.contains('on');
             saveVoiceCallData();
             closePage('voiceCallSettingsPage');
         }
