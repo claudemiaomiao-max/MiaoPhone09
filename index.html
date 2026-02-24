@@ -8282,7 +8282,6 @@
                         <div id="mlabProgressInfo" style="margin-top:8px;font-size:11px;color:#9ca3af;"></div>
                         <div style="margin-top:6px;display:flex;gap:6px;align-items:center;">
                             <button class="mlab-btn mlab-btn-outline" onclick="mlabShowProgress()" style="font-size:11px;padding:2px 8px;">查看进度</button>
-                            <button class="mlab-btn mlab-btn-outline" onclick="mlabManualRewind()" style="font-size:11px;padding:2px 8px;color:#f59e0b;border-color:#fcd34d;">手动回退进度</button>
                         </div>
                     </div>
                     <div class="mlab-section">
@@ -8295,6 +8294,8 @@
                         <div id="mlabHistoryStatus" style="font-size:12px;color:#9ca3af;margin-top:8px;"></div>
                         <button class="mlab-btn mlab-btn-outline" onclick="mlabScanGaps()" id="mlabGapBtn" style="margin-top:10px;font-size:12px;width:100%;">扫描补漏（检测并补提取缺口）</button>
                         <div id="mlabGapStatus" style="font-size:12px;color:#9ca3af;margin-top:6px;"></div>
+                        <button class="mlab-btn mlab-btn-outline" onclick="mlabScanOrphanVectors()" id="mlabOrphanBtn" style="margin-top:10px;font-size:12px;width:100%;color:#f59e0b;border-color:#fcd34d;">扫描孤儿向量（清理历史残留）</button>
+                        <div id="mlabOrphanStatus" style="font-size:12px;color:#9ca3af;margin-top:6px;"></div>
                     </div>
                     <div class="mlab-section">
                         <div class="mlab-section-title">SiliconFlow API Key</div>
@@ -9003,6 +9004,7 @@
         // 推送有变化的数据到云端（由定时器或 visibilitychange 调用）
         async function cloudPushDirty() {
             if (!cloudSyncEnabled()) return;
+            if (getLocalDataStats().total === 0) { console.warn('[云端同步] 本地数据为空，跳过自动推送'); return; }
             if (_cloudSyncDirty.appData) { _cloudSyncDirty.appData = false; await pushAppDataToCloud(); }
             if (_cloudSyncDirty.wechatData) { _cloudSyncDirty.wechatData = false; await pushWechatDataToCloud(); }
             if (_cloudSyncDirty.voiceCallData) { _cloudSyncDirty.voiceCallData = false; await pushVoiceCallDataToCloud(); }
@@ -9164,13 +9166,65 @@
             await loadInspirationData();
         }
 
+        // 统计本地数据量
+        function getLocalDataStats() {
+            const wechatConvCount = wechatData?.conversations ? Object.keys(wechatData.conversations).length : 0;
+            let wechatMsgCount = 0;
+            if (wechatData?.conversations) {
+                for (const conv of Object.values(wechatData.conversations)) {
+                    wechatMsgCount += conv.messages?.length || 0;
+                }
+            }
+            const apiConvCount = appData.conversations?.length || 0;
+            let apiMsgCount = 0;
+            for (const msgs of Object.values(appData.messages || {})) {
+                apiMsgCount += Array.isArray(msgs) ? msgs.length : 0;
+            }
+            return { wechatConvCount, wechatMsgCount, apiConvCount, apiMsgCount, total: wechatMsgCount + apiMsgCount };
+        }
+
+        // 统计云端数据量（快速检查）
+        async function getCloudDataStats() {
+            try {
+                const rows = await cloudFetchAll();
+                let wechatConvCount = 0;
+                let wechatMsgCount = 0;
+                let apiConvCount = 0;
+                for (const row of rows) {
+                    if (row.key.startsWith('wechat_conv_')) {
+                        wechatConvCount++;
+                        wechatMsgCount += row.value?.messages?.length || 0;
+                    }
+                    if (row.key === 'app_conversations') {
+                        apiConvCount = row.value?.conversations?.length || 0;
+                    }
+                }
+                return { wechatConvCount, wechatMsgCount, apiConvCount, total: wechatMsgCount };
+            } catch(e) {
+                console.warn('[云端同步] 获取云端统计失败:', e);
+                return null;
+            }
+        }
+
         // 一键上传全部本地数据到云端
         async function cloudMigrateToCloud() {
             if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
-            if (!confirm('将本地所有数据上传到云端（已有的云端数据会被覆盖），确定吗？')) return;
+            await cloudEnsureAllDataLoaded();
+            const local = getLocalDataStats();
+            const cloud = await getCloudDataStats();
+
+            if (cloud && cloud.total > 0 && local.total < cloud.total * 0.5) {
+                const msg = `⚠️ 本地数据明显少于云端！\n\n`
+                    + `本地: ${local.wechatMsgCount} 条微信消息, ${local.apiConvCount} 个API对话\n`
+                    + `云端: ${cloud.wechatMsgCount} 条微信消息, ${cloud.apiConvCount} 个API对话\n\n`
+                    + `继续上传会覆盖云端数据！\n如果你是新设备，请取消并用「从云端恢复」。\n\n确定要用本地数据覆盖云端吗？`;
+                if (!confirm(msg)) return;
+            } else {
+                if (!confirm('将本地所有数据上传到云端（已有的云端数据会被覆盖），确定吗？')) return;
+            }
+
             updateCloudSyncStatusDisplay('syncing');
             try {
-                await cloudEnsureAllDataLoaded();
                 await pushAppDataToCloud();
                 await pushWechatDataToCloud();
                 await pushVoiceCallDataToCloud();
@@ -9188,6 +9242,11 @@
             if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
             try {
                 await cloudEnsureAllDataLoaded();
+                const local = getLocalDataStats();
+                if (local.total === 0) {
+                    console.warn('[云端同步] 本地数据为空，跳过推送');
+                    return;
+                }
                 await pushAppDataToCloud();
                 await pushWechatDataToCloud();
                 await pushVoiceCallDataToCloud();
@@ -9811,48 +9870,6 @@
             el.innerHTML = html || '无已启用向量记忆的助手';
         }
 
-        async function mlabManualRewind() {
-            await initWechatData();
-            const conversations = wechatData?.conversations;
-            if (!conversations) { alert('无对话数据'); return; }
-
-            // 找到有向量记忆的助手
-            const targets = [];
-            for (const assistantId of Object.keys(conversations)) {
-                const assistant = appData.assistants.find(a => a.id === assistantId);
-                if (!assistant || !assistant.vectorMemoryEnabled) continue;
-                const conv = conversations[assistantId];
-                if (!conv?.messages) continue;
-                targets.push({ assistantId, assistant, conv });
-            }
-            if (targets.length === 0) { alert('无已启用向量记忆的助手'); return; }
-
-            // 简单起见取第一个
-            const target = targets[0];
-            const progress = mlabExtractProgress[target.assistantId] || 0;
-            const total = target.conv.messages.length - 1;
-
-            const input = prompt(`当前进度: ${progress}/${total}\n\n输入要回退的条数（例如输入 200 = 回退200条）：`);
-            if (!input) return;
-            const rewindBy = parseInt(input);
-            if (isNaN(rewindBy) || rewindBy <= 0) { alert('请输入正整数'); return; }
-
-            const newProgress = Math.max(0, progress - rewindBy);
-            const newMsg = target.conv.messages[newProgress];
-            const newTime = newMsg?.timestamp ? new Date(newMsg.timestamp).toLocaleString('zh-CN') : '未知';
-
-            if (rewindBy > 500) {
-                if (!confirm(`⚠️ 将回退 ${rewindBy} 条消息！\n\n进度: ${progress} → ${newProgress}\n截止时间将变为: ${newTime}\n\n这会导致大量消息被重新提取，确定吗？`)) return;
-            } else {
-                if (!confirm(`进度: ${progress} → ${newProgress}\n截止时间将变为: ${newTime}\n\n确定回退吗？`)) return;
-            }
-
-            mlabExtractProgress[target.assistantId] = newProgress;
-            saveMlabProgress();
-            mlabShowProgress();
-            console.log(`Memory Lab: 手动回退 [${target.assistant.name}] ${progress} → ${newProgress}`);
-        }
-
         function mlabResetProgress() {
             if (!confirm('确定重置所有助手的提取进度？\n这会让自动提取从"当前位置"重新开始，不会回溯老数据。')) return;
             const conversations = wechatData?.conversations;
@@ -10377,7 +10394,7 @@
         // 从某条日志的位置重新开始同步
         async function mlabRewindToLog(logIdx) {
             const log = mlabLogs[logIdx];
-            if (!log || !log.assistantId || !log.timeRange?.start) {
+            if (!log || !log.assistantId || !log.timeRange?.end) {
                 alert('这条日志缺少时间或助手信息，无法定位');
                 return;
             }
@@ -10386,34 +10403,44 @@
             const conv = wechatData?.conversations?.[log.assistantId];
             if (!conv?.messages) { alert('找不到对话数据'); return; }
 
-            // 找到这条日志起始时间对应的消息位置
-            const logStartTime = new Date(log.timeRange.start).getTime();
-            let targetIdx = 0;
+            // 找到这条日志结束时间对应的消息位置（保留本条日志，从它之后开始重提）
+            const logEndTime = new Date(log.timeRange.end).getTime();
+            let targetIdx = conv.messages.length - 1;
             for (let i = 0; i < conv.messages.length; i++) {
                 const msgTime = new Date(conv.messages[i].timestamp).getTime();
-                if (msgTime >= logStartTime) {
-                    targetIdx = Math.max(0, i - 1);
+                if (msgTime > logEndTime) {
+                    targetIdx = i;
                     break;
                 }
             }
 
             const currentProgress = mlabExtractProgress[log.assistantId] || 0;
             const rewindAmount = currentProgress - targetIdx;
-            const targetTime = new Date(log.timeRange.start).toLocaleString('zh-CN');
+            const targetTime = new Date(log.timeRange.end).toLocaleString('zh-CN');
 
-            // 统计这条日志及之后有多少条日志
-            const logsAfter = mlabLogs.filter((l, i) => i <= logIdx && l.assistantId === log.assistantId).length;
+            // 收集这条日志之后的同助手日志（不包含本条，本条保留）
+            const logEndMs = new Date(log.timeRange.end).getTime();
+            const logsToClean = mlabLogs.filter(l =>
+                l.id !== log.id &&
+                l.assistantId === log.assistantId &&
+                l.timeRange?.start &&
+                new Date(l.timeRange.start).getTime() > logEndMs
+            );
 
             if (rewindAmount <= 0) {
-                alert('当前进度已经在这条日志之前了，不需要回退。');
+                alert('当前进度已经在这条日志结尾了，不需要回退。');
                 return;
             }
 
-            let msg = `将进度回退到这条日志之前\n\n`;
+            let msg = `将进度回退到这条日志之后\n\n`;
+            msg += `本条日志保留不动\n`;
             msg += `回退: ${rewindAmount} 条消息\n`;
-            msg += `起点: ${targetTime}\n\n`;
-            msg += `回退后，这个时间之后的消息会被自动重新提取。\n`;
-            msg += `建议手动删除这条及之后的旧日志，避免向量重复。`;
+            msg += `从: ${targetTime} 之后开始重新提取\n\n`;
+            if (logsToClean.length > 0) {
+                msg += `将自动清理这条之后的 ${logsToClean.length} 条旧日志及对应向量。`;
+            } else {
+                msg += `这条之后没有需要清理的旧日志。`;
+            }
 
             if (rewindAmount > 500) {
                 msg = `⚠️ 将回退 ${rewindAmount} 条消息！\n\n` + msg;
@@ -10421,10 +10448,33 @@
 
             if (!confirm(msg)) return;
 
+            // 自动清理本条之后的旧日志和向量
+            if (logsToClean.length > 0) {
+                try {
+                    for (const oldLog of logsToClean) {
+                        if (cloudSyncEnabled()) {
+                            await mlabDeleteVectorsByLogId(oldLog.id);
+                            const url = appData.settings.supabaseUrl;
+                            const key = appData.settings.supabaseKey;
+                            await fetch(`${url}/rest/v1/data_store?key=eq.mlab_log_${encodeURIComponent(oldLog.id)}`, {
+                                method: 'DELETE',
+                                headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+                            });
+                        }
+                    }
+                    const cleanIds = new Set(logsToClean.map(l => l.id));
+                    mlabLogs = mlabLogs.filter(l => !cleanIds.has(l.id));
+                    console.log(`Memory Lab: 已自动清理 ${logsToClean.length} 条旧日志及向量`);
+                } catch(err) {
+                    console.warn('Memory Lab: 清理旧日志时出错', err.message);
+                }
+            }
+
             mlabExtractProgress[log.assistantId] = targetIdx;
             saveMlabProgress();
-            console.log(`Memory Lab: 从日志位置重新同步 [${log.assistantName}] 进度 ${currentProgress} → ${targetIdx}`);
-            alert(`进度已回退到 ${targetTime} 之前。\n\n下次心跳会自动开始重新提取。\n记得删除旧日志中这个时间之后的条目。`);
+            console.log(`Memory Lab: 进度回退到日志结尾 [${log.assistantName}] ${currentProgress} → ${targetIdx}`);
+            alert(`进度已回退到这条日志结尾。\n\n${logsToClean.length > 0 ? '已自动清理 ' + logsToClean.length + ' 条旧日志及向量。\n' : ''}下次心跳会从这里开始重新提取。`);
+            mlabRenderLogPanel();
             mlabShowProgress();
         }
 
@@ -10435,8 +10485,6 @@
 
             const timeStr = log.timeRange ? `${new Date(log.timeRange.start).toLocaleString('zh-CN')} ~ ${new Date(log.timeRange.end).toLocaleString('zh-CN')}` : '未知时间';
             if (!confirm(`确认删除这条日志？\n\n${log.assistantName} · ${timeStr}\n${log.chunkSize || 0}条消息 · ${log.outputNarratives?.length || 0}个叙事元\n\n向量库中对应的叙事元也会一起删除。`)) return;
-
-            const shouldRewind = confirm('是否回退提取进度？\n\n选「好」→ 进度回退，这段消息会被自动重新提取\n选「取消」→ 只删日志和向量，不回退进度（适合删重复日志）');
 
             try {
                 // 1. 删除向量库中的关联数据
@@ -10454,46 +10502,13 @@
                     });
                 }
 
-                // 3. 可选：回退进度
-                if (shouldRewind && log.assistantId && log.timeRange?.start) {
-                    await initWechatData();
-                    const conv = wechatData?.conversations?.[log.assistantId];
-                    if (conv?.messages) {
-                        const logStartTime = new Date(log.timeRange.start).getTime();
-                        let rewindIdx = 0;
-                        for (let i = 0; i < conv.messages.length; i++) {
-                            const msgTime = new Date(conv.messages[i].timestamp).getTime();
-                            if (msgTime >= logStartTime) {
-                                rewindIdx = Math.max(0, i - 1);
-                                break;
-                            }
-                        }
-                        const currentProgress = mlabExtractProgress[log.assistantId] || 0;
-                        const rewindAmount = currentProgress - rewindIdx;
-                        if (rewindIdx < currentProgress) {
-                            if (rewindAmount > 500) {
-                                if (!confirm(`⚠️ 进度将回退 ${rewindAmount} 条消息！\n\n这会导致大量消息被重新提取，确定要回退吗？`)) {
-                                    console.log('Memory Lab: 用户取消了大幅回退');
-                                } else {
-                                    mlabExtractProgress[log.assistantId] = rewindIdx;
-                                    saveMlabProgress();
-                                    console.log(`Memory Lab: 进度回退 [${log.assistantName}] ${currentProgress} → ${rewindIdx} (回退${rewindAmount}条)`);
-                                }
-                            } else {
-                                mlabExtractProgress[log.assistantId] = rewindIdx;
-                                saveMlabProgress();
-                                console.log(`Memory Lab: 进度回退 [${log.assistantName}] ${currentProgress} → ${rewindIdx} (回退${rewindAmount}条)`);
-                            }
-                        }
-                    }
-                }
-
-                // 4. 从内存中移除
+                // 3. 从内存中移除
                 mlabLogs.splice(logIdx, 1);
 
-                // 5. 重新渲染
+                // 4. 重新渲染
                 mlabRenderLogPanel();
-                console.log(`Memory Lab: 日志已删除 ${log.id}${shouldRewind ? '（已回退进度）' : '（未回退进度）'}`);
+                showWechatToast('已删除', 'info');
+                console.log(`Memory Lab: 日志已删除 ${log.id}`);
 
             } catch(err) {
                 console.error('Memory Lab: 删除日志失败', err);
@@ -10941,6 +10956,92 @@
         let mlabHistoryAbort = false;
 
         // 扫描日志缺口并补提取
+        // 扫描孤儿向量（log_id 对不上现有日志的向量）
+        async function mlabScanOrphanVectors() {
+            const statusEl = document.getElementById('mlabOrphanStatus');
+            const btn = document.getElementById('mlabOrphanBtn');
+            if (!cloudSyncEnabled()) { alert('请先配置 Supabase'); return; }
+
+            if (btn) { btn.disabled = true; btn.textContent = '扫描中...'; }
+            if (statusEl) statusEl.textContent = '正在从向量库拉取数据...';
+
+            try {
+                const url = appData.settings.supabaseUrl;
+                const key = appData.settings.supabaseKey;
+
+                // 1. 拉取向量库所有记录的 log_id（去重）
+                let allVectors = [];
+                let offset = 0;
+                const pageSize = 1000;
+                while (true) {
+                    const resp = await fetch(`${url}/rest/v1/mlab_narratives?select=id,log_id,content&order=id&limit=${pageSize}&offset=${offset}`, {
+                        headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+                    });
+                    if (!resp.ok) throw new Error('拉取向量数据失败: ' + resp.status);
+                    const rows = await resp.json();
+                    allVectors = allVectors.concat(rows);
+                    if (rows.length < pageSize) break;
+                    offset += pageSize;
+                }
+
+                if (allVectors.length === 0) {
+                    if (statusEl) statusEl.textContent = '向量库为空，没有需要清理的。';
+                    return;
+                }
+
+                // 2. 收集所有现有日志的 log_id
+                const existingLogIds = new Set(mlabLogs.map(l => l.id));
+
+                // 3. 找出孤儿向量
+                const orphans = allVectors.filter(v => v.log_id && !existingLogIds.has(v.log_id));
+
+                // 按 log_id 分组
+                const orphansByLogId = {};
+                for (const v of orphans) {
+                    if (!orphansByLogId[v.log_id]) orphansByLogId[v.log_id] = [];
+                    orphansByLogId[v.log_id].push(v);
+                }
+
+                const orphanLogIds = Object.keys(orphansByLogId);
+
+                if (orphanLogIds.length === 0) {
+                    if (statusEl) statusEl.innerHTML = `✅ 扫描完成，共 ${allVectors.length} 条向量，没有孤儿数据。`;
+                    return;
+                }
+
+                // 4. 展示结果
+                let report = `扫描完成！共 ${allVectors.length} 条向量，发现 ${orphans.length} 条孤儿向量（来自 ${orphanLogIds.length} 个已删除的日志）：\n\n`;
+                for (const logId of orphanLogIds) {
+                    const items = orphansByLogId[logId];
+                    const preview = items[0]?.content?.substring(0, 50) || '(无内容)';
+                    report += `• ${logId}：${items.length} 条向量\n  预览: ${preview}...\n`;
+                }
+                report += `\n确定要删除这 ${orphans.length} 条孤儿向量吗？`;
+
+                if (!confirm(report)) {
+                    if (statusEl) statusEl.textContent = `发现 ${orphans.length} 条孤儿向量，用户取消清理。`;
+                    return;
+                }
+
+                // 5. 按 log_id 批量删除
+                if (statusEl) statusEl.textContent = '正在清理...';
+                let deletedTotal = 0;
+                for (const logId of orphanLogIds) {
+                    const count = await mlabDeleteVectorsByLogId(logId);
+                    deletedTotal += count;
+                }
+
+                if (statusEl) statusEl.innerHTML = `✅ 清理完成！已删除 ${deletedTotal} 条孤儿向量。`;
+                console.log(`Memory Lab: 孤儿向量清理完成，删除 ${deletedTotal} 条`);
+
+            } catch(err) {
+                console.error('Memory Lab: 孤儿向量扫描失败', err);
+                if (statusEl) statusEl.textContent = '扫描失败: ' + err.message;
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '扫描孤儿向量（清理历史残留）'; }
+            }
+        }
+
         async function mlabScanGaps() {
             if (mlabHistoryRunning) { alert('正在提取中，请等待完成'); return; }
             if (!mlabConfig.model) { alert('请先在"配置"页选择总结模型'); return; }
