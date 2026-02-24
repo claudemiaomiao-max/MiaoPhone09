@@ -6177,6 +6177,58 @@
             white-space: nowrap;
             max-width: 200px;
         }
+        .insp-action-sheet {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 1100;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            animation: inspSheetBgIn 0.2s ease;
+        }
+        @keyframes inspSheetBgIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .insp-action-sheet-content {
+            background: #fff;
+            border-radius: 14px 14px 0 0;
+            width: 100%;
+            max-width: 420px;
+            padding: 8px 0;
+            padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+            animation: inspSheetSlideUp 0.25s ease;
+        }
+        @keyframes inspSheetSlideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .insp-action-sheet-item {
+            padding: 14px 20px;
+            font-size: 16px;
+            text-align: center;
+            cursor: pointer;
+            color: #333;
+            transition: background 0.15s;
+        }
+        .insp-action-sheet-item:active {
+            background: #f0f0f0;
+        }
+        .insp-action-sheet-item.danger {
+            color: #ef4444;
+        }
+        .insp-action-sheet-cancel {
+            padding: 14px 20px;
+            font-size: 16px;
+            text-align: center;
+            cursor: pointer;
+            color: #999;
+            border-top: 8px solid #f5f5f5;
+        }
+        .insp-action-sheet-cancel:active {
+            background: #f0f0f0;
+        }
         .insp-bottom {
             background: #fff;
             border-top: 1px solid #e5e5e5;
@@ -6190,21 +6242,35 @@
             gap: 8px;
             margin-bottom: 8px;
         }
-        .insp-input-row textarea {
+        .insp-input-box {
             flex: 1;
-            padding: 10px 12px;
+            background: #fff;
+            border-radius: 8px;
             border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 14px;
-            resize: none;
-            outline: none;
-            min-height: 40px;
+            padding: 8px 12px;
+            min-height: 36px;
             max-height: 100px;
-            line-height: 1.4;
-            font-family: inherit;
+            overflow-y: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: border-color 0.2s;
         }
-        .insp-input-row textarea:focus {
+        .insp-input-box:focus-within {
             border-color: #f59e0b;
+        }
+        .insp-input-box textarea {
+            flex: 1;
+            border: none;
+            background: none;
+            resize: none;
+            font-size: 14px;
+            line-height: 1.4;
+            outline: none;
+            font-family: inherit;
+            min-height: 20px;
+            max-height: 80px;
+            padding: 0;
         }
         .insp-voice-btn {
             background: none;
@@ -6216,8 +6282,8 @@
             justify-content: center;
             color: #999;
             flex-shrink: 0;
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
         }
         .insp-voice-btn:hover {
             color: #07c160;
@@ -8274,10 +8340,12 @@
                         <input type="text" id="inspUrlInput" placeholder="粘贴链接（可选）">
                     </div>
                     <div class="insp-input-row">
-                        <button class="insp-voice-btn" id="inspVoiceBtn" onclick="startInspirationVoiceInput()" title="语音输入">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                        </button>
-                        <textarea id="inspirationInput" rows="1" placeholder="想到什么就写什么..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';checkInspInputForUrl();"></textarea>
+                        <div class="insp-input-box">
+                            <button class="insp-voice-btn" id="inspVoiceBtn" onclick="startInspirationVoiceInput()" title="语音输入">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                            </button>
+                            <textarea id="inspirationInput" rows="1" placeholder="想到什么就写什么..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';checkInspInputForUrl();"></textarea>
+                        </div>
                         <button class="insp-send-btn" id="inspSendBtn" onclick="quickSaveInspiration()" title="发送">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         </button>
@@ -19186,6 +19254,19 @@ ${chatContext}
             document.getElementById('inspSaveModal').classList.remove('show');
             _inspSaveModalMsgId = null;
             _inspSaveModalAssistantId = null;
+            // 如果是编辑模式，恢复按钮原始行为
+            const modal = document.getElementById('inspSaveModal');
+            const tagRow = modal.querySelector('.insp-tag-row');
+            if (tagRow && tagRow.dataset.editMode === 'true') {
+                delete tagRow.dataset.editId;
+                delete tagRow.dataset.editMode;
+                tagRow.querySelectorAll('.insp-tag-btn').forEach(btn => {
+                    if (btn.dataset.origOnclick) {
+                        btn.setAttribute('onclick', btn.dataset.origOnclick);
+                        delete btn.dataset.origOnclick;
+                    }
+                });
+            }
         }
 
         // 从浮层保存
@@ -19219,11 +19300,109 @@ ${chatContext}
 
         // 删除灵感
         function deleteInspiration(id) {
-            if (!confirm('删除这条碎碎念？')) return;
             inspirationData.items = inspirationData.items.filter(i => i.id !== id);
             saveInspirationData();
             renderInspirationList();
             showWechatToast('已删除', 'info');
+        }
+
+        // 碎碎念长按操作菜单
+        function showInspActionSheet(id) {
+            const item = (inspirationData.items || []).find(i => i.id === id);
+            if (!item) return;
+            const existing = document.querySelector('.insp-action-sheet');
+            if (existing) existing.remove();
+
+            const sheet = document.createElement('div');
+            sheet.className = 'insp-action-sheet';
+            sheet.onclick = function(e) { if (e.target === sheet) closeInspActionSheet(); };
+            sheet.innerHTML = `
+                <div class="insp-action-sheet-content">
+                    <div class="insp-action-sheet-item" onclick="copyInspiration('${id}')">复制</div>
+                    <div class="insp-action-sheet-item" onclick="editInspiration('${id}')">编辑</div>
+                    <div class="insp-action-sheet-item danger" onclick="closeInspActionSheet();deleteInspiration('${id}')">删除</div>
+                    <div class="insp-action-sheet-cancel" onclick="closeInspActionSheet()">取消</div>
+                </div>
+            `;
+            document.body.appendChild(sheet);
+        }
+
+        function closeInspActionSheet() {
+            const sheet = document.querySelector('.insp-action-sheet');
+            if (sheet) sheet.remove();
+        }
+
+        function copyInspiration(id) {
+            closeInspActionSheet();
+            const item = (inspirationData.items || []).find(i => i.id === id);
+            if (!item) return;
+            const text = item.content + (item.url ? '\n' + item.url : '');
+            navigator.clipboard.writeText(text).then(() => {
+                showWechatToast('已复制', 'success');
+            }).catch(() => {
+                // fallback
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showWechatToast('已复制', 'success');
+            });
+        }
+
+        function editInspiration(id) {
+            closeInspActionSheet();
+            const item = (inspirationData.items || []).find(i => i.id === id);
+            if (!item) return;
+            // 复用存碎碎念浮层来编辑
+            const modal = document.getElementById('inspSaveModal');
+            const textarea = document.getElementById('inspSaveModalText');
+            textarea.value = item.content || '';
+            modal.classList.add('show');
+            // 把标签按钮改成保存编辑
+            const tagRow = modal.querySelector('.insp-tag-row');
+            tagRow.dataset.editId = id;
+            tagRow.dataset.editMode = 'true';
+            // 替换按钮行为：点击标签 = 保存并改分类
+            const btns = tagRow.querySelectorAll('.insp-tag-btn');
+            btns.forEach(btn => {
+                const origOnclick = btn.getAttribute('onclick');
+                btn.dataset.origOnclick = origOnclick;
+                const tag = origOnclick.match(/'([^']+)'/)?.[1] || 'idea';
+                btn.setAttribute('onclick', `saveInspEdit('${id}','${tag}')`);
+            });
+            textarea.focus();
+        }
+
+        function saveInspEdit(id, newTag) {
+            const textarea = document.getElementById('inspSaveModalText');
+            const newContent = textarea.value.trim();
+            if (!newContent) {
+                showWechatToast('内容不能为空', 'info');
+                return;
+            }
+            const item = (inspirationData.items || []).find(i => i.id === id);
+            if (item) {
+                item.content = newContent;
+                item.tag = newTag;
+            }
+            saveInspirationData();
+            renderInspirationList();
+            // 恢复按钮原始行为
+            const modal = document.getElementById('inspSaveModal');
+            const tagRow = modal.querySelector('.insp-tag-row');
+            delete tagRow.dataset.editId;
+            delete tagRow.dataset.editMode;
+            const btns = tagRow.querySelectorAll('.insp-tag-btn');
+            btns.forEach(btn => {
+                if (btn.dataset.origOnclick) {
+                    btn.setAttribute('onclick', btn.dataset.origOnclick);
+                    delete btn.dataset.origOnclick;
+                }
+            });
+            closeInspSaveModal();
+            showWechatToast('已保存', 'success');
         }
 
         // 渲染列表
@@ -19270,7 +19449,7 @@ ${chatContext}
                 const contentPreview = escapeHtml(item.content || '');
                 const urlHtml = item.url ? `<a class="insp-card-url" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">🔗 ${escapeHtml(item.url)}</a>` : '';
 
-                html += `<div class="insp-card" oncontextmenu="event.preventDefault();deleteInspiration('${item.id}')" ontouchstart="this._lt=setTimeout(()=>deleteInspiration('${item.id}'),600)" ontouchend="clearTimeout(this._lt)" ontouchmove="clearTimeout(this._lt)">
+                html += `<div class="insp-card" data-insp-id="${item.id}" oncontextmenu="event.preventDefault();showInspActionSheet('${item.id}')" ontouchstart="this._lt=setTimeout(()=>{showInspActionSheet('${item.id}')},600)" ontouchend="clearTimeout(this._lt)" ontouchmove="clearTimeout(this._lt)">
                     <div class="insp-card-header">
                         <span class="insp-tag ${item.tag}">${tagInfo.label}</span>
                         <span class="insp-card-time">${timeStr}</span>
