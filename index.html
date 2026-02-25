@@ -6151,11 +6151,11 @@
         .insp-tag.idea { background: #f0e8d4; color: #a89060; border-color: #d8c8a0; }
         .insp-tag.bug { background: #f0d8d4; color: #b08070; border-color: #d8b0a8; }
         .insp-tag.chen { background: #e8d8f0; color: #9878a8; border-color: #c8a8d8; }
-        .insp-tag.link_tutorial { background: #d4e4f0; color: #6890b0; border-color: #a8c8d8; }
-        .insp-tag.link_resource { background: #f0e0cc; color: #b09868; border-color: #d8c8a8; }
-        .insp-tag.link_tool { background: #d0e8e0; color: #68a090; border-color: #a0d0c0; }
-        .insp-tag.link_beauty { background: #ecdcf0; color: #a078b0; border-color: #c8a8d0; }
-        .insp-tag.link_inspo { background: #f0d0e0; color: #b07888; border-color: #d8a8b8; }
+        .insp-tag.link_tutorial { background: #dce0f0; color: #7888a8; border-color: #c0c8e0; }
+        .insp-tag.link_resource { background: #e8e4dc; color: #908878; border-color: #c8c0b8; }
+        .insp-tag.link_tool { background: #f0e8d4; color: #a89060; border-color: #d8c8a0; }
+        .insp-tag.link_beauty { background: #f0d8d4; color: #b08070; border-color: #d8b0a8; }
+        .insp-tag.link_inspo { background: #e8d8f0; color: #9878a8; border-color: #c8a8d8; }
         .insp-card-time {
             font-size: 11px; color: var(--insp-txt);
             font-family: "ZLabsBitmap", monospace;
@@ -6335,6 +6335,12 @@
         .insp-tag-row {
             display: flex; gap: 6px; overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            margin-bottom: 8px;
+            animation: inspTagRowIn 0.2s ease;
+        }
+        @keyframes inspTagRowIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .insp-tag-row::-webkit-scrollbar { display: none; }
         .insp-tag-btn {
@@ -6351,11 +6357,11 @@
         .insp-tag-btn.idea { background: #f0e8d4; color: #a89060; border-color: #d8c8a0; }
         .insp-tag-btn.bug { background: #f0d8d4; color: #b08070; border-color: #d8b0a8; }
         .insp-tag-btn.chen { background: #e8d8f0; color: #9878a8; border-color: #c8a8d8; }
-        .insp-tag-btn.link_tutorial { background: #d4e4f0; color: #6890b0; border-color: #a8c8d8; }
-        .insp-tag-btn.link_resource { background: #f0e0cc; color: #b09868; border-color: #d8c8a8; }
-        .insp-tag-btn.link_tool { background: #d0e8e0; color: #68a090; border-color: #a0d0c0; }
-        .insp-tag-btn.link_beauty { background: #ecdcf0; color: #a078b0; border-color: #c8a8d0; }
-        .insp-tag-btn.link_inspo { background: #f0d0e0; color: #b07888; border-color: #d8a8b8; }
+        .insp-tag-btn.link_tutorial { background: #dce0f0; color: #7888a8; border-color: #c0c8e0; }
+        .insp-tag-btn.link_resource { background: #e8e4dc; color: #908878; border-color: #c8c0b8; }
+        .insp-tag-btn.link_tool { background: #f0e8d4; color: #a89060; border-color: #d8c8a0; }
+        .insp-tag-btn.link_beauty { background: #f0d8d4; color: #b08070; border-color: #d8b0a8; }
+        .insp-tag-btn.link_inspo { background: #e8d8f0; color: #9878a8; border-color: #c8a8d8; }
 
         /* 存灵感浮层 */
         /* 导出格式选择弹窗 */
@@ -8294,23 +8300,23 @@
                     <div class="insp-url-row" id="inspUrlRow">
                         <input type="text" id="inspUrlInput" placeholder="粘贴链接（可选）">
                     </div>
-                    <div class="insp-input-row">
-                        <div class="insp-input-box">
-                            <button class="insp-voice-btn" id="inspVoiceBtn" onclick="startInspirationVoiceInput()" title="语音输入">
-                                <svg width="22" height="22" viewBox="0 0 16 16" fill="currentColor" style="image-rendering:pixelated"><rect x="1" y="6" width="3" height="4"/><rect x="4" y="5" width="2" height="6"/><rect x="6" y="4" width="2" height="8"/><rect x="8" y="3" width="1" height="10"/><rect x="11" y="5" width="1" height="2" opacity=".5"/><rect x="11" y="9" width="1" height="2" opacity=".5"/><rect x="13" y="4" width="1" height="2" opacity=".3"/><rect x="13" y="10" width="1" height="2" opacity=".3"/><rect x="13" y="7" width="1" height="2" opacity=".3"/><rect x="11" y="7" width="1" height="2" opacity=".5"/></svg>
-                            </button>
-                            <textarea id="inspirationInput" rows="1" placeholder="想到什么就写什么..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';checkInspInputForUrl();"></textarea>
-                        </div>
-                        <button class="insp-send-btn" id="inspSendBtn" onclick="quickSaveInspiration()" title="发送">
-                            <svg width="26" height="26" viewBox="-2 -2 104 104" style="image-rendering:pixelated"><rect x="9" y="22" width="10" height="10" rx="0" fill="#fdf8f0"/><path fill="#c0a8d8" fill-rule="evenodd" d="m0.023438 53.852c2.4844 0 5.2617-0.10547 7.7188 0.050782v7.6992c2.5664 0.027344 5.125 0.03125 7.6914 0.007813v7.6289c2.5508 0 5.1094-0.027343 7.6562 0.046875 0.019531 2.5547 0.015625 5.1094-0.007813 7.668 2.5742-0.007813 5.1484 0 7.7266 0.027344v7.6523c2.543-0.019531 5.1094-0.082031 7.6445 0.027344 0.023437 2.5469 0.03125 5.0977 0.019531 7.6445 2.5469 0 5.1172-0.066407 7.6602 0.03125v7.6328l7.75 0.003906c0-2.543-0.027343-5.0859 0.03125-7.6289 2.5469 0 5.1016-0.042969 7.6484 0 0.007812-2.5664-0.015625-5.1328 0.035156-7.6953 2.5469-0.007813 5.1055-0.078126 7.6523-0.015626 0-2.5508-0.035156-5.1055 0.023438-7.6523 2.5469-0.007813 5.0977-0.050781 7.6367-0.015625 0.078125-0.8125 0.023438-1.668 0.023438-2.4922 0-1.7422-0.019532-3.4844 0-5.2266 2.5586-0.027344 5.125-0.03125 7.6836-0.015625 0-2.5547-0.027344-5.1211 0.015624-7.6758 2.5547-0.023438 5.1172-0.027344 7.6719-0.019532 0-2.5234-0.027344-5.0508 0.019531-7.5742h7.6758l-0.015625-38.539h-7.6836v-7.7031h-7.7461v-7.6953h-23s-0.003907 7.6953-0.003907 7.6953c-2.5547 0-5.1211-0.03125-7.6758 0.007812l-0.007812 7.7344h-7.6836l-0.007813-7.7422h-7.6211s-0.027344-7.6992-0.027344-7.6992h-23.098c0 2.5703 0.027343 5.1367-0.035157 7.6992l-7.6523 0.007812-0.007813 7.7109-7.7109 0.042969c-0.046875 3.8828 0 7.7617-0.0039063 11.645l0.0078126 26.711zm9.7031-26.902h9.4883s0.03125-6.3867 0.074218-9.5742l5.8359-0.03125c1.2383 0 2.4844-0.027344 3.7188 0.03125 0.023438 3.1914 0.023438 6.3828-0.007812 9.5742h-9.5664v9.5625c-3.1797 0.046875-6.3789 0.046875-9.5547 0.003906-0.015625-3.1875-0.015625-6.3711 0.007812-9.5625z"/></svg>
-                        </button>
-                    </div>
-                    <div class="insp-tag-row" id="inspTagRow">
+                    <div class="insp-tag-row" id="inspTagRow" style="display:none;">
                         <button class="insp-tag-btn todo" onclick="saveInspiration('todo')">TODO</button>
                         <button class="insp-tag-btn clip" onclick="saveInspiration('clip')">Clip</button>
                         <button class="insp-tag-btn idea" onclick="saveInspiration('idea')">灵感</button>
                         <button class="insp-tag-btn bug" onclick="saveInspiration('bug')">BUG</button>
                         <button class="insp-tag-btn chen" onclick="saveInspiration('chen')">嗔嗔</button>
+                    </div>
+                    <div class="insp-input-row">
+                        <div class="insp-input-box">
+                            <button class="insp-voice-btn" id="inspVoiceBtn" onclick="startInspirationVoiceInput()" title="语音输入">
+                                <svg width="22" height="22" viewBox="0 0 16 16" fill="currentColor" style="image-rendering:pixelated"><rect x="1" y="6" width="3" height="4"/><rect x="4" y="5" width="2" height="6"/><rect x="6" y="4" width="2" height="8"/><rect x="8" y="3" width="1" height="10"/><rect x="11" y="5" width="1" height="2" opacity=".5"/><rect x="11" y="9" width="1" height="2" opacity=".5"/><rect x="13" y="4" width="1" height="2" opacity=".3"/><rect x="13" y="10" width="1" height="2" opacity=".3"/><rect x="13" y="7" width="1" height="2" opacity=".3"/><rect x="11" y="7" width="1" height="2" opacity=".5"/></svg>
+                            </button>
+                            <textarea id="inspirationInput" rows="1" placeholder="想到什么就写什么..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';checkInspInputForUrl();" onfocus="showInspTagRow()" onblur="hideInspTagRowDelay()"></textarea>
+                        </div>
+                        <button class="insp-send-btn" id="inspSendBtn" onclick="quickSaveInspiration()" title="发送">
+                            <svg width="26" height="26" viewBox="-2 -2 104 104" style="image-rendering:pixelated"><rect x="9" y="22" width="10" height="10" rx="0" fill="#fdf8f0"/><path fill="#c0a8d8" fill-rule="evenodd" d="m0.023438 53.852c2.4844 0 5.2617-0.10547 7.7188 0.050782v7.6992c2.5664 0.027344 5.125 0.03125 7.6914 0.007813v7.6289c2.5508 0 5.1094-0.027343 7.6562 0.046875 0.019531 2.5547 0.015625 5.1094-0.007813 7.668 2.5742-0.007813 5.1484 0 7.7266 0.027344v7.6523c2.543-0.019531 5.1094-0.082031 7.6445 0.027344 0.023437 2.5469 0.03125 5.0977 0.019531 7.6445 2.5469 0 5.1172-0.066407 7.6602 0.03125v7.6328l7.75 0.003906c0-2.543-0.027343-5.0859 0.03125-7.6289 2.5469 0 5.1016-0.042969 7.6484 0 0.007812-2.5664-0.015625-5.1328 0.035156-7.6953 2.5469-0.007813 5.1055-0.078126 7.6523-0.015626 0-2.5508-0.035156-5.1055 0.023438-7.6523 2.5469-0.007813 5.0977-0.050781 7.6367-0.015625 0.078125-0.8125 0.023438-1.668 0.023438-2.4922 0-1.7422-0.019532-3.4844 0-5.2266 2.5586-0.027344 5.125-0.03125 7.6836-0.015625 0-2.5547-0.027344-5.1211 0.015624-7.6758 2.5547-0.023438 5.1172-0.027344 7.6719-0.019532 0-2.5234-0.027344-5.0508 0.019531-7.5742h7.6758l-0.015625-38.539h-7.6836v-7.7031h-7.7461v-7.6953h-23s-0.003907 7.6953-0.003907 7.6953c-2.5547 0-5.1211-0.03125-7.6758 0.007812l-0.007812 7.7344h-7.6836l-0.007813-7.7422h-7.6211s-0.027344-7.6992-0.027344-7.6992h-23.098c0 2.5703 0.027343 5.1367-0.035157 7.6992l-7.6523 0.007812-0.007813 7.7109-7.7109 0.042969c-0.046875 3.8828 0 7.7617-0.0039063 11.645l0.0078126 26.711zm9.7031-26.902h9.4883s0.03125-6.3867 0.074218-9.5742l5.8359-0.03125c1.2383 0 2.4844-0.027344 3.7188 0.03125 0.023438 3.1914 0.023438 6.3828-0.007812 9.5742h-9.5664v9.5625c-3.1797 0.046875-6.3789 0.046875-9.5547 0.003906-0.015625-3.1875-0.015625-6.3711 0.007812-9.5625z"/></svg>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -19225,6 +19231,26 @@ ${chatContext}
         }
 
         // 检测输入内容是否包含链接，动态切换标签行
+        let _inspTagHideTimer = null;
+
+        function showInspTagRow() {
+            clearTimeout(_inspTagHideTimer);
+            const tagRow = document.getElementById('inspTagRow');
+            tagRow.style.display = 'flex';
+            checkInspInputForUrl();
+        }
+
+        function hideInspTagRowDelay() {
+            // 延迟隐藏，给点击标签按钮留时间
+            _inspTagHideTimer = setTimeout(() => {
+                const tagRow = document.getElementById('inspTagRow');
+                const input = document.getElementById('inspirationInput');
+                // 如果输入框有内容就保持显示
+                if (input && input.value.trim()) return;
+                tagRow.style.display = 'none';
+            }, 200);
+        }
+
         function checkInspInputForUrl() {
             const input = document.getElementById('inspirationInput');
             const text = input.value || '';
@@ -19276,6 +19302,7 @@ ${chatContext}
             input.style.height = 'auto';
             if (urlInput) urlInput.value = '';
             document.getElementById('inspUrlRow').classList.remove('show');
+            document.getElementById('inspTagRow').style.display = 'none';
 
             showWechatToast(`已存 ${INSP_TAGS[tag]?.label || tag} 💭`, 'success');
             renderInspirationList();
