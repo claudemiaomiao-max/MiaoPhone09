@@ -15966,6 +15966,12 @@ ${memoryText}`;
 
         // ---- 讯飞流式语音识别 ----
         async function startXfyunVoiceInput() {
+            // 先清理可能残留的旧会话
+            if (xfyunWs || xfyunMicStream || xfyunAudioContext) {
+                console.log('清理残留的讯飞资源');
+                xfCleanupAll();
+            }
+
             // 重置状态，保留输入框已有内容
             const input = getVoiceTargetInput();
             voicePendingText = input.value || '';
@@ -15976,6 +15982,9 @@ ${memoryText}`;
             if (btn) btn.classList.add('recording');
 
             try {
+                // 标记为正在启动，防止重复启动
+                voiceRecognition = { type: 'xfyun' };
+
                 // 1. 从后端获取签名 URL
                 const backendUrl = appData.settings.backendUrl;
                 console.log('请求讯飞签名...');
@@ -15999,7 +16008,6 @@ ${memoryText}`;
 
                 xfyunWs.onopen = () => {
                     console.log('讯飞 WebSocket 已连接');
-                    voiceRecognition = { type: 'xfyun' };
 
                     // 开始发送音频数据
                     xfyunProcessor.onaudioprocess = (e) => {
@@ -16075,6 +16083,7 @@ ${memoryText}`;
                 xfyunWs.onerror = (e) => {
                     console.error('讯飞 WebSocket 错误:', e);
                     xfCleanupAll();
+                    voiceRecognition = null;
                     // 降级到 Web Speech API
                     console.log('讯飞不可用，降级到浏览器语音识别');
                     startWebSpeechInput();
@@ -16083,9 +16092,17 @@ ${memoryText}`;
             } catch (e) {
                 console.error('讯飞语音识别启动失败:', e);
                 xfCleanupAll();
-                // 降级到 Web Speech API
-                console.log('讯飞启动失败，降级到浏览器语音识别');
-                startWebSpeechInput();
+                voiceRecognition = null;
+                // 移除录音按钮状态
+                document.querySelectorAll('.wechat-voice-btn.recording, .insp-voice-btn.recording').forEach(b => b.classList.remove('recording'));
+                if (e.name === 'NotAllowedError' || e.message?.includes('Permission')) {
+                    console.warn('麦克风权限被拒绝，不降级');
+                    alert('请允许麦克风权限后重试');
+                } else {
+                    // 降级到 Web Speech API
+                    console.log('讯飞启动失败，降级到浏览器语音识别');
+                    startWebSpeechInput();
+                }
             }
         }
 
@@ -16155,20 +16172,21 @@ ${memoryText}`;
         function xfCleanupAudio() {
             if (xfyunProcessor) {
                 xfyunProcessor.onaudioprocess = null;
-                xfyunProcessor.disconnect();
+                try { xfyunProcessor.disconnect(); } catch(e) {}
                 xfyunProcessor = null;
             }
             if (xfyunSourceNode) {
-                xfyunSourceNode.disconnect();
+                try { xfyunSourceNode.disconnect(); } catch(e) {}
                 xfyunSourceNode = null;
+            }
+            // 先释放麦克风 stream，再关 AudioContext
+            if (xfyunMicStream) {
+                xfyunMicStream.getTracks().forEach(t => t.stop());
+                xfyunMicStream = null;
             }
             if (xfyunAudioContext) {
                 xfyunAudioContext.close().catch(() => {});
                 xfyunAudioContext = null;
-            }
-            if (xfyunMicStream) {
-                xfyunMicStream.getTracks().forEach(t => t.stop());
-                xfyunMicStream = null;
             }
         }
 
