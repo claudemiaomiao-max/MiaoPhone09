@@ -6022,8 +6022,11 @@
             display: flex;
             flex-direction: column;
             height: 100%;
-            background: var(--insp-bg, #eae6f0);
-            --insp-bg: #eae6f0;
+            background:
+                repeating-linear-gradient(0deg, transparent, transparent 23px, #d8ccec 23px, #d8ccec 24px),
+                repeating-linear-gradient(90deg, transparent, transparent 23px, #d8ccec 23px, #d8ccec 24px),
+                #f4f0fa;
+            --insp-bg: #f4f0fa;
             --insp-cream: #fdf8f0;
             --insp-pink: #f8e2ea;
             --insp-purple: #c0a8d8;
@@ -6139,8 +6142,8 @@
         .insp-card-titlebar.link-bar { background: var(--insp-bar-blue); }
         .insp-card-titlebar.text-bar { background: var(--insp-bar-yellow); }
         .insp-card-titlebar.murmur-bar { background: #f8e2ea; }
-        .insp-card.murmur-card { border-color: #e0a8c0; }
-        .insp-card.murmur-card::before { border-color: #f0c8d8; }
+        .insp-card.murmur-card { border-color: var(--insp-purple); }
+        .insp-card.murmur-card::before { border-color: var(--insp-purple-lt); }
         .insp-tag {
             display: inline-block;
             padding: 1px 10px; font-size: 11px; font-weight: 500;
@@ -8457,9 +8460,6 @@
             </div>
         </div>
 
-        <!-- 存灵感浮层（微信长按入口） -->
-        <div class="insp-save-modal" id="inspSaveModal" onclick="if(event.target===this)closeInspSaveModal()">
-
         <!-- 文本替换弹窗 -->
         <div class="text-replace-modal" id="textReplaceModal" onclick="if(event.target===this)closeTextReplaceModal()">
             <div class="text-replace-content">
@@ -8476,6 +8476,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- 存灵感浮层（微信长按入口） -->
+        <div class="insp-save-modal" id="inspSaveModal" onclick="if(event.target===this)closeInspSaveModal()">
             <div class="insp-save-modal-content">
                 <div class="insp-save-modal-header">
                     <span>存碎碎念</span>
@@ -19625,11 +19628,14 @@ ${chatContext}
                 delete tagRow.dataset.editId;
                 delete tagRow.dataset.editMode;
                 tagRow.querySelectorAll('.insp-tag-btn').forEach(btn => {
+                    btn.style.display = '';
                     if (btn.dataset.origOnclick) {
                         btn.setAttribute('onclick', btn.dataset.origOnclick);
                         delete btn.dataset.origOnclick;
                     }
                 });
+                const murmurSaveBtn = tagRow.querySelector('.insp-murmur-save-btn');
+                if (murmurSaveBtn) murmurSaveBtn.style.display = 'none';
             }
         }
 
@@ -19751,18 +19757,37 @@ ${chatContext}
             const textarea = document.getElementById('inspSaveModalText');
             textarea.value = item.content || '';
             modal.classList.add('show');
-            // 把标签按钮改成保存编辑
             const tagRow = modal.querySelector('.insp-tag-row');
             tagRow.dataset.editId = id;
             tagRow.dataset.editMode = 'true';
-            // 替换按钮行为：点击标签 = 保存并改分类
-            const btns = tagRow.querySelectorAll('.insp-tag-btn');
-            btns.forEach(btn => {
-                const origOnclick = btn.getAttribute('onclick');
-                btn.dataset.origOnclick = origOnclick;
-                const tag = origOnclick.match(/'([^']+)'/)?.[1] || 'idea';
-                btn.setAttribute('onclick', `saveInspEdit('${id}','${tag}')`);
-            });
+
+            if (item.tag === 'murmur') {
+                // murmur：隐藏标签按钮，显示单独的保存按钮
+                tagRow.querySelectorAll('.insp-tag-btn').forEach(btn => btn.style.display = 'none');
+                // 添加临时保存按钮
+                let saveBtn = tagRow.querySelector('.insp-murmur-save-btn');
+                if (!saveBtn) {
+                    saveBtn = document.createElement('button');
+                    saveBtn.className = 'insp-murmur-save-btn';
+                    saveBtn.textContent = '保存';
+                    saveBtn.style.cssText = 'padding:8px 36px;border:none;border-radius:10px;background:#c0a8d8;color:#fff;font-size:14px;cursor:pointer;font-family:"ZLabsBitmap",monospace;';
+                    tagRow.appendChild(saveBtn);
+                }
+                saveBtn.style.display = '';
+                saveBtn.setAttribute('onclick', `saveInspEdit('${id}','murmur')`);
+            } else {
+                // 非murmur：正常显示标签按钮，隐藏murmur保存按钮
+                const murmurSaveBtn = tagRow.querySelector('.insp-murmur-save-btn');
+                if (murmurSaveBtn) murmurSaveBtn.style.display = 'none';
+                const btns = tagRow.querySelectorAll('.insp-tag-btn');
+                btns.forEach(btn => {
+                    btn.style.display = '';
+                    const origOnclick = btn.getAttribute('onclick');
+                    btn.dataset.origOnclick = origOnclick;
+                    const tag = origOnclick.match(/'([^']+)'/)?.[1] || 'idea';
+                    btn.setAttribute('onclick', `saveInspEdit('${id}','${tag}')`);
+                });
+            }
             textarea.focus();
         }
 
@@ -19785,13 +19810,18 @@ ${chatContext}
             const tagRow = modal.querySelector('.insp-tag-row');
             delete tagRow.dataset.editId;
             delete tagRow.dataset.editMode;
+            // 恢复标签按钮显示和onclick
             const btns = tagRow.querySelectorAll('.insp-tag-btn');
             btns.forEach(btn => {
+                btn.style.display = '';
                 if (btn.dataset.origOnclick) {
                     btn.setAttribute('onclick', btn.dataset.origOnclick);
                     delete btn.dataset.origOnclick;
                 }
             });
+            // 隐藏murmur专用保存按钮
+            const murmurSaveBtn = tagRow.querySelector('.insp-murmur-save-btn');
+            if (murmurSaveBtn) murmurSaveBtn.style.display = 'none';
             closeInspSaveModal();
             showWechatToast('已保存', 'success');
         }
