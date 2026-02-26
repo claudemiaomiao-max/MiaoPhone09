@@ -8398,6 +8398,7 @@
             }
         };
 
+        let _appDataLoaded = false;
         let editingAssistantId = null;
         let currentManagingProviderId = null;
         let fetchedModels = [];
@@ -8601,6 +8602,10 @@
 
         // ==================== 本地存储（使用IndexedDB，降级到localStorage） ====================
         function saveData() {
+            if (!_appDataLoaded) {
+                console.warn('appData尚未加载完成，跳过保存以防覆盖');
+                return false;
+            }
             // 优先使用 IndexedDB
             if (dbInstance) {
                 saveToIndexedDB('appData', appData).then(success => {
@@ -8644,6 +8649,7 @@
                 if (saved) {
                     appData = { ...appData, ...saved };
                     migrateTtsSettings();
+                    _appDataLoaded = true;
                     return;
                 }
             }
@@ -8653,6 +8659,7 @@
                 appData = { ...appData, ...JSON.parse(saved) };
                 migrateTtsSettings();
             }
+            _appDataLoaded = true;
         }
 
         // 确保 ttsSettings 有新字段（旧数据兼容）
@@ -9098,6 +9105,7 @@
                 // 恢复碎碎念数据
                 if (dataMap['inspiration_data']) {
                     inspirationData = { ...inspirationData, ...dataMap['inspiration_data'] };
+                    _inspirationDataLoaded = true;
                     saveInspirationData();
                 }
 
@@ -9112,18 +9120,18 @@
 
         // 确保微信、语音通话、日记数据已加载（它们是懒加载的）
         async function cloudEnsureAllDataLoaded() {
-            if (!wechatData._loaded) {
+            if (!_wechatDataLoaded) {
                 await initWechatData();
-                wechatData._loaded = true;
             }
-            if (!voiceCallData._loaded) {
+            if (!_voiceCallDataLoaded) {
                 await loadVoiceCallData();
-                voiceCallData._loaded = true;
             }
             // 日记数据从 localStorage 加载
             loadDiaryData();
             // 碎碎念数据加载
-            await loadInspirationData();
+            if (!_inspirationDataLoaded) {
+                await loadInspirationData();
+            }
         }
 
         // 统计本地数据量
@@ -14130,6 +14138,7 @@
             conversations: {},  // { assistantId: { messages: [], settings: {} } }
             pendingMessages: [] // 暂存的消息
         };
+        let _wechatDataLoaded = false;
 
         let editingWechatMessageId = null;  // 正在编辑的微信消息ID
 
@@ -14139,6 +14148,7 @@
                 const saved = await loadFromIndexedDB('wechatData');
                 if (saved) {
                     wechatData = { ...wechatData, ...saved };
+                    _wechatDataLoaded = true;
                     return;
                 }
             }
@@ -14147,9 +14157,14 @@
             if (saved) {
                 wechatData = { ...wechatData, ...JSON.parse(saved) };
             }
+            _wechatDataLoaded = true;
         }
 
         function saveWechatData() {
+            if (!_wechatDataLoaded) {
+                console.warn('微信数据尚未加载完成，跳过保存以防覆盖');
+                return false;
+            }
             // 优先使用 IndexedDB
             if (dbInstance) {
                 saveToIndexedDB('wechatData', wechatData).then(success => {
@@ -19097,6 +19112,7 @@ ${chatContext}
             items: [],
             lastSyncTime: null
         };
+        let _inspirationDataLoaded = false;
         let inspCurrentFilter = 'all';
         let _inspSaveModalMsgId = null;
         let _inspSaveModalAssistantId = null;
@@ -19123,6 +19139,7 @@ ${chatContext}
                 const data = await loadFromIndexedDB('inspirationData');
                 if (data) {
                     inspirationData = { ...inspirationData, ...data };
+                    _inspirationDataLoaded = true;
                     return;
                 }
             }
@@ -19133,10 +19150,15 @@ ${chatContext}
             } catch (e) {
                 console.error('加载碎碎念数据失败:', e);
             }
+            _inspirationDataLoaded = true;
         }
 
         // 保存碎碎念数据
         function saveInspirationData() {
+            if (!_inspirationDataLoaded) {
+                console.warn('碎碎念数据尚未加载完成，跳过保存以防覆盖');
+                return;
+            }
             if (dbInstance) {
                 saveToIndexedDB('inspirationData', inspirationData).then(success => {
                     if (!success) {
@@ -19365,7 +19387,11 @@ ${chatContext}
         }
 
         // 核心：添加一条灵感
-        function addInspirationItem(content, tag, url, source, msgId, assistantId) {
+        async function addInspirationItem(content, tag, url, source, msgId, assistantId) {
+            if (!_inspirationDataLoaded) {
+                console.warn('碎碎念数据未加载，先等待加载完成');
+                await loadInspirationData();
+            }
             const item = {
                 id: 'insp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
                 content,
@@ -20889,12 +20915,15 @@ ${dialogueText}
         let vcDetailRecords = [];
         let vcDetailIndex = 0;
 
+        let _voiceCallDataLoaded = false;
+
         // 加载/保存语音通话数据
         async function loadVoiceCallData() {
             if (dbInstance) {
                 const saved = await loadFromIndexedDB('voiceCallData');
                 if (saved) {
                     voiceCallData = { ...voiceCallData, ...saved };
+                    _voiceCallDataLoaded = true;
                     return;
                 }
             }
@@ -20902,9 +20931,14 @@ ${dialogueText}
             if (saved) {
                 voiceCallData = { ...voiceCallData, ...JSON.parse(saved) };
             }
+            _voiceCallDataLoaded = true;
         }
 
         function saveVoiceCallData() {
+            if (!_voiceCallDataLoaded) {
+                console.warn('语音通话数据尚未加载完成，跳过保存以防覆盖');
+                return;
+            }
             if (dbInstance) {
                 saveToIndexedDB('voiceCallData', voiceCallData).then(success => {
                     if (!success) {
