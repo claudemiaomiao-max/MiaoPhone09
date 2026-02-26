@@ -6441,6 +6441,88 @@
             font-size: 12px;
             color: #999;
         }
+
+        /* 文本替换弹窗 */
+        .text-replace-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+        }
+        .text-replace-modal.show {
+            display: flex;
+        }
+        .text-replace-content {
+            background: #fff;
+            width: 300px;
+            border-radius: 16px;
+            padding: 24px 20px;
+            animation: inspModalUp 0.3s ease;
+        }
+        .text-replace-title {
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .text-replace-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .text-replace-input {
+            flex: 1;
+            height: 40px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 0 12px;
+            font-size: 15px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .text-replace-input:focus {
+            border-color: #576b95;
+        }
+        .text-replace-arrow {
+            font-size: 18px;
+            color: #999;
+            flex-shrink: 0;
+        }
+        .text-replace-preview {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+            margin-bottom: 16px;
+            min-height: 18px;
+        }
+        .text-replace-btns {
+            display: flex;
+            gap: 10px;
+        }
+        .text-replace-btns button {
+            flex: 1;
+            height: 40px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .text-replace-cancel {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .text-replace-confirm {
+            background: #576b95;
+            color: #fff;
+        }
+        .text-replace-confirm:active {
+            background: #4a5b80;
+        }
         .export-format-cancel {
             margin-top: 12px;
             width: 100%;
@@ -7362,6 +7444,9 @@
             </div>
             <div class="wechat-context-menu-item" id="wechatMenuEdit" onclick="wechatEditSelectedMessage()">
                 <span>📝</span><span>编辑</span>
+            </div>
+            <div class="wechat-context-menu-item" id="wechatMenuReplace" onclick="wechatOpenTextReplace()">
+                <span>🔄</span><span>替换</span>
             </div>
             <div class="wechat-context-menu-item" id="wechatMenuMultiSelect" onclick="enterWechatMultiSelect()">
                 <span>☑️</span><span>多选</span>
@@ -8374,6 +8459,23 @@
 
         <!-- 存灵感浮层（微信长按入口） -->
         <div class="insp-save-modal" id="inspSaveModal" onclick="if(event.target===this)closeInspSaveModal()">
+
+        <!-- 文本替换弹窗 -->
+        <div class="text-replace-modal" id="textReplaceModal" onclick="if(event.target===this)closeTextReplaceModal()">
+            <div class="text-replace-content">
+                <div class="text-replace-title">文本替换</div>
+                <div class="text-replace-row">
+                    <input class="text-replace-input" id="textReplaceFrom" placeholder="查找" oninput="updateReplacePreview()">
+                    <span class="text-replace-arrow">→</span>
+                    <input class="text-replace-input" id="textReplaceTo" placeholder="替换为" oninput="updateReplacePreview()">
+                </div>
+                <div class="text-replace-preview" id="textReplacePreview"></div>
+                <div class="text-replace-btns">
+                    <button class="text-replace-cancel" onclick="closeTextReplaceModal()">取消</button>
+                    <button class="text-replace-confirm" onclick="confirmTextReplace()">替换</button>
+                </div>
+            </div>
+        </div>
             <div class="insp-save-modal-content">
                 <div class="insp-save-modal-header">
                     <span>存碎碎念</span>
@@ -14159,6 +14261,7 @@
         };
         let _wechatDataLoaded = false;
 
+        let wechatPendingFetches = {};  // { assistantId: true } 追踪哪些对话正在等AI回复
         let editingWechatMessageId = null;  // 正在编辑的微信消息ID
 
         async function initWechatData() {
@@ -14250,7 +14353,9 @@
                 const lastMsg = conv && conv.messages && conv.messages.length > 0 
                     ? conv.messages[conv.messages.length - 1] 
                     : null;
-                const preview = lastMsg ? (lastMsg.content || '').substring(0, 20) : '暂无消息';
+                const isTyping = !!wechatPendingFetches[a.id];
+                const preview = isTyping ? '正在输入...' : (lastMsg ? (lastMsg.content || '').substring(0, 20) : '暂无消息');
+                const previewStyle = isTyping ? 'color: #07c160; font-style: italic;' : '';
                 const time = lastMsg ? formatTimeShort(lastMsg.timestamp) : '';
                 
                 return `
@@ -14260,7 +14365,7 @@
                         </div>
                         <div class="wechat-list-info">
                             <div class="wechat-list-name">${a.name}</div>
-                            <div class="wechat-list-preview">${escapeHtml(preview)}</div>
+                            <div class="wechat-list-preview" style="${previewStyle}">${escapeHtml(preview)}</div>
                         </div>
                         <div class="wechat-list-meta">
                             <div class="wechat-list-time">${time}</div>
@@ -14290,6 +14395,17 @@
             const assistant = appData.assistants.find(a => a.id === assistantId);
             document.getElementById('wechatChatTitle').textContent = assistant ? assistant.name : '聊天';
             
+            // 恢复pending状态：如果这个助手正在等AI回复，显示"正在输入中"并禁用发送按钮
+            if (wechatPendingFetches[assistantId]) {
+                const typingEl = document.getElementById('wechatTyping');
+                if (typingEl) typingEl.classList.add('show');
+                document.getElementById('wechatSendBtn').disabled = true;
+            } else {
+                const typingEl = document.getElementById('wechatTyping');
+                if (typingEl) typingEl.classList.remove('show');
+                document.getElementById('wechatSendBtn').disabled = false;
+            }
+
             renderWechatMessages();
             openPage('wechatChatPage');
             setupWechatInput();
@@ -15005,6 +15121,9 @@
             const hasFiles = filesToSend.length > 0;
             const hasQuote = wechatQuotedMessage !== null;
 
+            // 【关键】在函数最开头锁定目标助手ID，后续全部用这个，不依赖 currentAssistantId
+            const targetAssistantId = wechatData.currentAssistantId;
+
             // 如果有文件，先添加到暂存
             if (hasFiles) {
                 for (const file of filesToSend) {
@@ -15060,7 +15179,7 @@
                 input.style.height = 'auto';
             }
 
-            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const conv = wechatData.conversations[targetAssistantId];
             const hasPending = wechatData.pendingMessages.length > 0;
             const lastMsg = conv?.messages?.length ? conv.messages[conv.messages.length - 1] : null;
             const needsReply = lastMsg && lastMsg.role === 'user';
@@ -15068,7 +15187,7 @@
             // 既没有新消息，也不需要补回复 -> 才return
             if (!hasPending && !needsReply) return;
 
-            const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
+            const assistant = appData.assistants.find(a => a.id === targetAssistantId);
 
             // 获取模型：助手默认模型 > 全局默认模型
             const assistantModel = assistant?.providerId && assistant?.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
@@ -15095,15 +15214,25 @@
                     conv.messages.push(msg);
                 });
                 wechatData.pendingMessages = [];
-                renderWechatMessages();
+                // 只有当前在看这个对话才渲染
+                if (wechatData.currentAssistantId === targetAssistantId) {
+                    renderWechatMessages();
+                }
                 saveWechatData();
             }
 
-            // 禁用发送按钮
-            document.getElementById('wechatSendBtn').disabled = true;
-            // 显示正在输入中
-            const typingEl = document.getElementById('wechatTyping');
-            if (typingEl) typingEl.classList.add('show');
+            // 标记该助手正在等待AI回复
+            wechatPendingFetches[targetAssistantId] = true;
+
+            // 只有当前在看这个对话才操作UI元素
+            if (wechatData.currentAssistantId === targetAssistantId) {
+                document.getElementById('wechatSendBtn').disabled = true;
+                const typingEl = document.getElementById('wechatTyping');
+                if (typingEl) typingEl.classList.add('show');
+            }
+
+            // 更新联系人列表（显示"正在输入"状态）
+            renderWechatList();
 
             try {
                 // 构建请求
@@ -15171,12 +15300,22 @@
                 });
             }
 
-            // 隐藏正在输入中
-            const typingElEnd = document.getElementById('wechatTyping');
-            if (typingElEnd) typingElEnd.classList.remove('show');
-            document.getElementById('wechatSendBtn').disabled = false;
+            // 清除pending状态
+            delete wechatPendingFetches[targetAssistantId];
+
+            // 保存数据（无论当前在看哪个窗口都要保存）
             saveWechatData();
-            renderWechatMessages();
+
+            // 根据用户当前在看哪个窗口决定UI更新策略
+            if (wechatData.currentAssistantId === targetAssistantId) {
+                // 用户还在看这个对话 → 完整渲染
+                const typingElEnd = document.getElementById('wechatTyping');
+                if (typingElEnd) typingElEnd.classList.remove('show');
+                document.getElementById('wechatSendBtn').disabled = false;
+                renderWechatMessages();
+            }
+
+            // 无论在哪都更新联系人列表（刷新最后一条消息预览和typing状态）
             renderWechatList();
 
             // 检查是否需要自动总结记忆
@@ -17729,6 +17868,7 @@ ${memoryText}`;
             // 系统消息（拍一拍）隐藏引用和编辑，保留多选和删除
             document.getElementById('wechatMenuQuote').style.display = isSystemMsg ? 'none' : '';
             document.getElementById('wechatMenuEdit').style.display = isSystemMsg ? 'none' : '';
+            document.getElementById('wechatMenuReplace').style.display = isSystemMsg ? 'none' : '';
             document.getElementById('wechatMenuInspiration').style.display = isSystemMsg ? 'none' : '';
 
             // 计算位置
@@ -17805,6 +17945,91 @@ ${memoryText}`;
                     deleteWechatMessage(wechatSelectedMsgId);
                 }
             }
+        }
+
+        // ========== 文本替换功能 ==========
+        let _lastReplaceFrom = '';
+        let _lastReplaceTo = '';
+
+        function wechatOpenTextReplace() {
+            closeWechatContextMenu();
+            if (!wechatSelectedMsgId) return;
+
+            // 找到消息
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const msg = conv?.messages?.find(m => m.id === wechatSelectedMsgId);
+            if (!msg || !msg.content) return;
+
+            // 填入上次的替换对
+            document.getElementById('textReplaceFrom').value = _lastReplaceFrom;
+            document.getElementById('textReplaceTo').value = _lastReplaceTo;
+            document.getElementById('textReplaceModal').classList.add('show');
+            updateReplacePreview();
+
+            // 自动聚焦到查找框
+            setTimeout(() => document.getElementById('textReplaceFrom').focus(), 100);
+        }
+
+        function closeTextReplaceModal() {
+            document.getElementById('textReplaceModal').classList.remove('show');
+        }
+
+        function updateReplacePreview() {
+            const from = document.getElementById('textReplaceFrom').value;
+            const preview = document.getElementById('textReplacePreview');
+
+            if (!from || !wechatSelectedMsgId) {
+                preview.textContent = '';
+                return;
+            }
+
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const msg = conv?.messages?.find(m => m.id === wechatSelectedMsgId);
+            if (!msg || !msg.content) { preview.textContent = ''; return; }
+
+            const count = msg.content.split(from).length - 1;
+            preview.textContent = count > 0 ? `找到 ${count} 处匹配` : '未找到匹配';
+            preview.style.color = count > 0 ? '#576b95' : '#999';
+        }
+
+        function confirmTextReplace() {
+            const from = document.getElementById('textReplaceFrom').value;
+            const to = document.getElementById('textReplaceTo').value;
+
+            if (!from) {
+                alert('请填写要查找的文本');
+                return;
+            }
+
+            if (!wechatSelectedMsgId) return;
+
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const msg = conv?.messages?.find(m => m.id === wechatSelectedMsgId);
+            if (!msg || !msg.content) return;
+
+            const count = msg.content.split(from).length - 1;
+            if (count === 0) {
+                alert('未找到匹配的文本');
+                return;
+            }
+
+            // 执行替换
+            msg.content = msg.content.replaceAll(from, to);
+
+            // 记住这次的替换对
+            _lastReplaceFrom = from;
+            _lastReplaceTo = to;
+
+            closeTextReplaceModal();
+            saveWechatData();
+            renderWechatMessages();
+
+            // 提示
+            const tip = document.createElement('div');
+            tip.textContent = `已替换 ${count} 处`;
+            tip.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);color:#fff;padding:8px 20px;border-radius:8px;font-size:14px;z-index:99999;';
+            document.body.appendChild(tip);
+            setTimeout(() => tip.remove(), 1500);
         }
 
         // ========== 待发消息编辑/删除 ==========
@@ -17973,9 +18198,9 @@ ${memoryText}`;
             _exportCallback = null;
         }
         function confirmExportFormat(format) {
-            closeExportFormatModal();
-            if (_exportCallback) _exportCallback(format);
-            _exportCallback = null;
+            const cb = _exportCallback;  // 先保存回调引用
+            closeExportFormatModal();     // 关弹窗（会清空_exportCallback）
+            if (cb) cb(format);           // 用保存的引用执行回调
         }
 
         function exportWechatSelectedMessages() {
