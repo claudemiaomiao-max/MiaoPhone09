@@ -2996,14 +2996,35 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            overflow: hidden;
+            overflow: visible;
             margin-right: 12px;
+            position: relative;
         }
 
         .wechat-list-avatar img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .wechat-unread-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 18px;
+            height: 18px;
+            background: #f44336;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+            box-sizing: border-box;
+            line-height: 1;
         }
 
         .wechat-list-info {
@@ -14266,6 +14287,7 @@
         let _wechatDataLoaded = false;
 
         let wechatPendingFetches = {};  // { assistantId: true } 追踪哪些对话正在等AI回复
+        let wechatUnreadCounts = {};   // { assistantId: number } 追踪未读消息数
         let editingWechatMessageId = null;  // 正在编辑的微信消息ID
 
         async function initWechatData() {
@@ -14361,11 +14383,14 @@
                 const preview = isTyping ? '正在输入...' : (lastMsg ? (lastMsg.content || '').substring(0, 20) : '暂无消息');
                 const previewStyle = isTyping ? 'color: #07c160; font-style: italic;' : '';
                 const time = lastMsg ? formatTimeShort(lastMsg.timestamp) : '';
+                const unread = wechatUnreadCounts[a.id] || 0;
+                const unreadBadge = unread > 0 ? `<div class="wechat-unread-badge">${unread > 99 ? '99+' : unread}</div>` : '';
                 
                 return `
                     <div class="wechat-list-item" onclick="openWechatChat('${a.id}')">
                         <div class="wechat-list-avatar">
                             ${a.avatar ? `<img src="${a.avatar}" alt="">` : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'}
+                            ${unreadBadge}
                         </div>
                         <div class="wechat-list-info">
                             <div class="wechat-list-name">${a.name}</div>
@@ -14383,6 +14408,8 @@
         function openWechatChat(assistantId) {
             wechatData.currentAssistantId = assistantId;
             wechatData.pendingMessages = [];
+            // 清除未读数
+            delete wechatUnreadCounts[assistantId];
             
             // 初始化对话数据
             if (!wechatData.conversations[assistantId]) {
@@ -15291,7 +15318,24 @@
                 console.log('API原始响应:', replyContent.substring(0, 500));
 
                 // 解析回复（尝试JSON数组，否则当普通文本处理）
-                parseAndAddWechatReplies(replyContent, conv, targetAssistantId);
+                // 所有清理逻辑通过onComplete回调在最后一条消息渲染后执行
+                parseAndAddWechatReplies(replyContent, conv, targetAssistantId, () => {
+                    // 清除pending状态
+                    delete wechatPendingFetches[targetAssistantId];
+
+                    // 根据用户当前在看哪个窗口决定UI更新策略
+                    if (wechatData.currentAssistantId === targetAssistantId) {
+                        const typingElEnd = document.getElementById('wechatTyping');
+                        if (typingElEnd) typingElEnd.classList.remove('show');
+                        document.getElementById('wechatSendBtn').disabled = false;
+                    }
+
+                    // 无论在哪都更新联系人列表
+                    renderWechatList();
+
+                    // 检查是否需要自动总结记忆
+                    checkAutoSummary();
+                });
 
             } catch (error) {
                 console.error('请求失败:', error);
@@ -15302,28 +15346,20 @@
                     content: '请求失败: ' + error.message,
                     timestamp: new Date().toISOString()
                 });
+
+                // 错误情况：立即清理
+                delete wechatPendingFetches[targetAssistantId];
+                saveWechatData();
+
+                if (wechatData.currentAssistantId === targetAssistantId) {
+                    const typingElEnd = document.getElementById('wechatTyping');
+                    if (typingElEnd) typingElEnd.classList.remove('show');
+                    document.getElementById('wechatSendBtn').disabled = false;
+                    renderWechatMessages();
+                }
+
+                renderWechatList();
             }
-
-            // 清除pending状态
-            delete wechatPendingFetches[targetAssistantId];
-
-            // 保存数据（无论当前在看哪个窗口都要保存）
-            saveWechatData();
-
-            // 根据用户当前在看哪个窗口决定UI更新策略
-            if (wechatData.currentAssistantId === targetAssistantId) {
-                // 用户还在看这个对话 → 完整渲染
-                const typingElEnd = document.getElementById('wechatTyping');
-                if (typingElEnd) typingElEnd.classList.remove('show');
-                document.getElementById('wechatSendBtn').disabled = false;
-                renderWechatMessages();
-            }
-
-            // 无论在哪都更新联系人列表（刷新最后一条消息预览和typing状态）
-            renderWechatList();
-
-            // 检查是否需要自动总结记忆
-            checkAutoSummary();
         }
 
         async function buildWechatRequestMessages(conv, assistant) {
@@ -15797,7 +15833,7 @@ ${memoryText}`;
             return [{ role: 'user', content: fullContent }];
         }
 
-        function parseAndAddWechatReplies(content, conv, targetAssistantId) {
+        function parseAndAddWechatReplies(content, conv, targetAssistantId, onComplete) {
             let replies = [];
             let prefixText = ''; // JSON前的多余文字
 
@@ -16045,11 +16081,16 @@ ${memoryText}`;
                         const msgHtml = renderWechatMessageFast(msgToAdd, assistant, userAvatarHtml, assistantAvatarHtml, false, showTs);
                         container.insertAdjacentHTML('beforeend', msgHtml);
                         container.scrollTop = container.scrollHeight;
+                    } else {
+                        // 不在目标窗口 → 累加未读数
+                        wechatUnreadCounts[assistantId] = (wechatUnreadCounts[assistantId] || 0) + 1;
+                        renderWechatList();
                     }
 
                     // 只在最后一条消息时保存，减少IO操作
                     if (index === replies.length - 1) {
                         saveWechatData();
+                        if (onComplete) onComplete();
                     }
                 }, index * 1200);
             });
@@ -20596,6 +20637,11 @@ ${dialogueSummary}
                 // 更新冷却时间戳
                 if (!conv.settings) conv.settings = {};
                 conv.settings.lastProactiveTimestamp = Date.now();
+
+                // 不在目标窗口时累加未读数
+                if (wechatData.currentAssistantId !== assistantId) {
+                    wechatUnreadCounts[assistantId] = (wechatUnreadCounts[assistantId] || 0) + replies.length;
+                }
 
                 // 保存并更新列表UI
                 saveWechatData();
