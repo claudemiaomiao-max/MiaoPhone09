@@ -6038,7 +6038,7 @@
         }
         .insp-header {
             display: flex; align-items: center;
-            padding: 14px 16px;
+            padding: 8px 12px;
             background: var(--insp-pink);
             border-bottom: 2px dashed var(--insp-purple);
             gap: 12px; flex-shrink: 0;
@@ -6076,7 +6076,7 @@
             font-family: "ZLabsBitmap", monospace;
         }
         .insp-tabs {
-            display: flex; padding: 8px 12px; gap: 6px;
+            display: flex; padding: 6px 10px; gap: 6px;
             background: var(--insp-pink);
             border-bottom: 3px solid var(--insp-purple);
             overflow-x: auto; flex-shrink: 0;
@@ -6138,6 +6138,9 @@
         }
         .insp-card-titlebar.link-bar { background: var(--insp-bar-blue); }
         .insp-card-titlebar.text-bar { background: var(--insp-bar-yellow); }
+        .insp-card-titlebar.murmur-bar { background: #f8e2ea; }
+        .insp-card.murmur-card { border-color: #e0a8c0; }
+        .insp-card.murmur-card::before { border-color: #f0c8d8; }
         .insp-tag {
             display: inline-block;
             padding: 1px 10px; font-size: 11px; font-weight: 500;
@@ -6156,6 +6159,7 @@
         .insp-tag.link_tool { background: #f0e8d4; color: #a89060; border-color: #d8c8a0; }
         .insp-tag.link_beauty { background: #f0d8d4; color: #b08070; border-color: #d8b0a8; }
         .insp-tag.link_inspo { background: #e8d8f0; color: #9878a8; border-color: #c8a8d8; }
+        .insp-tag.murmur { background: #f8e2ea; color: #b07888; border-color: #e0a8c0; }
         .insp-card-time {
             font-size: 11px; color: var(--insp-txt);
             font-family: "ZLabsBitmap", monospace;
@@ -6184,6 +6188,20 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+        .insp-card-content.expanded {
+            -webkit-line-clamp: unset;
+            display: block;
+        }
+        .insp-expand-btn {
+            display: block; text-align: center;
+            padding: 2px 0 6px; cursor: pointer;
+            color: var(--insp-txt-lt); font-size: 16px;
+            font-family: "ZLabsBitmap", monospace;
+            letter-spacing: 3px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .insp-expand-btn:active { color: var(--insp-purple); }
         .insp-card-footer { padding: 0 12px 10px; }
         .insp-card-url {
             display: block; font-size: 12px;
@@ -6232,13 +6250,13 @@
         .insp-bottom {
             background: var(--insp-pink);
             border-top: 3px solid var(--insp-purple);
-            padding: 10px 12px;
-            padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+            padding: 8px 10px;
+            padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
             flex-shrink: 0;
         }
         .insp-input-row {
             display: flex; align-items: flex-end;
-            gap: 8px; margin-bottom: 8px;
+            gap: 8px; margin-bottom: 4px;
         }
         .insp-input-box {
             flex: 1; background: var(--insp-cream);
@@ -8280,6 +8298,7 @@
                 </div>
                 <div class="insp-tabs" id="inspTabs">
                     <button class="insp-tab active" onclick="setInspFilter('all')">全部</button>
+                    <button class="insp-tab" onclick="setInspFilter('murmur')">Murmur</button>
                     <button class="insp-tab" onclick="setInspFilter('todo')">TODO</button>
                     <button class="insp-tab" onclick="setInspFilter('clip')">Clip</button>
                     <button class="insp-tab" onclick="setInspFilter('idea')">灵感</button>
@@ -19146,7 +19165,8 @@ ${chatContext}
             link_resource: { label: '素材', color: '#f97316' },
             link_tool: { label: '工具', color: '#14b8a6' },
             link_beauty: { label: '美化', color: '#e879f9' },
-            link_inspo: { label: '灵感参考', color: '#ec4899' }
+            link_inspo: { label: '灵感参考', color: '#ec4899' },
+            murmur: { label: 'Murmur', color: '#e8a0b8' }
         };
         const LINK_TAGS = ['link_tutorial', 'link_resource', 'link_tool', 'link_beauty', 'link_inspo'];
         const TEXT_TAGS = ['todo', 'clip', 'idea', 'bug', 'chen'];
@@ -19307,12 +19327,9 @@ ${chatContext}
             }
         }
 
-        // 快速发送（发送按钮）：有链接默认归网址clip，无链接默认clip
+        // 快速发送（爱心按钮）：一律存为 murmur
         function quickSaveInspiration() {
-            const input = document.getElementById('inspirationInput');
-            const text = input.value || '';
-            const hasUrl = /(https?:\/\/[^\s]+)/i.test(text);
-            saveInspiration(hasUrl ? 'link_resource' : 'clip');
+            saveInspiration('murmur');
         }
 
         // 存灵感（独立入口）
@@ -19598,8 +19615,10 @@ ${chatContext}
                 const contentPreview = escapeHtml(item.content || '');
                 const urlHtml = item.url ? `<a class="insp-card-url" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">🔗 ${escapeHtml(item.url)}</a>` : '';
 
-                html += `<div class="insp-card" data-insp-id="${item.id}" oncontextmenu="event.preventDefault();showInspActionSheet('${item.id}')" ontouchstart="this._lt=setTimeout(()=>{showInspActionSheet('${item.id}')},600)" ontouchend="clearTimeout(this._lt)" ontouchmove="clearTimeout(this._lt)">
-                    <div class="insp-card-titlebar ${LINK_TAGS.includes(item.tag) ? 'link-bar' : 'text-bar'}">
+                const cardClass = item.tag === 'murmur' ? 'murmur-card' : '';
+                const barClass = item.tag === 'murmur' ? 'murmur-bar' : (LINK_TAGS.includes(item.tag) ? 'link-bar' : 'text-bar');
+                html += `<div class="insp-card ${cardClass}" data-insp-id="${item.id}" oncontextmenu="event.preventDefault();showInspActionSheet('${item.id}')" ontouchstart="this._lt=setTimeout(()=>{showInspActionSheet('${item.id}')},600)" ontouchend="clearTimeout(this._lt)" ontouchmove="clearTimeout(this._lt)">
+                    <div class="insp-card-titlebar ${barClass}">
                         <span class="insp-tag ${item.tag}">${tagInfo.label}</span>
                         <span class="insp-card-time">${timeStr}</span>
                         <div class="insp-card-actions">
@@ -19615,6 +19634,29 @@ ${chatContext}
                 </div>`;
             }
             container.innerHTML = html;
+
+            // 检测截断，添加展开/收起按钮
+            container.querySelectorAll('.insp-card-content').forEach(el => {
+                if (el.scrollHeight > el.clientHeight) {
+                    const btn = document.createElement('div');
+                    btn.className = 'insp-expand-btn';
+                    btn.textContent = '···';
+                    btn.onclick = function() {
+                        const isExpanded = el.classList.toggle('expanded');
+                        if (isExpanded) {
+                            if (typeof marked !== 'undefined') {
+                                el.innerHTML = marked.parse(el.getAttribute('data-raw') || el.textContent);
+                            }
+                            btn.textContent = '收起';
+                        } else {
+                            el.textContent = el.getAttribute('data-raw') || el.textContent;
+                            btn.textContent = '···';
+                        }
+                    };
+                    el.setAttribute('data-raw', el.textContent);
+                    el.parentElement.appendChild(btn);
+                }
+            });
         }
 
         // 碎碎念语音输入
