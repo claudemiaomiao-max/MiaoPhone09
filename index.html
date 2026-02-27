@@ -13502,8 +13502,14 @@
                 const msgs = appData.messages[convId];
                 const lastMsg = msgs && msgs.length > 0 ? msgs[msgs.length - 1] : null;
                 if (lastMsg && lastMsg.role === 'assistant' && lastMsg.isStreaming) {
-                    lastMsg.content = '请求失败：' + error.message;
-                    lastMsg.versions[0] = lastMsg.content;
+                    // 如果已经收到了正文内容，不要覆盖，只标记结束
+                    if (lastMsg.content && lastMsg.content.trim().length > 0) {
+                        console.warn('流式传输出错但已有内容，保留正文:', error.message);
+                        lastMsg.versions[0] = lastMsg.content; // 同步versions
+                    } else {
+                        lastMsg.content = '请求失败：' + error.message;
+                        lastMsg.versions[0] = lastMsg.content;
+                    }
                     lastMsg.isStreaming = false;
                 }
             } finally {
@@ -13714,19 +13720,27 @@
             let thinkingStartTime = Date.now();
             let isThinking = false;
             const STREAM_TIMEOUT = 120000; // 2分钟超时，防止网络半断开时永远挂起
+            let streamDone = false;
 
             while (true) {
                 // 带超时的读取，防止卡死
                 const readPromise = reader.read();
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('流式响应超时（2分钟无数据）')), STREAM_TIMEOUT)
-                );
+                let timeoutId;
+                const timeoutPromise = new Promise((_, reject) => {
+                    timeoutId = setTimeout(() => reject(new Error('流式响应超时（2分钟无数据）')), STREAM_TIMEOUT);
+                });
 
                 let result;
                 try {
                     result = await Promise.race([readPromise, timeoutPromise]);
+                    clearTimeout(timeoutId); // 读取成功，清除超时定时器
                 } catch (timeoutError) {
                     reader.cancel();
+                    // 如果已经收到[DONE]或已有内容，不抛错，正常结束
+                    if (streamDone || aiMsg.content.length > 0) {
+                        console.log('流式读取超时，但内容已完整接收，正常结束');
+                        break;
+                    }
                     throw timeoutError;
                 }
 
@@ -13740,7 +13754,10 @@
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
                         const data = line.slice(6);
-                        if (data === '[DONE]') continue;
+                        if (data === '[DONE]') {
+                            streamDone = true;
+                            continue;
+                        }
 
                         try {
                             const json = JSON.parse(data);
@@ -13773,6 +13790,9 @@
                         } catch (e) {}
                     }
                 }
+
+                // 收到[DONE]后立即退出while循环，不再等待reader.read()
+                if (streamDone) break;
             }
         }
 
