@@ -15692,8 +15692,22 @@ ${memoryText}`;
                 }
             }
 
+            // 找到最后一条助手消息在history中的索引，用于插入时间间隔
+            let lastAssistantHistoryIdx = -1;
+            for (let i = history.length - 1; i >= 0; i--) {
+                if (history[i].role === 'assistant') {
+                    lastAssistantHistoryIdx = i;
+                    break;
+                }
+            }
+
             history.forEach((msg, idx) => {
                 try {
+                    // 在最后一条助手消息之后、用户新消息之前插入时间间隔
+                    if (lastTimeGapInfo && idx === lastAssistantHistoryIdx + 1 && lastAssistantHistoryIdx >= 0) {
+                        fullContent += `${lastTimeGapInfo}\n`;
+                    }
+
                     const speaker = msg.role === 'user' ? '用户' : assistantName;
                     let content = msg.content;
 
@@ -15772,11 +15786,6 @@ ${memoryText}`;
                 const skippedCount = totalImageCount - images.length;
                 fullContent = fullContent.replace('=====对话记录=====\n',
                     `=====对话记录=====\n[注：历史中共有${totalImageCount}张图片，为节省空间只保留最近${images.length}张，其余${skippedCount}张用文字标记]\n`);
-            }
-
-            // 在对话记录末尾插入时间间隔提示（只有一个，清晰明了）
-            if (lastTimeGapInfo) {
-                fullContent += `\n${lastTimeGapInfo}\n`;
             }
 
             fullContent += '=====\n';
@@ -15973,11 +15982,12 @@ ${memoryText}`;
             const assistantName = assistant?.name || '助手';
 
             // 添加到消息列表，带延迟效果模拟（间隔1.2秒更真实）
-            // 性能优化：使用增量渲染，只追加新消息而非重绘整个列表
-            const container = document.getElementById('wechatMessages');
-
             replies.forEach((reply, index) => {
                 setTimeout(() => {
+                    // 【关键】每次都从当前wechatData取最新引用，防止initWechatData重建对象后引用断裂
+                    const currentConv = wechatData.conversations[assistantId];
+                    if (!currentConv) return; // 对话被删除了
+
                     let msgToAdd;
 
                     // 处理助手发起的拍一拍
@@ -15994,7 +16004,7 @@ ${memoryText}`;
                         };
                         // 震动反馈（手机端）
                         if (navigator.vibrate) {
-                            navigator.vibrate([100, 50, 100]); // 短-停-短的震动模式
+                            navigator.vibrate([100, 50, 100]);
                         }
                     }
                     // 处理助手发起的转账
@@ -16016,8 +16026,7 @@ ${memoryText}`;
                         const action = reply.action || 'accepted';
                         const amount = reply.amount || 0;
 
-                        // 找到用户发送的待处理转账并更新状态
-                        const userPendingTransfer = conv.messages.find(m =>
+                        const userPendingTransfer = currentConv.messages.find(m =>
                             m.type === 'transfer' &&
                             m.role === 'user' &&
                             m.status === 'pending'
@@ -16026,7 +16035,6 @@ ${memoryText}`;
                             userPendingTransfer.status = action;
                         }
 
-                        // 创建AI的收款通知消息
                         msgToAdd = {
                             id: 'receipt_' + Date.now() + '_' + index,
                             role: 'assistant',
@@ -16047,7 +16055,6 @@ ${memoryText}`;
                             emotion: reply.emotion || 'neutral',
                             timestamp: new Date().toISOString()
                         };
-                        // 如果AI回复包含引用
                         if (reply.quote) {
                             msgToAdd.quote = {
                                 senderName: reply.quote.senderName || '用户',
@@ -16056,40 +16063,43 @@ ${memoryText}`;
                         }
                     }
 
-                    conv.messages.push(msgToAdd);
+                    currentConv.messages.push(msgToAdd);
+
+                    // 每条消息都立即保存，防止切出模式后initWechatData重建对象导致丢失
+                    saveWechatData();
 
                     // 增量渲染：只有用户当前在看目标对话时才渲染到DOM
                     if (wechatData.currentAssistantId === assistantId) {
-                        // 时间戳逻辑：只有同角色连续消息的最后一条才显示时间戳
-                        const isLastInBatch = index === replies.length - 1;
-                        const nextReply = replies[index + 1];
-                        const nextIsSameRole = nextReply && (nextReply.type !== 'pat' && nextReply.type !== 'pat_message');
-                        const showTs = isLastInBatch || !nextIsSameRole;
+                        const currentContainer = document.getElementById('wechatMessages');
+                        if (currentContainer) {
+                            const isLastInBatch = index === replies.length - 1;
+                            const nextReply = replies[index + 1];
+                            const nextIsSameRole = nextReply && (nextReply.type !== 'pat' && nextReply.type !== 'pat_message');
+                            const showTs = isLastInBatch || !nextIsSameRole;
 
-                        // 隐藏前一条同角色消息的时间戳
-                        const allMsgEls = container.querySelectorAll('.wechat-msg');
-                        if (allMsgEls.length > 0) {
-                            const lastEl = allMsgEls[allMsgEls.length - 1];
-                            if (lastEl && lastEl.classList.contains(msgToAdd.role)) {
-                                const prevTime = lastEl.querySelector('.wechat-msg-time');
-                                if (prevTime) prevTime.style.display = 'none';
+                            const allMsgEls = currentContainer.querySelectorAll('.wechat-msg');
+                            if (allMsgEls.length > 0) {
+                                const lastEl = allMsgEls[allMsgEls.length - 1];
+                                if (lastEl && lastEl.classList.contains(msgToAdd.role)) {
+                                    const prevTime = lastEl.querySelector('.wechat-msg-time');
+                                    if (prevTime) prevTime.style.display = 'none';
+                                }
                             }
-                        }
 
-                        const userAvatarHtml = getCachedUserAvatarHtml();
-                        const assistantAvatarHtml = getCachedAssistantAvatarHtml(assistant);
-                        const msgHtml = renderWechatMessageFast(msgToAdd, assistant, userAvatarHtml, assistantAvatarHtml, false, showTs);
-                        container.insertAdjacentHTML('beforeend', msgHtml);
-                        container.scrollTop = container.scrollHeight;
+                            const userAvatarHtml = getCachedUserAvatarHtml();
+                            const assistantAvatarHtml = getCachedAssistantAvatarHtml(assistant);
+                            const msgHtml = renderWechatMessageFast(msgToAdd, assistant, userAvatarHtml, assistantAvatarHtml, false, showTs);
+                            currentContainer.insertAdjacentHTML('beforeend', msgHtml);
+                            currentContainer.scrollTop = currentContainer.scrollHeight;
+                        }
                     } else {
                         // 不在目标窗口 → 累加未读数
                         wechatUnreadCounts[assistantId] = (wechatUnreadCounts[assistantId] || 0) + 1;
                         renderWechatList();
                     }
 
-                    // 只在最后一条消息时保存，减少IO操作
+                    // 最后一条消息时触发完成回调
                     if (index === replies.length - 1) {
-                        saveWechatData();
                         if (onComplete) onComplete();
                     }
                 }, index * 1200);
@@ -17310,8 +17320,9 @@ ${memoryText}`;
             const tts = appData.ttsSettings;
             if (!tts.edgeWorkerUrl) throw new Error('Edge TTS Worker 地址未配置');
 
-            const params = EDGE_EMOTION_PARAMS[emotion] || EDGE_EMOTION_PARAMS.neutral;
-            const cacheKey = `edge|${voiceId}|${emotion}|${text}`;
+            // Edge TTS不支持真正的情绪风格，始终使用neutral参数避免奇怪的变调
+            const params = EDGE_EMOTION_PARAMS.neutral;
+            const cacheKey = `edge|${voiceId}|neutral|${text}`;
 
             if (ttsCache.has(cacheKey)) {
                 return { url: ttsCache.get(cacheKey), cacheKey };
@@ -22283,7 +22294,7 @@ ${dialogueText}
                     () => {
                         // onStart: 记录当前播放的audioUrl用于保存
                         const cacheKey = appData.ttsSettings.engine === 'edge'
-                            ? `edge|${voiceId}|${emotion}|${text}`
+                            ? `edge|${voiceId}|neutral|${text}`
                             : `${voiceId}|${appData.ttsSettings.model}|${emotion}|${text}`;
                         const cachedUrl = ttsCache.get(cacheKey);
                         if (cachedUrl) {
