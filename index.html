@@ -14543,7 +14543,6 @@
 
         function openWechatChat(assistantId) {
             wechatData.currentAssistantId = assistantId;
-            wechatData.pendingMessages = [];
             // 清除未读数
             delete wechatUnreadCounts[assistantId];
             
@@ -14670,7 +14669,8 @@
             const messages = conv ? conv.messages : [];
             const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
 
-            if (messages.length === 0 && wechatData.pendingMessages.length === 0) {
+            const myPendingMessages = wechatData.pendingMessages.filter(m => m._targetAssistantId === wechatData.currentAssistantId);
+            if (messages.length === 0 && myPendingMessages.length === 0) {
                 container.innerHTML = `
                     <div class="wechat-empty" style="height: 100%;">
                         <div class="wechat-empty-icon">💬</div>
@@ -14727,8 +14727,8 @@
                 html += renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, false, showTimestamp);
             });
 
-            // 渲染暂存的消息
-            wechatData.pendingMessages.forEach(msg => {
+            // 渲染暂存的消息（只显示属于当前助手的）
+            myPendingMessages.forEach(msg => {
                 html += renderWechatMessageFast(msg, assistant, userAvatarHtml, assistantAvatarHtml, true);
             });
 
@@ -15084,7 +15084,8 @@
                 role: 'system',
                 type: 'pat_message',
                 content: pokeContent,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                _targetAssistantId: wechatData.currentAssistantId
             };
 
             // 添加到暂存消息列表
@@ -15131,7 +15132,8 @@
                 amount: amount,
                 note: note || '',
                 status: 'pending',  // pending/accepted/declined
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                _targetAssistantId: wechatData.currentAssistantId
             };
 
             // 添加到暂存消息
@@ -15185,7 +15187,8 @@
                     originalTransferId: msg.id,
                     amount: msg.amount,
                     senderName: msg.senderName,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    _targetAssistantId: wechatData.currentAssistantId
                 };
                 wechatData.pendingMessages.push(receiptMsg);
 
@@ -15215,7 +15218,8 @@
                     originalTransferId: msg.id,
                     amount: msg.amount,
                     senderName: msg.senderName,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    _targetAssistantId: wechatData.currentAssistantId
                 };
                 wechatData.pendingMessages.push(receiptMsg);
 
@@ -15245,7 +15249,8 @@
                             type: 'image',
                             content: file.base64,
                             fileName: file.name,
-                            timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                            _targetAssistantId: wechatData.currentAssistantId
                         };
                         wechatData.pendingMessages.push(imgMsg);
                     }
@@ -15262,7 +15267,8 @@
                     role: 'user',
                     type: isVoiceShortcut ? 'voice_message' : 'text',
                     content: isVoiceShortcut ? content.slice(2) : content,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    _targetAssistantId: wechatData.currentAssistantId
                 };
                 // 如果有引用消息，添加引用信息
                 if (wechatQuotedMessage) {
@@ -15301,7 +15307,8 @@
                             type: 'image',
                             content: file.base64,
                             fileName: file.name,
-                            timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                            _targetAssistantId: targetAssistantId
                         };
                         wechatData.pendingMessages.push(imgMsg);
                     } else if (file.isTextFile && file.textContent) {
@@ -15313,7 +15320,8 @@
                             content: `[文件: ${file.name}]\n${file.textContent}`,
                             fileName: file.name,
                             isFile: true,
-                            timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                            _targetAssistantId: targetAssistantId
                         };
                         wechatData.pendingMessages.push(fileMsg);
                     }
@@ -15330,7 +15338,8 @@
                     role: 'user',
                     type: isVoiceShortcut ? 'voice_message' : 'text',
                     content: isVoiceShortcut ? content.slice(2) : content,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
+                    _targetAssistantId: targetAssistantId
                 };
                 // 如果有引用消息，添加引用信息
                 if (wechatQuotedMessage) {
@@ -15347,7 +15356,7 @@
             }
 
             const conv = wechatData.conversations[targetAssistantId];
-            const hasPending = wechatData.pendingMessages.length > 0;
+            const hasPending = wechatData.pendingMessages.some(m => m._targetAssistantId === targetAssistantId);
             const lastMsg = conv?.messages?.length ? conv.messages[conv.messages.length - 1] : null;
             const needsReply = lastMsg && lastMsg.role === 'user';
 
@@ -15375,12 +15384,15 @@
             // 创建带有正确模型的临时助手对象
             const effectiveAssistant = { ...assistant, providerId, modelId };
 
-            // 有暂存消息才执行"把暂存移到正式消息"
+            // 有暂存消息才执行"把暂存移到正式消息"（只移属于目标助手的）
             if (hasPending) {
-                wechatData.pendingMessages.forEach(msg => {
+                const myPending = wechatData.pendingMessages.filter(m => m._targetAssistantId === targetAssistantId);
+                const otherPending = wechatData.pendingMessages.filter(m => m._targetAssistantId !== targetAssistantId);
+                myPending.forEach(msg => {
+                    delete msg._targetAssistantId; // 移入正式消息后去掉内部标记
                     conv.messages.push(msg);
                 });
-                wechatData.pendingMessages = [];
+                wechatData.pendingMessages = otherPending;
                 // 只有当前在看这个对话才渲染
                 if (wechatData.currentAssistantId === targetAssistantId) {
                     renderWechatMessages();
@@ -15771,10 +15783,10 @@ ${memoryText}`;
 
             // 时间间隔检测（时间感知开启时生效）
             let lastTimeGapInfo = null;
-            if (timeAwareEnabled && history.length > 0) {
-                // 找到最后一条用户消息的时间（用户离开的时间基准）
+            if (timeAwareEnabled && history.length > 1) {
+                // 找到上一次用户消息的时间（排除最后一条，因为那是刚发的新消息）
                 let lastUserTime = null;
-                for (let i = history.length - 1; i >= 0; i--) {
+                for (let i = history.length - 2; i >= 0; i--) {
                     if (history[i].role === 'user' && history[i].timestamp) {
                         lastUserTime = typeof history[i].timestamp === 'number'
                             ? history[i].timestamp
@@ -16117,8 +16129,12 @@ ${memoryText}`;
             const assistant = appData.assistants.find(a => a.id === assistantId);
             const assistantName = assistant?.name || '助手';
 
-            // 添加到消息列表，带延迟效果模拟（间隔1.2秒更真实）
+            // 添加到消息列表
+            // 如果用户正在看目标窗口，带延迟效果一条一条蹦出来
+            // 如果用户不在目标窗口（切走了），直接全部存入，回来时一次性看到
+            const isViewingTarget = wechatData.currentAssistantId === assistantId;
             replies.forEach((reply, index) => {
+                const delay = isViewingTarget ? index * 1200 : 0;
                 setTimeout(() => {
                     // 【关键】每次都从当前wechatData取最新引用，防止initWechatData重建对象后引用断裂
                     const currentConv = wechatData.conversations[assistantId];
@@ -16238,7 +16254,7 @@ ${memoryText}`;
                     if (index === replies.length - 1) {
                         if (onComplete) onComplete();
                     }
-                }, index * 1200);
+                }, delay);
             });
         }
 
@@ -17125,7 +17141,8 @@ ${memoryText}`;
                 role: 'user',
                 type: 'voice_message',
                 content: text,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                _targetAssistantId: wechatData.currentAssistantId
             };
 
             // 添加到待发送
