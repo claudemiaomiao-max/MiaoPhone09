@@ -13699,7 +13699,7 @@
                 stream: appData.settings.apiStreamEnabled !== false
             };
 
-            requestBody.max_tokens = (assistant.maxTokens > 0) ? assistant.maxTokens : 8192;
+            requestBody.max_tokens = (assistant.maxTokens > 0) ? assistant.maxTokens : 30000;
             
             // 根据思考级别设置（兼容多种供应商格式）
             if (level !== 'off' && level !== 'auto' && thinkingTokens > 0) {
