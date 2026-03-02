@@ -7667,6 +7667,13 @@
                             <select class="wechat-settings-input" id="wechatEdgeVoice" style="width: 160px; font-size: 12px;"></select>
                         </div>
                     </div>
+                    <div class="wechat-settings-item">
+                        <span class="wechat-settings-label">情绪映射 (MiniMax)</span>
+                        <div class="switch" id="wechatEmotionEnabled" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div style="padding: 0 16px 8px; font-size: 12px; color: #999;">
+                        关闭后TTS将使用默认语气，不传递情绪参数
+                    </div>
                 </div>
                 <!-- 长期记忆设置 -->
                 <div class="wechat-settings-section">
@@ -13017,11 +13024,15 @@
             updateChatHeader();
         }
 
+        // 消息渲染HTML缓存：已完成的消息不需要每次重新渲染
+        const _msgRenderCache = new Map(); // key: msgId, value: { content, reasoningText, currentVersion, html }
+
         function renderMessages() {
             const container = document.getElementById('chatMessages');
             const messages = appData.messages[appData.currentConversationId] || [];
 
             if (messages.length === 0) {
+                _msgRenderCache.clear();
                 container.innerHTML = `
                     <div class="welcome-view">
                         <div class="welcome-icon">
@@ -13034,11 +13045,40 @@
                 return;
             }
 
-            container.innerHTML = messages.map(m => renderMessage(m)).join('');
+            const htmlParts = messages.map(m => {
+                // 流式输出中的消息不缓存
+                if (m.isStreaming) {
+                    _msgRenderCache.delete(m.id);
+                    return renderMessage(m);
+                }
+                // 检查缓存是否命中
+                const cached = _msgRenderCache.get(m.id);
+                const currentVersion = m.currentVersion || 0;
+                if (cached && cached.content === m.content && cached.reasoningText === (m.reasoningText || '') && cached.currentVersion === currentVersion) {
+                    return cached.html;
+                }
+                // 缓存未命中，重新渲染并缓存
+                const html = renderMessage(m);
+                _msgRenderCache.set(m.id, { content: m.content, reasoningText: m.reasoningText || '', currentVersion, html });
+                return html;
+            });
+
+            container.innerHTML = htmlParts.join('');
             if (!renderMessages._keepScroll) {
                 container.scrollTop = container.scrollHeight;
             }
             renderMessages._keepScroll = false;
+        }
+
+        // 节流版renderMessages：流式输出时使用，每帧最多渲染一次
+        let _streamRenderScheduled = false;
+        function scheduleStreamRender() {
+            if (_streamRenderScheduled) return;
+            _streamRenderScheduled = true;
+            requestAnimationFrame(() => {
+                _streamRenderScheduled = false;
+                renderMessages();
+            });
         }
 
         function renderMessage(msg) {
@@ -13124,8 +13164,11 @@
                                 <button class="message-action-btn" onclick="editMessage('${msg.id}')" title="编辑">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </button>
-                                <button class="message-action-btn" onclick="regenerateFromMessage('${msg.id}')" title="从此处重新生成">
+                                <button class="message-action-btn" onclick="regenerateFromMessage('${msg.id}')" title="重新发送">
                                     <span class="icon-refresh"></span>
+                                </button>
+                                <button class="message-action-btn" onclick="deleteMessage('${msg.id}')" title="删除">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                 </button>
                                 ${userVersionHtml}
                             </div>
@@ -13165,6 +13208,9 @@
                                 </button>
                                 <button class="message-action-btn" onclick="regenerateResponse('${msg.id}')" title="重新生成" ${msg.isStreaming ? 'disabled' : ''}>
                                     <span class="icon-refresh"></span>
+                                </button>
+                                <button class="message-action-btn" onclick="deleteMessage('${msg.id}')" title="删除" ${msg.isStreaming ? 'disabled' : ''}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                                 </button>
                                 ${assistantVersionHtml}
                             </div>
@@ -13368,15 +13414,85 @@
         }
 
         async function regenerateFromMessage(userMsgId) {
+            if (isSending) return;
             const messages = appData.messages[appData.currentConversationId] || [];
             const userMsgIndex = messages.findIndex(m => m.id === userMsgId);
             if (userMsgIndex === -1) return;
 
-            // 找到下一条AI消息
+            const userMsg = messages[userMsgIndex];
             const aiMsgIndex = userMsgIndex + 1;
+
+            // 如果下一条是AI消息，就删掉它重新生成；否则直接新建AI消息
             if (aiMsgIndex < messages.length && messages[aiMsgIndex].role === 'assistant') {
-                await regenerateResponse(messages[aiMsgIndex].id);
+                // 删除旧的AI回复
+                messages.splice(aiMsgIndex, 1);
             }
+
+            // 获取模型配置（复用sendMessage的逻辑）
+            const assistant = appData.assistants.find(a => a.id === appData.currentAssistantId);
+            if (!assistant) { alert('请先选择一个助手'); return; }
+            const tempModel = appData.settings.apiTempModel;
+            const assistantModel = assistant.providerId && assistant.modelId ? `${assistant.providerId}||${assistant.modelId}` : '';
+            const globalModel = appData.settings.defaultModel;
+            const modelValue = tempModel || assistantModel || globalModel;
+            if (!modelValue) { alert('请先在设置中选择默认模型'); return; }
+            const [providerId, modelId] = modelValue.split('||');
+            const provider = appData.providers.find(p => p.id === providerId);
+            if (!provider) { alert('找不到对应的供应商配置'); return; }
+
+            const effectiveAssistant = { ...assistant, providerId, modelId };
+
+            // 新建AI消息
+            const aiMsg = {
+                id: 'msg_' + Date.now() + '_ai',
+                role: 'assistant',
+                content: '',
+                versions: [''],
+                currentVersion: 0,
+                reasoningText: '',
+                timestamp: new Date().toISOString(),
+                isStreaming: true
+            };
+            // 插到用户消息后面
+            messages.splice(userMsgIndex + 1, 0, aiMsg);
+
+            isSending = true;
+            const chatSendBtn = document.getElementById('chatSendBtn');
+            chatSendBtn.disabled = true;
+            renderMessages();
+
+            try {
+                await streamChat(provider, effectiveAssistant, aiMsg);
+                aiMsg.versions[0] = aiMsg.content;
+                aiMsg.isStreaming = false;
+                const conv = appData.conversations.find(c => c.id === appData.currentConversationId);
+                if (conv) conv.updatedAt = new Date().toISOString();
+            } catch (error) {
+                console.error('重新生成失败:', error);
+                if (aiMsg.content && aiMsg.content.trim().length > 0) {
+                    aiMsg.versions[0] = aiMsg.content;
+                } else {
+                    aiMsg.content = '请求失败：' + error.message;
+                    aiMsg.versions[0] = aiMsg.content;
+                }
+                aiMsg.isStreaming = false;
+            } finally {
+                isSending = false;
+                chatSendBtn.disabled = false;
+                saveData();
+                renderMessages();
+            }
+        }
+
+        function deleteMessage(msgId) {
+            if (!confirm('确定要删除这条消息吗？')) return;
+            const messages = appData.messages[appData.currentConversationId] || [];
+            const msgIndex = messages.findIndex(m => m.id === msgId);
+            if (msgIndex === -1) return;
+            messages.splice(msgIndex, 1);
+            _msgRenderCache.delete(msgId);
+            saveData();
+            renderMessages();
         }
 
         // ==================== 发送消息 ====================
@@ -13781,7 +13897,7 @@
                                     aiMsg.content += delta.content;
                                 }
 
-                                renderMessages();
+                                scheduleStreamRender();
                             }
 
                             if (json.usage) {
@@ -15656,21 +15772,21 @@ ${memoryText}`;
             // 时间间隔检测（时间感知开启时生效）
             let lastTimeGapInfo = null;
             if (timeAwareEnabled && history.length > 0) {
-                // 找到最后一条助手消息的时间
-                let lastAssistantTime = null;
+                // 找到最后一条用户消息的时间（用户离开的时间基准）
+                let lastUserTime = null;
                 for (let i = history.length - 1; i >= 0; i--) {
-                    if (history[i].role === 'assistant' && history[i].timestamp) {
-                        lastAssistantTime = typeof history[i].timestamp === 'number'
+                    if (history[i].role === 'user' && history[i].timestamp) {
+                        lastUserTime = typeof history[i].timestamp === 'number'
                             ? history[i].timestamp
                             : new Date(history[i].timestamp).getTime();
                         break;
                     }
                 }
 
-                // 如果有助手消息，计算到现在的时间间隔
-                if (lastAssistantTime) {
+                // 如果有用户消息，计算到现在的时间间隔
+                if (lastUserTime) {
                     const now = new Date();
-                    const gap = now.getTime() - lastAssistantTime;
+                    const gap = now.getTime() - lastUserTime;
                     const hours = gap / (60 * 60 * 1000);
                     const minutes = Math.floor(gap / (60 * 1000));
                     const days = Math.floor(hours / 24);
@@ -17395,9 +17511,18 @@ ${memoryText}`;
             return { url: blobUrl, cacheKey };
         }
 
+        // 获取当前微信对话是否开启了情绪映射
+        function isEmotionEnabled() {
+            const conv = wechatData.conversations?.[wechatData.currentAssistantId];
+            return conv?.settings?.emotionEnabled !== false; // 默认开启
+        }
+
         // 调用MiniMax TTS API（支持情绪参数）
         async function playTtsAudio(text, voiceId, el, emotion = 'neutral') {
             const tts = appData.ttsSettings;
+
+            // 情绪映射开关：关闭时不传情绪给MiniMax
+            if (!isEmotionEnabled()) emotion = 'neutral';
 
             // 在用户手势调用栈中预解锁Audio元素（必须在任何await之前）
             // Safari要求play()在用户手势中，async fetch之后手势上下文会丢失
@@ -17550,6 +17675,9 @@ ${memoryText}`;
         async function playTtsAudioWithCallback(text, voiceId, onStart, onEnd, emotion = 'neutral', preUnlockedAudio = null) {
             const tts = appData.ttsSettings;
             console.log('TTS引擎:', tts.engine, '| voiceId:', voiceId);
+
+            // 情绪映射开关：关闭时不传情绪给MiniMax
+            if (!isEmotionEnabled()) emotion = 'neutral';
 
             // 在用户手势调用栈中预解锁Audio元素（必须在任何await之前）
             if (!preUnlockedAudio) {
@@ -19704,13 +19832,11 @@ ${chatContext}
             if (tagRow && tagRow.dataset.editMode === 'true') {
                 delete tagRow.dataset.editId;
                 delete tagRow.dataset.editMode;
-                tagRow.querySelectorAll('.insp-tag-btn').forEach(btn => {
-                    btn.style.display = '';
-                    if (btn.dataset.origOnclick) {
-                        btn.setAttribute('onclick', btn.dataset.origOnclick);
-                        delete btn.dataset.origOnclick;
-                    }
-                });
+                // 恢复原始按钮HTML
+                if (tagRow.dataset.origHtml) {
+                    tagRow.innerHTML = tagRow.dataset.origHtml;
+                    delete tagRow.dataset.origHtml;
+                }
                 const murmurSaveBtn = tagRow.querySelector('.insp-murmur-save-btn');
                 if (murmurSaveBtn) murmurSaveBtn.style.display = 'none';
             }
@@ -19841,7 +19967,6 @@ ${chatContext}
             if (item.tag === 'murmur') {
                 // murmur：隐藏标签按钮，显示单独的保存按钮
                 tagRow.querySelectorAll('.insp-tag-btn').forEach(btn => btn.style.display = 'none');
-                // 添加临时保存按钮
                 let saveBtn = tagRow.querySelector('.insp-murmur-save-btn');
                 if (!saveBtn) {
                     saveBtn = document.createElement('button');
@@ -19853,17 +19978,27 @@ ${chatContext}
                 saveBtn.style.display = '';
                 saveBtn.setAttribute('onclick', `saveInspEdit('${id}','murmur')`);
             } else {
-                // 非murmur：正常显示标签按钮，隐藏murmur保存按钮
+                // 根据当前tag判断应该显示哪组标签
+                const isLink = LINK_TAGS.includes(item.tag);
+                const tagsToShow = isLink ? LINK_TAGS : TEXT_TAGS;
+
+                // 隐藏murmur保存按钮
                 const murmurSaveBtn = tagRow.querySelector('.insp-murmur-save-btn');
                 if (murmurSaveBtn) murmurSaveBtn.style.display = 'none';
-                const btns = tagRow.querySelectorAll('.insp-tag-btn');
-                btns.forEach(btn => {
-                    btn.style.display = '';
-                    const origOnclick = btn.getAttribute('onclick');
-                    btn.dataset.origOnclick = origOnclick;
-                    const tag = origOnclick.match(/'([^']+)'/)?.[1] || 'idea';
-                    btn.setAttribute('onclick', `saveInspEdit('${id}','${tag}')`);
-                });
+
+                // 动态替换标签按钮为对应类型
+                // 先保存原始按钮HTML以便恢复
+                if (!tagRow.dataset.origHtml) {
+                    tagRow.dataset.origHtml = tagRow.innerHTML;
+                }
+                // 生成对应类型的标签按钮
+                const btnsHtml = tagsToShow.map(t =>
+                    `<button class="insp-tag-btn ${t}" onclick="saveInspEdit('${id}','${t}')">${INSP_TAGS[t].label}</button>`
+                ).join('');
+                // 保留murmur保存按钮（如果有的话）
+                const murmurBtn = tagRow.querySelector('.insp-murmur-save-btn');
+                tagRow.innerHTML = btnsHtml;
+                if (murmurBtn) tagRow.appendChild(murmurBtn);
             }
             textarea.focus();
         }
@@ -19887,15 +20022,11 @@ ${chatContext}
             const tagRow = modal.querySelector('.insp-tag-row');
             delete tagRow.dataset.editId;
             delete tagRow.dataset.editMode;
-            // 恢复标签按钮显示和onclick
-            const btns = tagRow.querySelectorAll('.insp-tag-btn');
-            btns.forEach(btn => {
-                btn.style.display = '';
-                if (btn.dataset.origOnclick) {
-                    btn.setAttribute('onclick', btn.dataset.origOnclick);
-                    delete btn.dataset.origOnclick;
-                }
-            });
+            // 恢复原始按钮HTML
+            if (tagRow.dataset.origHtml) {
+                tagRow.innerHTML = tagRow.dataset.origHtml;
+                delete tagRow.dataset.origHtml;
+            }
             // 隐藏murmur专用保存按钮
             const murmurSaveBtn = tagRow.querySelector('.insp-murmur-save-btn');
             if (murmurSaveBtn) murmurSaveBtn.style.display = 'none';
@@ -20116,6 +20247,7 @@ ${chatContext}
             document.getElementById('wechatTimeAware').classList.toggle('on', timeAwareOn);
             document.getElementById('wechatOfflineMode').classList.toggle('on', settings.offlineMode || false);
             document.getElementById('wechatTtsEnabled').classList.toggle('on', settings.ttsEnabled || false);
+            document.getElementById('wechatEmotionEnabled').classList.toggle('on', settings.emotionEnabled !== false); // 默认开启
             document.getElementById('wechatVoiceId').value = settings.voiceId || '';
 
             // Edge TTS 音色 UI
@@ -20198,6 +20330,7 @@ ${chatContext}
                     timeAware: document.getElementById('wechatTimeAware').classList.contains('on'),
                     offlineMode: document.getElementById('wechatOfflineMode').classList.contains('on'),
                     ttsEnabled: document.getElementById('wechatTtsEnabled').classList.contains('on'),
+                    emotionEnabled: document.getElementById('wechatEmotionEnabled').classList.contains('on'),
                     voiceId: document.getElementById('wechatVoiceId').value.trim(),
                     edgeVoiceId: document.getElementById('wechatEdgeVoice').value || 'zh-CN-XiaoxiaoNeural',
                     longTermMemoryEnabled: document.getElementById('wechatLongTermMemoryEnabled').classList.contains('on'),
