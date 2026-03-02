@@ -15784,9 +15784,11 @@ ${memoryText}`;
             // 时间间隔检测（时间感知开启时生效）
             let lastTimeGapInfo = null;
             if (timeAwareEnabled && history.length > 1) {
-                // 找到上一次用户消息的时间（排除最后一条，因为那是刚发的新消息）
+                // 以最后一条助手消息为分界线，找它之前的最后一条用户消息
+                // 这样排除了当前轮用户新发的消息，只看"上一轮对话"时用户最后说话的时间
                 let lastUserTime = null;
-                for (let i = history.length - 2; i >= 0; i--) {
+                let searchBefore = lastAssistantIdx >= 0 ? lastAssistantIdx : history.length - 1;
+                for (let i = searchBefore; i >= 0; i--) {
                     if (history[i].role === 'user' && history[i].timestamp) {
                         lastUserTime = typeof history[i].timestamp === 'number'
                             ? history[i].timestamp
