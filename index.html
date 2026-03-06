@@ -7501,9 +7501,10 @@
                     <span class="icon-back"></span>
                 </button>
                 <span class="page-title">长期记忆</span>
-                <button class="page-action" onclick="openAddMemoryModal()" style="color: #576b95; font-size: 14px; width: auto; padding: 0 12px;">
-                    添加
-                </button>
+                <div style="display:flex;gap:4px;align-items:center;">
+                    <button class="page-action" onclick="exportLongTermMemory()" style="color: #999; font-size: 12px; width: auto; padding: 0 8px;">导出</button>
+                    <button class="page-action" onclick="openAddMemoryModal()" style="color: #576b95; font-size: 14px; width: auto; padding: 0 12px;">添加</button>
+                </div>
             </div>
             <div class="page-content" style="padding: 0; background: #ededed;">
                 <!-- 操作区 -->
@@ -20867,6 +20868,34 @@ ${dialogueSummary}
         }
 
         // ==================== 长期记忆功能 ====================
+
+        function exportLongTermMemory() {
+            const conv = wechatData.conversations[wechatData.currentAssistantId];
+            const memories = conv?.settings?.longTermMemory || [];
+            if (memories.length === 0) { alert('暂无记忆可导出'); return; }
+
+            const assistant = appData.assistants.find(a => a.id === wechatData.currentAssistantId);
+            const name = assistant?.name || '助手';
+
+            // 按时间正序
+            const sorted = [...memories].sort((a, b) => new Date(a.time) - new Date(b.time));
+
+            let md = `# ${name} - 长期记忆\n\n`;
+            md += `> 导出时间：${new Date().toLocaleString('zh-CN')}  \n`;
+            md += `> 共 ${sorted.length} 条记忆\n\n---\n\n`;
+
+            let lastDate = '';
+            for (const mem of sorted) {
+                const dt = new Date(mem.time);
+                const date = dt.toLocaleDateString('zh-CN');
+                if (date !== lastDate) { md += `## ${date}\n\n`; lastDate = date; }
+                const time = dt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                const source = mem.type === 'user' ? '用户添加' : (mem.auto ? '自动总结' : 'AI总结');
+                md += `- **[${time} · ${source}]** ${mem.content}\n`;
+            }
+
+            downloadFile(md, `记忆_${name}_${new Date().toISOString().slice(0, 10)}.md`, 'text/markdown');
+        }
 
         // 打开长期记忆页面
         function openWechatMemoryPage() {
