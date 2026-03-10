@@ -1,0 +1,508 @@
+/* diary.css - 日记模式样式 */
+
+/* 日记模式样式 - 妙妙风格（粉棕米色） */
+.diary-page {
+    background: #f5f0eb;
+}
+.diary-page .page-header {
+    background: linear-gradient(135deg, #e8d5de 0%, #d4c5b9 100%);
+    border-bottom: none;
+}
+.diary-page .page-header .page-title {
+    color: #5a4a4a;
+}
+.diary-page .page-back {
+    color: #5a4a4a;
+}
+.diary-assistant-list {
+    padding: 12px;
+}
+.diary-assistant-item {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.diary-assistant-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c9a8b8, #a8879a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.diary-assistant-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.diary-assistant-avatar svg {
+    color: #fff;
+}
+.diary-assistant-info {
+    flex: 1;
+    min-width: 0;
+}
+.diary-assistant-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 4px;
+}
+.diary-assistant-count {
+    font-size: 13px;
+    color: #999;
+}
+.diary-assistant-arrow {
+    color: #ccc;
+    font-size: 18px;
+}
+
+/* 日记列表样式 */
+.diary-notebook-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+}
+.diary-auto-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+}
+.diary-list {
+    padding: 12px;
+}
+.diary-list-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+.diary-list-empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+.diary-item {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.diary-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.diary-item-date {
+    font-size: 14px;
+    font-weight: 500;
+    color: #a8879a;
+}
+.diary-item-weather {
+    font-size: 13px;
+    color: #999;
+}
+.diary-item-preview {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+/* 日记详情样式 */
+.diary-detail-content {
+    padding: 16px;
+    background: #fff;
+    min-height: calc(100% - 60px);
+}
+.diary-detail-date {
+    font-size: 18px;
+    font-weight: 500;
+    color: #a8879a;
+    margin-bottom: 16px;
+    text-align: center;
+}
+.diary-detail-text {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #333;
+    white-space: pre-wrap;
+}
+
+/* 生成日记按钮 */
+.diary-generate-btn {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c9a8b8, #a8879a);
+    border: none;
+    box-shadow: 0 4px 15px rgba(168,135,154,0.4);
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+.diary-generate-btn:active {
+    transform: scale(0.95);
+}
+
+/* 日记本助手选择器 */
+.diary-assistant-selector {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    gap: 12px;
+}
+.diary-assistant-selector-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c9a8b8, #a8879a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.diary-assistant-selector-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.diary-assistant-selector-avatar svg {
+    color: #fff;
+}
+.diary-assistant-selector-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+.diary-assistant-selector-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+}
+.diary-assistant-selector-arrow {
+    color: #999;
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+.diary-assistant-selector-arrow.open {
+    transform: rotate(180deg);
+}
+.diary-assistant-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 10;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.diary-assistant-dropdown.show {
+    display: block;
+}
+.diary-assistant-dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    gap: 12px;
+    cursor: pointer;
+}
+.diary-assistant-dropdown-item:hover {
+    background: #f5f5f5;
+}
+.diary-assistant-dropdown-item.selected {
+    background: #f9f5f7;
+}
+.diary-assistant-dropdown-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #c9a8b8, #a8879a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.diary-assistant-dropdown-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.diary-assistant-dropdown-name {
+    font-size: 15px;
+    color: #333;
+}
+.diary-assistant-dropdown-count {
+    font-size: 12px;
+    color: #999;
+    margin-left: auto;
+}
+
+/* 日历样式 */
+.diary-calendar {
+    background: #fff;
+    padding: 12px;
+}
+.diary-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0 16px;
+}
+.diary-calendar-nav {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: #f5f5f5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #666;
+}
+.diary-calendar-nav:active {
+    background: #e0e0e0;
+}
+.diary-calendar-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+}
+.diary-calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    margin-bottom: 8px;
+}
+.diary-calendar-weekday {
+    font-size: 12px;
+    color: #999;
+    padding: 8px 0;
+}
+.diary-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+.diary-calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    position: relative;
+    font-size: 14px;
+    color: #333;
+}
+.diary-calendar-day:hover {
+    background: #f5f5f5;
+}
+.diary-calendar-day.other-month {
+    color: #ccc;
+}
+.diary-calendar-day.today {
+    background: #f9f5f7;
+    font-weight: 500;
+}
+.diary-calendar-day.selected {
+    background: #c9a8b8;
+    color: #fff;
+}
+/* 有聊天记录的日期 - 浅色背景色块 */
+.diary-calendar-day.has-chat {
+    background: rgba(212,197,185,0.4);
+}
+/* 连续聊天日期的色块融合 */
+.diary-calendar-day.has-chat.chat-continue-left {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+.diary-calendar-day.has-chat.chat-continue-right {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    /* 使用box-shadow填充间隙 */
+    box-shadow: 4px 0 0 0 rgba(212,197,185,0.4);
+}
+/* 选中时覆盖背景色和阴影 */
+.diary-calendar-day.selected.has-chat {
+    background: #c9a8b8;
+}
+.diary-calendar-day.selected.has-chat.chat-continue-right {
+    box-shadow: 4px 0 0 0 #c9a8b8;
+}
+/* 有日记的日期 - 深色小圆点（底部） */
+.diary-calendar-day.has-diary::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: calc(50% - 3px);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #a8879a;
+}
+.diary-calendar-day.selected.has-diary::after {
+    background: rgba(255,255,255,0.8);
+}
+/* 未来日期不可点击 */
+.diary-calendar-day.future {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+/* 日记内容区域 */
+.diary-content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+.diary-day-entries {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.diary-day-header {
+    padding: 12px 16px;
+    background: #f9f9f9;
+    font-size: 14px;
+    color: #666;
+    border-bottom: 1px solid #eee;
+}
+.diary-day-content {
+    padding: 16px;
+    font-size: 15px;
+    line-height: 1.8;
+    color: #333;
+    white-space: pre-wrap;
+    font-family: var(--chat-font);
+}
+.diary-no-entry {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+.diary-no-entry-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+}
+
+/* 日记详情页滑动 */
+.diary-detail-wrapper {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+}
+.diary-detail-slider {
+    display: flex;
+    height: 100%;
+    transition: transform 0.3s ease;
+}
+.diary-detail-slide {
+    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 16px;
+    background: #fff;
+    box-sizing: border-box;
+    font-family: var(--chat-font);
+    font-size: 15px;
+    line-height: 1.8;
+}
+.diary-page-indicator {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 13px;
+    color: #a8879a;
+    background: rgba(255,255,255,0.9);
+    padding: 4px 10px;
+    border-radius: 12px;
+    z-index: 10;
+}
+/* PC端日记导航箭头 */
+.diary-nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 60px;
+    border: none;
+    background: rgba(168,135,154,0.8);
+    color: #fff;
+    font-size: 28px;
+    cursor: pointer;
+    z-index: 10;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+.diary-nav-arrow:hover {
+    background: rgba(168,135,154,1);
+}
+.diary-nav-prev {
+    left: 8px;
+}
+.diary-nav-next {
+    right: 8px;
+}
+/* 移动端隐藏箭头 */
+@media (max-width: 768px) {
+    .diary-nav-arrow {
+        display: none !important;
+    }
+}
+/* 日记详情滑动提示区域 */
+.diary-swipe-hint {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ccc;
+    font-size: 20px;
+}
+.diary-swipe-hint.left {
+    left: 0;
+}
+.diary-swipe-hint.right {
+    right: 0;
+}

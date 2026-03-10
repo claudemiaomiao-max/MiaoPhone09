@@ -1,0 +1,306 @@
+/* memory-lab.css - Memory Lab (向量记忆实验室) 样式 */
+
+/* Memory Lab 图标 */
+.app-memory-lab .app-icon-img {
+    background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+}
+
+/* ==================== Memory Lab ==================== */
+.mlab-tabs {
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+}
+.mlab-tab {
+    flex: 1;
+    padding: 12px 0;
+    border: none;
+    background: none;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+.mlab-tab.active {
+    color: #7c3aed;
+    border-bottom-color: #7c3aed;
+    font-weight: 600;
+}
+.mlab-panel {
+    padding: 12px;
+}
+.mlab-section {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+.mlab-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 10px;
+}
+.mlab-btn {
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    background: #f3f4f6;
+    color: #374151;
+}
+.mlab-btn-primary {
+    background: linear-gradient(135deg, #a855f7, #6366f1);
+    color: #fff;
+}
+.mlab-btn-primary:disabled {
+    opacity: 0.5;
+}
+.mlab-btn-outline {
+    background: none;
+    border: 1px solid #d1d5db;
+    color: #6b7280;
+}
+.mlab-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    background: #fff;
+}
+.mlab-msg-preview {
+    margin-top: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    background: #fafafa;
+    -webkit-overflow-scrolling: touch;
+}
+.mlab-placeholder {
+    color: #9ca3af;
+    font-size: 13px;
+    text-align: center;
+    padding: 20px 0;
+}
+.mlab-prompt-editor {
+    width: 100%;
+    min-height: 200px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+    font-family: inherit;
+}
+.mlab-param-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 13px;
+    color: #374151;
+}
+.mlab-param-row + .mlab-param-row {
+    border-top: 1px solid #f3f4f6;
+}
+.mlab-param-input {
+    width: 70px;
+    text-align: center;
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+}
+.mlab-narrative {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+}
+.mlab-narrative:last-child {
+    margin-bottom: 0;
+}
+.mlab-narrative-context {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+}
+.mlab-narrative-quote {
+    font-size: 12px;
+    color: #7c3aed;
+    padding: 3px 0;
+    font-style: italic;
+}
+.mlab-narrative-summary {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+.mlab-narrative-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+.mlab-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #ede9fe;
+    color: #7c3aed;
+}
+.mlab-tag-intensity {
+    background: #fef3c7;
+    color: #d97706;
+}
+.mlab-split-reason {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-bottom: 4px;
+}
+.mlab-raw-json {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 10px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 300px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.mlab-log-entry {
+    padding: 12px;
+    border-radius: 10px;
+    background: #f9fafb;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.mlab-log-entry:active {
+    background: #f3f4f6;
+}
+.mlab-log-detail {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e5e7eb;
+    cursor: default;
+}
+.mlab-log-status-success {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #d1fae5;
+    color: #059669;
+    flex-shrink: 0;
+}
+.mlab-log-status-error {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #fee2e2;
+    color: #dc2626;
+    flex-shrink: 0;
+}
+.mlab-log-status-parse-error {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #fef3c7;
+    color: #d97706;
+    flex-shrink: 0;
+}
+.mlab-narrative-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 8px;
+}
+.mlab-narrative-edit-btn {
+    font-size: 11px;
+    padding: 2px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    color: #6b7280;
+    cursor: pointer;
+}
+.mlab-narrative-edit-btn:active {
+    background: #f3f4f6;
+}
+.mlab-narrative-edit-btn.primary {
+    background: #7c3aed;
+    color: #fff;
+    border-color: #7c3aed;
+}
+.mlab-narrative-edit-field {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    box-sizing: border-box;
+    resize: vertical;
+}
+.mlab-narrative-edit-field:focus {
+    outline: none;
+    border-color: #8b5cf6;
+}
+.mlab-narrative.edited {
+    border-color: #a78bfa;
+    background: #faf5ff;
+}
+.mlab-search-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+.mlab-search-input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}
+.mlab-search-result {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+.mlab-search-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.mlab-search-similarity {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 12px;
+    background: #f0fdf4;
+    color: #16a34a;
+}
+.mlab-search-similarity.low {
+    background: #fef3c7;
+    color: #d97706;
+}
