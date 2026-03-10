@@ -304,3 +304,107 @@
     background: #fef3c7;
     color: #d97706;
 }
+
+/* ==================== 手动测试 Segment Control ==================== */
+.mlab-segment-control {
+    display: flex;
+    background: #ede9fe;
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 12px;
+}
+.mlab-segment {
+    flex: 1;
+    padding: 8px 0;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: #7c3aed;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+.mlab-segment.active {
+    background: linear-gradient(135deg, #a855f7, #6366f1);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(124, 58, 237, 0.3);
+}
+
+/* ==================== 当日总结结果卡片 ==================== */
+.mlab-daily-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+.mlab-daily-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 11px;
+    color: #9ca3af;
+}
+.mlab-daily-card-model {
+    background: #ede9fe;
+    color: #7c3aed;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+}
+.mlab-daily-memory-block {
+    background: #faf5ff;
+    border: 1px solid #e9d5ff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+.mlab-daily-memory-block .mlab-section-title {
+    color: #7c3aed;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+.mlab-daily-memory-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #374151;
+    white-space: pre-wrap;
+}
+.mlab-daily-obs-block {
+    background: #f9fafb;
+    border: 1px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+.mlab-daily-obs-block .mlab-section-title {
+    color: #6b7280;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+.mlab-daily-obs-item {
+    font-size: 12px;
+    color: #4b5563;
+    line-height: 1.6;
+    padding: 4px 0;
+    padding-left: 14px;
+    position: relative;
+}
+.mlab-daily-obs-item::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #a855f7;
+    font-weight: bold;
+}
+.mlab-daily-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f3f4f6;
+}
