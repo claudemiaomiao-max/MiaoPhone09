@@ -1747,24 +1747,59 @@
 
                 <!-- 手动测试区 -->
                 <div class="mlab-panel" id="mlabTestPanel">
-                    <div class="mlab-section">
-                        <div class="mlab-section-title">导入对话</div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="mlab-btn" onclick="mlabImportJson()" style="flex:1;">导入 JSON 文件</button>
-                            <button class="mlab-btn mlab-btn-outline" onclick="mlabClearTest()" style="flex:0 0 auto;">清空</button>
-                        </div>
-                        <div class="mlab-msg-preview" id="mlabInputPreview">
-                            <div class="mlab-placeholder">导入聊天记录 JSON 后在此预览</div>
-                        </div>
-                        <input type="file" id="mlabFileInput" accept=".json" style="display:none" onchange="mlabHandleFile(this)">
+                    <!-- 模式切换 segment control -->
+                    <div class="mlab-segment-control">
+                        <button class="mlab-segment active" id="mlabSegNarrative" onclick="mlabSwitchTestMode('narrative')">叙事元提取</button>
+                        <button class="mlab-segment" id="mlabSegDaily" onclick="mlabSwitchTestMode('daily')">当日总结</button>
                     </div>
-                    <div class="mlab-section">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div class="mlab-section-title" style="margin-bottom:0;">提取结果</div>
-                            <button class="mlab-btn mlab-btn-primary" onclick="mlabRunExtract()" id="mlabExtractBtn">提取叙事元</button>
+
+                    <!-- 叙事元提取模式（原有功能） -->
+                    <div id="mlabNarrativeMode">
+                        <div class="mlab-section">
+                            <div class="mlab-section-title">导入对话</div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="mlab-btn" onclick="mlabImportJson()" style="flex:1;">导入 JSON 文件</button>
+                                <button class="mlab-btn mlab-btn-outline" onclick="mlabClearTest()" style="flex:0 0 auto;">清空</button>
+                            </div>
+                            <div class="mlab-msg-preview" id="mlabInputPreview">
+                                <div class="mlab-placeholder">导入聊天记录 JSON 后在此预览</div>
+                            </div>
+                            <input type="file" id="mlabFileInput" accept=".json" style="display:none" onchange="mlabHandleFile(this)">
                         </div>
-                        <div class="mlab-msg-preview" id="mlabOutputPreview" style="margin-top: 8px;">
-                            <div class="mlab-placeholder">点击"提取叙事元"后在此显示结果</div>
+                        <div class="mlab-section">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="mlab-section-title" style="margin-bottom:0;">提取结果</div>
+                                <button class="mlab-btn mlab-btn-primary" onclick="mlabRunExtract()" id="mlabExtractBtn">提取叙事元</button>
+                            </div>
+                            <div class="mlab-msg-preview" id="mlabOutputPreview" style="margin-top: 8px;">
+                                <div class="mlab-placeholder">点击"提取叙事元"后在此显示结果</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 当日总结模式（新增） -->
+                    <div id="mlabDailyMode" style="display:none;">
+                        <div class="mlab-section">
+                            <div class="mlab-section-title">选择日期与助手</div>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="date" class="form-input" id="mlabDailyDate" style="flex:1;font-size:14px;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;">
+                                <button class="mlab-btn mlab-btn-primary" onclick="mlabFetchDailyMessages()" id="mlabDailyFetchBtn" style="flex:0 0 auto;white-space:nowrap;">拉取消息</button>
+                            </div>
+                            <div class="mlab-msg-preview" id="mlabDailyInputPreview" style="margin-top:10px;">
+                                <div class="mlab-placeholder">选择日期后点击「拉取消息」</div>
+                            </div>
+                        </div>
+                        <div class="mlab-section">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="mlab-section-title" style="margin-bottom:0;">总结结果</div>
+                                <div style="display:flex;gap:6px;">
+                                    <button class="mlab-btn mlab-btn-outline" onclick="mlabClearDailyResults()" style="font-size:12px;padding:8px 12px;">清空结果</button>
+                                    <button class="mlab-btn mlab-btn-primary" onclick="mlabRunDailySummary()" id="mlabDailySummaryBtn">生成当日总结</button>
+                                </div>
+                            </div>
+                            <div id="mlabDailyResults" style="margin-top: 8px;">
+                                <div class="mlab-placeholder">点击「生成当日总结」后在此显示结果</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1852,6 +1887,10 @@
                     <div class="mlab-section">
                         <div class="mlab-section-title">提取提示词</div>
                         <textarea class="form-textarea mlab-prompt-editor" id="mlabPromptEditor" rows="12" placeholder="输入提取叙事元的提示词..." onchange="mlabSaveConfig()"></textarea>
+                    </div>
+                    <div class="mlab-section">
+                        <div class="mlab-section-title">当日总结提示词</div>
+                        <textarea class="form-textarea mlab-prompt-editor" id="mlabDailySummaryPromptEditor" rows="12" placeholder="输入当日总结的提示词...&#10;可用变量：{date} 会替换为选择的日期" onchange="mlabSaveConfig()"></textarea>
                     </div>
                     <div class="mlab-section">
                         <div class="mlab-section-title">切分参数</div>
