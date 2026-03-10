@@ -54,7 +54,7 @@ function switchMemoryCoreTab(tab) {
     _mcCurrentTab = tab;
     document.getElementById('mcTabSummary').classList.toggle('active', tab === 'summary');
     document.getElementById('mcTabObservation').classList.toggle('active', tab === 'observation');
-    document.getElementById('mcSummaryPanel').style.display = tab === 'summary' ? 'block' : 'none';
+    document.getElementById('mcSummaryPanel').style.display = tab === 'summary' ? 'flex' : 'none';
     document.getElementById('mcObservationPanel').style.display = tab === 'observation' ? 'block' : 'none';
 
     if (tab === 'observation') {
