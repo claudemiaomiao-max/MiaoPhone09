@@ -16,10 +16,15 @@ let mlabExtractProgress = {};      // { assistantId: lastExtractedMsgIndex }
 let mlabLogs = [];                 // 内存中的日志缓存
 let mlabLogsLoaded = false;        // 是否已从 Supabase 加载过
 
+let mlabDailyMessages = null;   // 当日总结拉取的消息
+let mlabDailyResults = [];      // 当日总结测试结果列表（内存中，退出后丢弃）
+let mlabTestMode = 'narrative'; // 当前手动测试模式: 'narrative' | 'daily'
+
 let mlabConfig = {
     model: '',          // providerId||modelId
     temperature: 0.5,
     prompt: '',
+    dailySummaryPrompt: '', // 当日总结提示词
     silenceTimeout: 30, // 分钟
     msgLimit: 80,       // 消息累积上限
     minThreshold: 40,   // 最小条数门槛
@@ -42,6 +47,14 @@ function openMemoryLab() {
     document.getElementById('mlabTempSlider').value = mlabConfig.temperature;
     document.getElementById('mlabTempValue').textContent = mlabConfig.temperature;
     document.getElementById('mlabPromptEditor').value = mlabConfig.prompt || '';
+    document.getElementById('mlabDailySummaryPromptEditor').value = mlabConfig.dailySummaryPrompt || '';
+    // 日期选择器默认昨天
+    const yesterday = new Date(Date.now() - 86400000);
+    document.getElementById('mlabDailyDate').value = yesterday.toISOString().split('T')[0];
+    // 重置当日总结测试状态
+    mlabDailyMessages = null;
+    mlabDailyResults = [];
+    mlabTestMode = 'narrative';
     document.getElementById('mlabSilenceTimeout').value = mlabConfig.silenceTimeout;
     document.getElementById('mlabMsgLimit').value = mlabConfig.msgLimit;
     document.getElementById('mlabMinThreshold').value = mlabConfig.minThreshold;
@@ -95,6 +108,7 @@ function mlabSaveConfig() {
     mlabConfig.model = document.getElementById('mlabModelSelect').value;
     mlabConfig.temperature = parseFloat(document.getElementById('mlabTempSlider').value);
     mlabConfig.prompt = document.getElementById('mlabPromptEditor').value;
+    mlabConfig.dailySummaryPrompt = document.getElementById('mlabDailySummaryPromptEditor').value;
     mlabConfig.silenceTimeout = parseInt(document.getElementById('mlabSilenceTimeout').value) || 30;
     mlabConfig.msgLimit = parseInt(document.getElementById('mlabMsgLimit').value) || 80;
     mlabConfig.minThreshold = parseInt(document.getElementById('mlabMinThreshold').value) || 40;
@@ -2084,6 +2098,356 @@ async function mlabStartHistoryExtract() {
 function mlabStopHistoryExtract() {
     mlabHistoryAbort = true;
     document.getElementById('mlabHistoryStopBtn').textContent = '正在停止...';
+}
+
+// ==================== 当日总结 ====================
+
+// 切换手动测试模式
+function mlabSwitchTestMode(mode) {
+    mlabTestMode = mode;
+    document.getElementById('mlabSegNarrative').classList.toggle('active', mode === 'narrative');
+    document.getElementById('mlabSegDaily').classList.toggle('active', mode === 'daily');
+    document.getElementById('mlabNarrativeMode').style.display = mode === 'narrative' ? 'block' : 'none';
+    document.getElementById('mlabDailyMode').style.display = mode === 'daily' ? 'block' : 'none';
+}
+
+// 拉取选定日期的微信聊天记录
+async function mlabFetchDailyMessages() {
+    const dateStr = document.getElementById('mlabDailyDate').value;
+    if (!dateStr) {
+        alert('请先选择日期');
+        return;
+    }
+
+    const btn = document.getElementById('mlabDailyFetchBtn');
+    btn.disabled = true;
+    btn.textContent = '拉取中...';
+    const previewDiv = document.getElementById('mlabDailyInputPreview');
+
+    try {
+        // 确保 wechatData 已加载
+        await initWechatData();
+
+        const curAssistant = appData.assistants.find(a => a.id === wechatData?.currentAssistantId);
+        if (!curAssistant) {
+            previewDiv.innerHTML = '<div class="mlab-placeholder" style="color:#ef4444;">请先在微信模式中选择一个助手</div>';
+            return;
+        }
+
+        const conv = wechatData.conversations?.[curAssistant.id];
+        if (!conv || !conv.messages || conv.messages.length === 0) {
+            previewDiv.innerHTML = '<div class="mlab-placeholder" style="color:#ef4444;">该助手无聊天记录</div>';
+            return;
+        }
+
+        // 筛选当天消息（00:00:00 ~ 23:59:59）
+        const dayStart = new Date(dateStr + 'T00:00:00').getTime();
+        const dayEnd = new Date(dateStr + 'T23:59:59.999').getTime();
+
+        const dayMessages = conv.messages.filter(m => {
+            if (!m.timestamp) return false;
+            const ts = typeof m.timestamp === 'number' ? m.timestamp : new Date(m.timestamp).getTime();
+            return ts >= dayStart && ts <= dayEnd;
+        });
+
+        if (dayMessages.length === 0) {
+            mlabDailyMessages = null;
+            previewDiv.innerHTML = '<div class="mlab-placeholder">该日期无聊天记录</div>';
+            return;
+        }
+
+        mlabDailyMessages = dayMessages;
+
+        // 计算时间范围
+        const firstTs = typeof dayMessages[0].timestamp === 'number' ? dayMessages[0].timestamp : new Date(dayMessages[0].timestamp).getTime();
+        const lastTs = typeof dayMessages[dayMessages.length - 1].timestamp === 'number' ? dayMessages[dayMessages.length - 1].timestamp : new Date(dayMessages[dayMessages.length - 1].timestamp).getTime();
+        const timeRange = new Date(firstTs).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) + ' ~ ' + new Date(lastTs).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+        // 渲染预览
+        const aName = curAssistant.name || '助手';
+        const uName = appData.settings.userName || '用户';
+        const maxPreview = 100;
+        const msgs = dayMessages.slice(0, maxPreview);
+        let html = `<div style="font-size:12px;color:#7c3aed;margin-bottom:8px;font-weight:600;">共 ${dayMessages.length} 条消息 · ${timeRange}${dayMessages.length > maxPreview ? '（预览前100条）' : ''}</div>`;
+        msgs.forEach(m => {
+            const name = m.role === 'user' ? `<b style="color:#059669;">${escapeHtml(uName)}</b>` : `<b style="color:#7c3aed;">${escapeHtml(aName)}</b>`;
+            const content = (m.type === 'image' ? '[图片]' : (m.content || '')).substring(0, 100);
+            html += `<div style="margin-bottom:4px;">${name}: ${escapeHtml(content)}</div>`;
+        });
+        previewDiv.innerHTML = html;
+        console.log(`Memory Lab 当日总结: 拉取 ${dateStr} 共 ${dayMessages.length} 条消息`);
+    } catch(err) {
+        previewDiv.innerHTML = `<div style="color:#ef4444;padding:10px;">出错: ${escapeHtml(err.message)}</div>`;
+        console.error('Memory Lab 拉取当日消息失败:', err);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '拉取消息';
+    }
+}
+
+// 生成当日总结
+async function mlabRunDailySummary() {
+    if (!mlabDailyMessages || mlabDailyMessages.length === 0) {
+        alert('请先拉取当天的聊天记录');
+        return;
+    }
+    if (!mlabConfig.model) {
+        alert('请先在「配置」页选择总结模型');
+        return;
+    }
+    if (!mlabConfig.dailySummaryPrompt || mlabConfig.dailySummaryPrompt.trim().length < 10) {
+        alert('请先在配置中填写当日总结提示词');
+        return;
+    }
+
+    const btn = document.getElementById('mlabDailySummaryBtn');
+    btn.disabled = true;
+    btn.textContent = '生成中...';
+    const resultsDiv = document.getElementById('mlabDailyResults');
+    if (mlabDailyResults.length === 0) {
+        resultsDiv.innerHTML = '<div class="mlab-placeholder">正在调用总结模型...</div>';
+    }
+
+    try {
+        const dateStr = document.getElementById('mlabDailyDate').value;
+        const curAssistant = appData.assistants.find(a => a.id === wechatData?.currentAssistantId);
+        const assistantName = curAssistant?.name || '助手';
+        const userName = appData.settings.userName || '用户';
+
+        const [providerId, modelId] = mlabConfig.model.split('||');
+        const provider = appData.providers.find(p => p.id === providerId);
+        if (!provider) throw new Error('供应商未找到');
+
+        // 构建日期变量（YYYY/M/D 格式，与长期记忆一致）
+        const dateParts = dateStr.split('-');
+        const dateFormatted = `${dateParts[0]}/${parseInt(dateParts[1])}/${parseInt(dateParts[2])}`;
+
+        // 替换提示词中的 {date}
+        const prompt = mlabConfig.dailySummaryPrompt.replace(/\{date\}/g, dateFormatted);
+
+        // 构建消息文本
+        const dialogueText = mlabDailyMessages.map(m => {
+            const role = m.role === 'user' ? userName : assistantName;
+            const content = m.type === 'image' ? '[图片]' : (m.content || '');
+            return `${role}: ${content}`;
+        }).join('\n');
+
+        const fullContent = prompt + '\n\n---\n\n以下是聊天记录：\n\n' + dialogueText;
+
+        // 调用 API
+        const response = await fetch(provider.baseUrl + provider.apiPath, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + provider.apiKey
+            },
+            body: JSON.stringify({
+                model: modelId,
+                messages: [{ role: 'user', content: fullContent }],
+                temperature: mlabConfig.temperature
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errText.substring(0, 200)}`);
+        }
+
+        const result = await response.json();
+        const rawContent = result.choices?.[0]?.message?.content || '';
+        console.log('Memory Lab 当日总结原始输出:', rawContent.substring(0, 300));
+
+        // 解析 JSON
+        let parsed = null;
+        let jsonText = rawContent;
+        // 尝试提取 ```json``` 代码块
+        const codeBlockMatch = rawContent.match(/```json\s*([\s\S]*?)```/);
+        if (codeBlockMatch) jsonText = codeBlockMatch[1].trim();
+        // 尝试提取 JSON 对象
+        const objMatch = jsonText.match(/\{[\s\S]*\}/);
+        if (objMatch) jsonText = objMatch[0];
+
+        try {
+            parsed = JSON.parse(jsonText);
+        } catch(e) {
+            try {
+                const cleaned = mlabFixJsonQuotes(jsonText);
+                parsed = JSON.parse(cleaned);
+                console.log('Memory Lab 当日总结: JSON 兜底修复成功');
+            } catch(e2) {
+                console.warn('Memory Lab 当日总结: JSON 解析失败', e2.message);
+            }
+        }
+
+        // 构建结果对象
+        const modelName = provider.models?.find(m => m.id === modelId)?.name || modelId;
+        const resultEntry = {
+            date: dateStr,
+            generatedAt: new Date().toISOString(),
+            modelName: modelName,
+            modelId: mlabConfig.model,
+            parsed: parsed, // { date, daily_memory, observations }
+            rawContent: rawContent,
+            parseSuccess: !!parsed
+        };
+
+        // 追加到结果列表（最新在前）
+        mlabDailyResults.unshift(resultEntry);
+        mlabRenderDailyResults();
+
+    } catch(err) {
+        // 出错时在结果区显示错误
+        const errorEntry = {
+            date: document.getElementById('mlabDailyDate').value,
+            generatedAt: new Date().toISOString(),
+            modelName: '出错',
+            error: err.message
+        };
+        mlabDailyResults.unshift(errorEntry);
+        mlabRenderDailyResults();
+        console.error('Memory Lab 当日总结失败:', err);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '生成当日总结';
+    }
+}
+
+// 渲染当日总结结果列表
+function mlabRenderDailyResults() {
+    const container = document.getElementById('mlabDailyResults');
+    if (mlabDailyResults.length === 0) {
+        container.innerHTML = '<div class="mlab-placeholder">点击「生成当日总结」后在此显示结果</div>';
+        return;
+    }
+
+    let html = '';
+    mlabDailyResults.forEach((r, idx) => {
+        html += '<div class="mlab-daily-card">';
+        // header: 生成时间 + 模型
+        const time = new Date(r.generatedAt).toLocaleString('zh-CN');
+        html += `<div class="mlab-daily-card-header"><span>${time}</span><span class="mlab-daily-card-model">${escapeHtml(r.modelName)}</span></div>`;
+
+        if (r.error) {
+            html += `<div style="color:#ef4444;font-size:13px;padding:8px 0;">出错: ${escapeHtml(r.error)}</div>`;
+        } else if (r.parseSuccess && r.parsed) {
+            // daily_memory 区域
+            html += '<div class="mlab-daily-memory-block">';
+            html += '<div class="mlab-section-title">当日记忆</div>';
+            html += `<div class="mlab-daily-memory-text">${escapeHtml(r.parsed.daily_memory || '')}</div>`;
+            html += '</div>';
+
+            // observations 区域
+            const obs = r.parsed.observations || [];
+            if (obs.length > 0) {
+                html += '<div class="mlab-daily-obs-block">';
+                html += '<div class="mlab-section-title">观察区</div>';
+                obs.forEach(o => {
+                    const content = typeof o === 'string' ? o : (o.content || '');
+                    html += `<div class="mlab-daily-obs-item">${escapeHtml(content)}</div>`;
+                });
+                html += '</div>';
+            }
+
+            // 操作按钮
+            html += '<div class="mlab-daily-card-actions">';
+            html += `<button class="mlab-narrative-edit-btn" onclick="mlabCopyDailyJson(${idx})">复制 JSON</button>`;
+            html += `<button class="mlab-narrative-edit-btn primary" onclick="mlabSaveDailySummary(${idx})">保存为正式总结</button>`;
+            html += '</div>';
+        } else {
+            // 解析失败，显示原始内容
+            html += `<div style="color:#ef4444;font-size:12px;margin-bottom:6px;">JSON 解析失败，显示原始输出：</div>`;
+            html += `<button class="mlab-narrative-edit-btn" onclick="mlabCopyDailyJson(${idx})" style="margin-bottom:6px;">复制原始输出</button>`;
+            html += `<div class="mlab-raw-json">${escapeHtml(r.rawContent || '')}</div>`;
+        }
+
+        html += '</div>';
+    });
+
+    container.innerHTML = html;
+}
+
+// 复制当日总结 JSON
+function mlabCopyDailyJson(idx) {
+    const r = mlabDailyResults[idx];
+    const text = r.parseSuccess && r.parsed ? JSON.stringify(r.parsed, null, 2) : (r.rawContent || '');
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        const orig = btn.textContent;
+        btn.textContent = '已复制';
+        btn.style.color = '#7c3aed';
+        setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;left:-9999px;';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const btn = event.target;
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = '复制 JSON'; }, 1500);
+    });
+}
+
+// 保存为正式总结
+async function mlabSaveDailySummary(idx) {
+    const r = mlabDailyResults[idx];
+    if (!r || !r.parsed) {
+        alert('该结果解析失败，无法保存');
+        return;
+    }
+
+    const dateKey = r.date; // YYYY-MM-DD
+
+    // 初始化 dailySummaries
+    if (!appData.dailySummaries) appData.dailySummaries = {};
+
+    // 检查是否已有
+    if (appData.dailySummaries[dateKey]) {
+        if (!confirm(`${dateKey} 已有正式总结，是否覆盖？`)) return;
+    }
+
+    const now = new Date().toISOString();
+    appData.dailySummaries[dateKey] = {
+        date: dateKey,
+        daily_memory: r.parsed.daily_memory || '',
+        observations: r.parsed.observations || [],
+        model: r.modelId || r.modelName,
+        created_at: appData.dailySummaries[dateKey]?.created_at || now,
+        updated_at: now
+    };
+
+    saveData();
+    _cloudSyncDirty.appData = true;
+
+    // 同步到 Supabase
+    if (cloudSyncEnabled()) {
+        try {
+            await cloudUpsert('daily_summaries', appData.dailySummaries);
+        } catch(e) {
+            console.warn('当日总结云端同步失败:', e);
+        }
+    }
+
+    // toast 提示
+    const btn = event.target;
+    btn.textContent = '已保存';
+    btn.style.background = '#16a34a';
+    btn.style.borderColor = '#16a34a';
+    setTimeout(() => {
+        btn.textContent = '保存为正式总结';
+        btn.style.background = '';
+        btn.style.borderColor = '';
+    }, 2000);
+
+    console.log(`Memory Lab: 当日总结 ${dateKey} 已保存`);
+}
+
+// 清空当日总结测试结果
+function mlabClearDailyResults() {
+    mlabDailyResults = [];
+    document.getElementById('mlabDailyResults').innerHTML = '<div class="mlab-placeholder">点击「生成当日总结」后在此显示结果</div>';
 }
 
 // ==================== Memory Lab 结束 ====================
