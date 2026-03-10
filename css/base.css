@@ -1,0 +1,728 @@
+/* base.css - Global variables, reset, icons, layout framework, common components */
+
+/* ==================== 字体声明 ==================== */
+@font-face { font-family: "NaikaiFont"; src: url("../fonts/NaikaiFont-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "MoonStarsKai"; src: url("../fonts/MoonStarsKai-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "JasonHandwriting"; src: url("../fonts/JasonHandwriting1-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "PingfangShiguang"; src: url("../fonts/pingfangshiguang.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "cococheese"; src: url("../fonts/cococheese.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "ZLabsBitmap"; src: url("../fonts/ZLabsBitmap.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "ZZJmarkpen"; src: url("../fonts/ZZJmarkpen.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "KURIYAMAKOUCHI"; src: url("../fonts/KURIYAMAKOUCHIFONT_N.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+
+/* ==================== 全局重置与变量 ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-primary: #faf8f5;
+    --bg-secondary: #fff;
+    --bg-tertiary: #f5f0eb;
+    --bg-desktop: linear-gradient(135deg, #fdf6f9 0%, #f5ede8 50%, #faf5f0 100%);
+    --text-primary: #2d2d2d;
+    --text-secondary: #666;
+    --text-muted: #999;
+    --accent: #c9a8b8;
+    --accent-light: #e8d5de;
+    --accent-dark: #a8879a;
+    --border: #e5e0db;
+    --user-bubble: #d4c5b9;
+    --ai-bubble: #fff;
+    --shadow: rgba(0,0,0,0.08);
+    --shadow-lg: rgba(0,0,0,0.12);
+    --thinking-bg: #f9f5f7;
+    --chat-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --chat-font-size: 15px;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* ==================== 图标样式 ==================== */
+.icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 汉堡菜单图标 - 修复重叠问题 */
+.icon-menu {
+    width: 20px;
+    height: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.icon-menu span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--text-primary);
+    border-radius: 1px;
+    flex-shrink: 0;
+}
+
+/* 加号图标 - 修复错位 */
+.icon-plus {
+    width: 18px;
+    height: 18px;
+    position: relative;
+    display: inline-block;
+}
+.icon-plus::before,
+.icon-plus::after {
+    content: '';
+    position: absolute;
+    background: currentColor;
+    border-radius: 1px;
+}
+.icon-plus::before {
+    width: 2px;
+    height: 18px;
+    left: 8px;
+    top: 0;
+}
+.icon-plus::after {
+    width: 18px;
+    height: 2px;
+    top: 8px;
+    left: 0;
+}
+
+/* 复制图标 */
+.icon-copy {
+    width: 14px;
+    height: 16px;
+    position: relative;
+}
+.icon-copy::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 12px;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+}
+.icon-copy::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 12px;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    background: var(--bg-secondary);
+}
+
+/* 刷新图标 */
+.icon-refresh {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    position: relative;
+}
+.icon-refresh::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    right: 0;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 5px solid currentColor;
+    transform: rotate(45deg);
+}
+
+/* 编辑图标 */
+.icon-edit {
+    width: 14px;
+    height: 14px;
+    position: relative;
+}
+.icon-edit::before {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+    bottom: 0;
+    left: 0;
+}
+.icon-edit::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    background: currentColor;
+    top: 2px;
+    right: 0;
+    transform: rotate(-45deg);
+    transform-origin: right center;
+}
+
+/* 更多图标 */
+.icon-more {
+    display: flex;
+    gap: 3px;
+}
+.icon-more span {
+    width: 4px;
+    height: 4px;
+    background: currentColor;
+    border-radius: 50%;
+}
+
+/* 箭头图标 */
+.icon-arrow {
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.2s;
+}
+.icon-arrow.up {
+    transform: rotate(-135deg);
+}
+.icon-arrow.left {
+    transform: rotate(135deg);
+}
+
+/* 返回箭头 */
+.icon-back {
+    width: 10px;
+    height: 10px;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+}
+
+/* 退出图标 */
+.icon-exit {
+    width: 18px;
+    height: 18px;
+    position: relative;
+}
+.icon-exit::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 10px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-right: none;
+    border-radius: 3px 0 0 3px;
+}
+.icon-exit::after {
+    content: '';
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    width: 10px;
+    height: 2px;
+    background: currentColor;
+    transform: translateY(-50%);
+}
+
+/* ==================== PWA 全屏模式适配（仅添加到主屏幕后生效） ==================== */
+html.standalone body {
+    background: var(--bg-primary);
+}
+html.standalone .phone-container {
+    height: 100vh;
+}
+/* 顶部 safe-area：header 背景延伸到状态栏后面 */
+html.standalone .desktop {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+html.standalone .page-header {
+    padding: env(safe-area-inset-top, 0px) 16px 10px;
+}
+html.standalone .chat-header {
+    padding: env(safe-area-inset-top, 0px) 12px 8px;
+}
+html.standalone .wechat-chat-header {
+    padding: env(safe-area-inset-top, 0px) 12px 10px;
+}
+html.standalone .wechat-chat-header-center {
+    top: env(safe-area-inset-top, 0px);
+    bottom: 0;
+    padding-bottom: 10px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+/* 底部 safe-area：底部元素延伸到 Home Indicator 后面 */
+html.standalone .dock {
+    margin-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+html.standalone .chat-input-area {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html.standalone .wechat-input-area {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html.standalone .wechat-plus-panel {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html.standalone .insp-header {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 2px);
+}
+html.standalone .insp-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0px);
+}
+
+/* ==================== 页面层（设置、聊天等） ==================== */
+.page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-primary);
+    transform: translateX(100%);
+    transition: transform 0.3s ease, visibility 0s 0.3s;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    visibility: hidden;
+}
+
+.page.active {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.3s ease, visibility 0s 0s;
+}
+
+.page-header {
+    padding: 10px 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    min-height: 48px;
+}
+
+.page-back {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-dark);
+}
+
+.page-title {
+    flex: 1;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.page-action {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-dark);
+}
+
+.page-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+/* ==================== 通用按钮与图标 ==================== */
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: var(--bg-tertiary);
+}
+
+.btn-icon.danger:hover {
+    background: #fee;
+    color: #d32f2f;
+}
+
+/* 删除图标 */
+.icon-delete {
+    width: 14px;
+    height: 16px;
+    position: relative;
+}
+.icon-delete::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1.5px solid currentColor;
+    border-radius: 0 0 2px 2px;
+}
+.icon-delete::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 2px;
+    right: 2px;
+    height: 3px;
+    border: 1.5px solid currentColor;
+    border-bottom: none;
+    border-radius: 2px 2px 0 0;
+}
+
+/* ==================== 表单样式 ==================== */
+.form-section {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px var(--shadow);
+}
+
+.form-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    background: var(--bg-tertiary);
+    transition: all 0.2s;
+    font-family: inherit;
+}
+/* 全局模型选择器 - 限制下拉高度 */
+.form-select {
+    max-height: 200px;
+}
+#globalDefaultModel {
+    overflow-y: auto;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--bg-secondary);
+}
+
+.form-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: var(--accent-dark);
+}
+
+.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background: var(--border);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* ==================== 遮罩层 ==================== */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0s 0.3s;
+    z-index: 200;
+    pointer-events: none;
+}
+
+.overlay.show {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s, visibility 0s 0s;
+    pointer-events: auto;
+}
+
+/* ==================== 加载动画 ==================== */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+    30% {
+        transform: translateY(-8px);
+        opacity: 1;
+    }
+}
+
+/* ==================== 响应式 ==================== */
+@media (min-width: 768px) {
+    .phone-container {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        height: calc(100vh - 40px);
+        height: calc(100dvh - 40px);
+        border-radius: 40px;
+        box-shadow: 0 20px 60px var(--shadow-lg);
+    }
+}
+
+/* ==================== 弹窗/模态框 ==================== */
+.modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0s 0.3s;
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s, visibility 0s 0s;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.modal-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 20px;
+    color: var(--text-muted);
+}
+
+.modal-body {
+    padding: 16px;
+}
+
+.modal-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* ==================== 开关 ==================== */
+.switch {
+    width: 44px;
+    height: 24px;
+    background: var(--border);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.switch.on {
+    background: var(--accent);
+}
+
+.switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.switch.on::after {
+    transform: translateX(20px);
+}
+
+/* ==================== 滑块 ==================== */
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.slider-value {
+    min-width: 40px;
+    text-align: right;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* ==================== 空状态 ==================== */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+}
+
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state-text {
+    font-size: 14px;
+}
