@@ -92,6 +92,7 @@
     <link rel="stylesheet" href="css/api-mode.css">
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/wechat.css">
+    <link rel="stylesheet" href="css/memory-core.css">
 
     <!-- JS 模块：公共工具层 -->
     <script src="js/core/data.js"></script>
@@ -106,6 +107,7 @@
     <script src="js/modules/stt.js"></script>
     <script src="js/modules/file-upload.js"></script>
     <script src="js/modules/memory-lab.js"></script>
+    <script src="js/modules/memory-core.js"></script>
     <script src="js/modules/diary.js"></script>
     <script src="js/modules/inspiration.js"></script>
     <script src="js/modules/proactive.js"></script>
@@ -170,6 +172,12 @@
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h2M14 9h2M8 13h8" stroke-linecap="round"/></svg>
                     </div>
                     <span class="app-icon-label">碎碎念</span>
+                </div>
+                <div class="app-icon app-memory-core" onclick="openMemoryCoreApp()">
+                    <div class="app-icon-img">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    </div>
+                    <span class="app-icon-label">7秒以外</span>
                 </div>
             </div>
         </div>
@@ -1205,6 +1213,16 @@
                         聊天时自动检索向量记忆库，将相关记忆注入对话（需配置 SiliconFlow Key 和 Supabase）
                     </div>
                 </div>
+                <!-- 当日总结注入 -->
+                <div class="wechat-settings-section">
+                    <div class="wechat-settings-item">
+                        <span class="wechat-settings-label">注入当日总结</span>
+                        <div class="switch" id="wechatDailySummaryInject" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div style="padding: 8px 16px; font-size: 12px; color: #999;">
+                        将「7秒以外」中的当日总结记忆注入聊天上下文
+                    </div>
+                </div>
                 <div class="wechat-settings-section">
                     <div class="wechat-settings-item" onclick="exportWechatChat()">
                         <span class="wechat-settings-label">导出聊天记录</span>
@@ -1725,6 +1743,44 @@
                 <div class="vc-save-btns" id="vcSaveBtns">
                     <button class="vc-save-btn discard" onclick="vcDiscardCall()">不保存</button>
                     <button class="vc-save-btn save" onclick="vcSaveCall()">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7秒以外 · 记忆核心 App -->
+        <div class="page" id="memoryCoreAppPage">
+            <div class="page-header" style="background: linear-gradient(135deg, #f59e0b, #ef4444); border: none;">
+                <button class="page-back" onclick="closeMemoryCoreApp()" style="color: #fff;">
+                    <span class="icon-back"></span>
+                </button>
+                <span class="page-title" style="color: #fff;">7秒以外</span>
+                <div style="width: 36px;"></div>
+            </div>
+            <!-- Tab 栏 -->
+            <div class="mc-tabs">
+                <button class="mc-tab active" id="mcTabSummary" onclick="switchMemoryCoreTab('summary')">当日总结</button>
+                <button class="mc-tab" id="mcTabObservation" onclick="switchMemoryCoreTab('observation')">观察区</button>
+            </div>
+            <!-- 当日总结面板 -->
+            <div id="mcSummaryPanel" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <!-- 顶部操作区 -->
+                <div class="mc-toolbar">
+                    <input type="date" id="mcDateInput">
+                    <button class="mc-generate-btn" id="mcGenerateBtn" onclick="mcGenerateSummary()">生成总结</button>
+                    <div class="mc-toolbar-row">
+                        <span>注入条数</span>
+                        <input type="number" id="mcInjectCount" min="1" max="50" value="15" onchange="mcSaveSettings()">
+                    </div>
+                </div>
+                <!-- 卡片流 -->
+                <div class="mc-panel" id="mcSummaryCards">
+                    <div class="mc-empty">还没有当日总结<br>选择日期后点击「生成总结」</div>
+                </div>
+            </div>
+            <!-- 观察区面板 -->
+            <div id="mcObservationPanel" class="mc-panel" style="display: none; flex: 1;">
+                <div id="mcObservationCards">
+                    <div class="mc-empty">还没有观察记录<br>生成当日总结后会自动提取</div>
                 </div>
             </div>
         </div>
