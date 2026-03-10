@@ -142,6 +142,10 @@ async function pushAppDataToCloud() {
         records.push({ key: 'app_providers', value: appData.providers, updated_at: now });
         // 对话列表 + 当前状态
         records.push({ key: 'app_conversations', value: { conversations: appData.conversations, currentConversationId: appData.currentConversationId, currentAssistantId: appData.currentAssistantId }, updated_at: now });
+        // 当日总结
+        if (appData.dailySummaries && Object.keys(appData.dailySummaries).length > 0) {
+            records.push({ key: 'daily_summaries', value: appData.dailySummaries, updated_at: now });
+        }
         // 每个对话的消息（剥离图片）
         const strippedMessages = cloudStripApiAttachments(appData.messages);
         for (const convId of Object.keys(strippedMessages)) {
@@ -291,6 +295,10 @@ async function cloudPullFromCloud() {
             appData.conversations = dataMap['app_conversations'].conversations || [];
             appData.currentConversationId = dataMap['app_conversations'].currentConversationId;
             appData.currentAssistantId = dataMap['app_conversations'].currentAssistantId;
+        }
+        // 恢复当日总结
+        if (dataMap['daily_summaries']) {
+            appData.dailySummaries = dataMap['daily_summaries'];
         }
         // 恢复消息
         appData.messages = {};
