@@ -2,19 +2,8 @@
  * utils/markdown.js - Markdown 渲染和消息内容格式化
  *
  * 暴露函数：formatMessageContent, copyCodeBlock
- * 依赖：escapeHtml (ui.js), stripInterjectionsAlways (tts.js，临时内置副本)
- *
- * 注意：stripInterjectionsAlways 的临时副本，等 tts.js 拆出来后删除此处副本
+ * 依赖：escapeHtml (ui.js), stripInterjectionsAlways (modules/tts.js)
  */
-
-// 临时副本 —— 等 modules/tts.js 拆出来后删除这里的定义
-// tts.js 拆出后会定义全局的 stripInterjectionsAlways，届时删除此处即可
-if (typeof stripInterjectionsAlways === 'undefined') {
-    function stripInterjectionsAlways(text) {
-        return text.replace(/\((laughs|chuckle|coughs|clear-throat|groans|breath|pant|inhale|exhale|gasps|sniffs|sighs|snorts|burps|lip-smacking|humming|hissing|emm|whistles|sneezes|crying|applause)\)/gi, '');
-    }
-    window.stripInterjectionsAlways = stripInterjectionsAlways;
-}
 
 function formatMessageContent(content, useMarkdown = true) {
     if (!content) return '';
