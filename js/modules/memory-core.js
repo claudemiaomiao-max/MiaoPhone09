@@ -304,22 +304,45 @@ function mcRenderSummaryCards() {
 // ==================== 卡片编辑/删除 ====================
 
 function mcEditCard(cardId) {
-    const card = appData.dailySummaryCards.find(c => c.id === cardId);
-    if (!card) return;
+    try {
+        const card = appData.dailySummaryCards.find(c => c.id === cardId);
+        if (!card) return;
 
-    const contentDiv = document.getElementById('mc-content-' + cardId);
-    contentDiv.innerHTML = `<textarea class="mc-edit-textarea" id="mc-edit-${cardId}">${escapeHtml(card.daily_memory || '')}</textarea>
-        <div class="mc-edit-actions">
-            <button class="mc-btn-sm" onclick="mcSaveCardEdit('${cardId}')">保存</button>
-            <button class="mc-btn-sm" onclick="mcCancelCardEdit('${cardId}')">取消</button>
-        </div>`;
+        const contentDiv = document.getElementById('mc-content-' + cardId);
+        if (!contentDiv) return;
+
+        // 清空并用 DOM API 创建元素（避免 innerHTML + textarea 在 iOS 上的问题）
+        contentDiv.textContent = '';
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'mc-edit-textarea';
+        textarea.value = card.daily_memory || '';
+        contentDiv.appendChild(textarea);
+
+        const actions = document.createElement('div');
+        actions.className = 'mc-edit-actions';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'mc-btn-sm';
+        saveBtn.textContent = '保存';
+        saveBtn.addEventListener('click', function() { mcSaveCardEdit(cardId, textarea); });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'mc-btn-sm';
+        cancelBtn.textContent = '取消';
+        cancelBtn.addEventListener('click', function() { mcRenderSummaryCards(); });
+
+        actions.appendChild(saveBtn);
+        actions.appendChild(cancelBtn);
+        contentDiv.appendChild(actions);
+    } catch(e) {
+        console.error('[记忆核心] 编辑卡片出错:', e);
+    }
 }
 
-function mcSaveCardEdit(cardId) {
+function mcSaveCardEdit(cardId, textarea) {
     const card = appData.dailySummaryCards.find(c => c.id === cardId);
-    if (!card) return;
-    const textarea = document.getElementById('mc-edit-' + cardId);
-    if (!textarea) return;
+    if (!card || !textarea) return;
 
     card.daily_memory = textarea.value;
     saveData();
@@ -394,22 +417,44 @@ function mcRenderObservationCards() {
 }
 
 function mcEditObs(obsId) {
-    const obs = appData.observationCards.find(o => o.id === obsId);
-    if (!obs) return;
+    try {
+        const obs = appData.observationCards.find(o => o.id === obsId);
+        if (!obs) return;
 
-    const contentDiv = document.getElementById('mc-obs-content-' + obsId);
-    contentDiv.innerHTML = `<textarea class="mc-edit-textarea mc-edit-obs-textarea" id="mc-edit-obs-${obsId}">${escapeHtml(obs.content || '')}</textarea>
-        <div class="mc-edit-actions">
-            <button class="mc-btn-sm" onclick="mcSaveObsEdit('${obsId}')">保存</button>
-            <button class="mc-btn-sm" onclick="mcCancelObsEdit()">取消</button>
-        </div>`;
+        const contentDiv = document.getElementById('mc-obs-content-' + obsId);
+        if (!contentDiv) return;
+
+        contentDiv.textContent = '';
+
+        const textarea = document.createElement('textarea');
+        textarea.className = 'mc-edit-textarea mc-edit-obs-textarea';
+        textarea.value = obs.content || '';
+        contentDiv.appendChild(textarea);
+
+        const actions = document.createElement('div');
+        actions.className = 'mc-edit-actions';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'mc-btn-sm';
+        saveBtn.textContent = '保存';
+        saveBtn.addEventListener('click', function() { mcSaveObsEdit(obsId, textarea); });
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'mc-btn-sm';
+        cancelBtn.textContent = '取消';
+        cancelBtn.addEventListener('click', function() { mcRenderObservationCards(); });
+
+        actions.appendChild(saveBtn);
+        actions.appendChild(cancelBtn);
+        contentDiv.appendChild(actions);
+    } catch(e) {
+        console.error('[记忆核心] 编辑观察出错:', e);
+    }
 }
 
-function mcSaveObsEdit(obsId) {
+function mcSaveObsEdit(obsId, textarea) {
     const obs = appData.observationCards.find(o => o.id === obsId);
-    if (!obs) return;
-    const textarea = document.getElementById('mc-edit-obs-' + obsId);
-    if (!textarea) return;
+    if (!obs || !textarea) return;
 
     obs.content = textarea.value;
     saveData();
