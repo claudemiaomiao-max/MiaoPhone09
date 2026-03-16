@@ -93,6 +93,7 @@
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/wechat.css">
     <link rel="stylesheet" href="css/memory-core.css">
+    <link rel="stylesheet" href="css/partner-editor.css">
 
     <!-- JS 模块：公共工具层 -->
     <script src="js/core/data.js"></script>
@@ -110,6 +111,7 @@
     <script src="js/modules/memory-core.js"></script>
     <script src="js/modules/diary.js"></script>
     <script src="js/modules/inspiration.js"></script>
+    <script src="js/modules/partner-editor.js"></script>
     <script src="js/modules/proactive.js"></script>
     <script src="js/settings/display.js"></script>
     <script src="js/settings/thinking.js"></script>
@@ -172,6 +174,12 @@
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h2M14 9h2M8 13h8" stroke-linecap="round"/></svg>
                     </div>
                     <span class="app-icon-label">碎碎念</span>
+                </div>
+                <div class="app-icon app-soft-spot" onclick="openPartnerEditor()">
+                    <div class="app-icon-img">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                    <span class="app-icon-label">Soft Spot</span>
                 </div>
                 <div class="app-icon app-memory-core" onclick="openMemoryCoreApp()">
                     <div class="app-icon-img">
@@ -339,6 +347,13 @@
                         </div>
                         <div style="margin-top: 12px; padding: 8px 12px; background: var(--bg-tertiary); border-radius: 8px; font-size: 12px; color: #888;" id="cloudSyncStatus">
                             未配置
+                        </div>
+                        <div style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; padding: 8px 0;">
+                            <span style="font-size: 14px; color: #333;">暂停同步</span>
+                            <input type="checkbox" id="cloudSyncPausedToggle" onchange="toggleCloudSyncPaused()" style="width: 44px; height: 24px; accent-color: #f57c00; cursor: pointer;">
+                        </div>
+                        <div id="cloudSyncPausedWarning" style="display: none; margin-top: 4px; padding: 8px 12px; background: #fff3e0; border: 1px solid #ffcc80; border-radius: 8px; font-size: 12px; color: #e65100;">
+                            ⚠️ 云端同步已暂停，数据仅保存在本地
                         </div>
                         <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
                             <button onclick="cloudSyncNow()" style="flex: 1; min-width: 80px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 8px; background: white; font-size: 13px; cursor: pointer;">立即同步</button>
@@ -1999,6 +2014,18 @@
         </div>
 
         <!-- 碎碎念页面 -->
+        <!-- Soft Spot 人格编辑页面 -->
+        <div class="page" id="partnerEditorPage">
+            <div class="partner-editor-page">
+                <div class="pe-header">
+                    <button class="page-back" onclick="closePartnerEditor()"><svg width="28" height="28" viewBox="0 0 100 100" fill="#c0a8d8" style="image-rendering:pixelated"><path d="m5.5547 83.332h-5.5547v-72.223h5.5547zm0-72.223v-5.5547h5.5547v5.5547zm5.5547-5.5547v-5.5547h77.777v5.5547zm77.777 0h5.5547v5.5547h-5.5547zm5.5547 5.5547h5.5547v72.223h-5.5547zm0 72.223v11.109h-11.109v5.5547h-66.668v-5.5547h-11.109v-11.109h11.109v5.5547h66.668v-5.5547zm-72.918-61.805v9.3047h-9.3047v-9.3047zv-9.3047h9.3047v9.3047zm8.1953 22.918v-5.5547h5.5547v-5.5547h5.5547v-5.5547h5.5547v15h27.777v1.668h1.668v11.109h-1.668v1.668h-27.777v15h-5.5547v-5.5547h-5.5547v-5.5547h-5.5547v-5.5547h-5.5547v-11.109h5.5547z" fill-rule="evenodd"/></svg></button>
+                    <div class="pe-header-title">Soft Spot</div>
+                </div>
+                <div class="pe-content" id="peContent">
+                </div>
+            </div>
+        </div>
+
         <div class="page" id="inspirationPage">
             <div class="insp-page">
                 <div class="insp-header">

@@ -25,6 +25,25 @@ function cloudSyncEnabled() {
     return !!(appData.settings.supabaseUrl && appData.settings.supabaseKey);
 }
 
+// 同步暂停开关：为 true 时跳过所有推送和拉取
+function isCloudSyncPaused() {
+    return !!appData.settings.cloudSyncPaused;
+}
+
+function toggleCloudSyncPaused() {
+    appData.settings.cloudSyncPaused = !appData.settings.cloudSyncPaused;
+    saveData();
+    updateCloudSyncPausedUI();
+    updateCloudSyncStatusDisplay();
+}
+
+function updateCloudSyncPausedUI() {
+    const toggle = document.getElementById('cloudSyncPausedToggle');
+    if (toggle) toggle.checked = !!appData.settings.cloudSyncPaused;
+    const warning = document.getElementById('cloudSyncPausedWarning');
+    if (warning) warning.style.display = appData.settings.cloudSyncPaused ? 'block' : 'none';
+}
+
 function saveSupabaseConfig() {
     let url = (document.getElementById('supabaseUrlInput').value || '').trim();
     if (url.endsWith('/')) url = url.replace(/\/+$/, '');
@@ -128,7 +147,7 @@ function cloudStripApiAttachments(messagesMap) {
 
 // 推送 appData 到云端
 async function pushAppDataToCloud() {
-    if (!cloudSyncEnabled() || _cloudSyncPushingFlags.appData) return;
+    if (!cloudSyncEnabled() || isCloudSyncPaused() || _cloudSyncPushingFlags.appData) return;
     _cloudSyncPushingFlags.appData = true;
     updateCloudSyncStatusDisplay('syncing');
     try {
@@ -156,6 +175,10 @@ async function pushAppDataToCloud() {
         if (appData.dailySummarySettings) {
             records.push({ key: 'daily_summary_settings', value: appData.dailySummarySettings, updated_at: now });
         }
+        // Partner 数据
+        if (appData.partner) {
+            records.push({ key: 'app_partner', value: appData.partner, updated_at: now });
+        }
         // 每个对话的消息（剥离图片）
         const strippedMessages = cloudStripApiAttachments(appData.messages);
         for (const convId of Object.keys(strippedMessages)) {
@@ -175,7 +198,7 @@ async function pushAppDataToCloud() {
 
 // 推送 wechatData 到云端
 async function pushWechatDataToCloud() {
-    if (!cloudSyncEnabled() || _cloudSyncPushingFlags.wechatData) return;
+    if (!cloudSyncEnabled() || isCloudSyncPaused() || _cloudSyncPushingFlags.wechatData) return;
     _cloudSyncPushingFlags.wechatData = true;
     updateCloudSyncStatusDisplay('syncing');
     try {
@@ -202,7 +225,7 @@ async function pushWechatDataToCloud() {
 
 // 推送 voiceCallData 到云端
 async function pushVoiceCallDataToCloud() {
-    if (!cloudSyncEnabled() || _cloudSyncPushingFlags.voiceCallData) return;
+    if (!cloudSyncEnabled() || isCloudSyncPaused() || _cloudSyncPushingFlags.voiceCallData) return;
     _cloudSyncPushingFlags.voiceCallData = true;
     updateCloudSyncStatusDisplay('syncing');
     try {
@@ -226,7 +249,7 @@ async function pushVoiceCallDataToCloud() {
 
 // 推送有变化的数据到云端（由定时器或 visibilitychange 调用）
 async function cloudPushDirty() {
-    if (!cloudSyncEnabled()) return;
+    if (!cloudSyncEnabled() || isCloudSyncPaused()) return;
     if (getLocalDataStats().total === 0) { console.warn('[云端同步] 本地数据为空，跳过自动推送'); return; }
     if (_cloudSyncDirty.appData) { _cloudSyncDirty.appData = false; await pushAppDataToCloud(); }
     if (_cloudSyncDirty.wechatData) { _cloudSyncDirty.wechatData = false; await pushWechatDataToCloud(); }
@@ -243,7 +266,7 @@ function cloudStartInterval() {
 
 // 推送 diaryData 到云端
 async function pushDiaryDataToCloud() {
-    if (!cloudSyncEnabled() || _cloudSyncPushingFlags.diaryData) return;
+    if (!cloudSyncEnabled() || isCloudSyncPaused() || _cloudSyncPushingFlags.diaryData) return;
     _cloudSyncPushingFlags.diaryData = true;
     try {
         const now = new Date().toISOString();
@@ -266,7 +289,7 @@ async function pushDiaryDataToCloud() {
 
 // 推送碎碎念数据到云端
 async function pushInspirationDataToCloud() {
-    if (!cloudSyncEnabled() || _cloudSyncPushingFlags.inspirationData) return;
+    if (!cloudSyncEnabled() || isCloudSyncPaused() || _cloudSyncPushingFlags.inspirationData) return;
     _cloudSyncPushingFlags.inspirationData = true;
     try {
         const now = new Date().toISOString();
@@ -286,6 +309,7 @@ async function pushInspirationDataToCloud() {
 // 从云端拉取全部数据并恢复
 async function cloudPullFromCloud() {
     if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
+    if (isCloudSyncPaused()) { alert('云端同步已暂停，请先关闭暂停开关'); return; }
     if (!confirm('从云端恢复数据会覆盖当前本地数据，确定要继续吗？')) return;
     updateCloudSyncStatusDisplay('syncing');
     try {
@@ -319,6 +343,10 @@ async function cloudPullFromCloud() {
         }
         if (dataMap['daily_summary_settings']) {
             appData.dailySummarySettings = dataMap['daily_summary_settings'];
+        }
+        // 恢复 partner
+        if (dataMap['app_partner']) {
+            appData.partner = { ...appData.partner, ...dataMap['app_partner'] };
         }
         // 恢复消息
         appData.messages = {};
@@ -444,6 +472,7 @@ async function getCloudDataStats() {
 // 一键上传全部本地数据到云端
 async function cloudMigrateToCloud() {
     if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
+    if (isCloudSyncPaused()) { alert('云端同步已暂停，请先关闭暂停开关'); return; }
     await cloudEnsureAllDataLoaded();
     const local = getLocalDataStats();
     const cloud = await getCloudDataStats();
@@ -475,6 +504,7 @@ async function cloudMigrateToCloud() {
 // 立即同步
 async function cloudSyncNow() {
     if (!cloudSyncEnabled()) { alert('请先配置 Supabase 地址和 Key'); return; }
+    if (isCloudSyncPaused()) { alert('云端同步已暂停，请先关闭暂停开关'); return; }
     try {
         await cloudEnsureAllDataLoaded();
         const local = getLocalDataStats();
@@ -501,6 +531,11 @@ function updateCloudSyncStatusDisplay(status, detail) {
     if (!cloudSyncEnabled()) {
         el.textContent = '未配置';
         el.style.color = '#888';
+        return;
+    }
+    if (isCloudSyncPaused()) {
+        el.textContent = '⏸ 同步已暂停';
+        el.style.color = '#f57c00';
         return;
     }
     if (status === 'syncing') {

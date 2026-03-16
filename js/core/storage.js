@@ -188,6 +188,7 @@ async function loadData() {
         if (saved) {
             appData = { ...appData, ...saved };
             migrateTtsSettings();
+            migratePartner();
             _appDataLoaded = true;
             return;
         }
@@ -197,8 +198,34 @@ async function loadData() {
     if (saved) {
         appData = { ...appData, ...JSON.parse(saved) };
         migrateTtsSettings();
+        migratePartner();
     }
     _appDataLoaded = true;
+}
+
+// 确保 partner 字段存在（旧数据兼容）
+function migratePartner() {
+    if (!appData.partner) {
+        appData.partner = {
+            id: 'partner_default',
+            version: 1,
+            profile: { name: '', avatar: '', signature: '' },
+            soul: '',
+            user: '',
+            bond: '',
+            rules: '',
+            model: { providerId: '', defaultModel: '', temperature: 0.7, maxTokens: 0 },
+            voice: { ttsEngine: 'edge', voiceId: '', edgeVoiceId: '', emotionMapping: true },
+            memory: { vectorMemoryEnabled: false, longTermMemoryEnabled: false, memoryEntries: [] },
+            consciousness: { enabled: false, heartbeatInterval: 300, explorationEnabled: false, activeHours: { start: 8, end: 23 } },
+            tools: { searchEnabled: false, browseEnabled: false, summaryEnabled: false }
+        };
+    }
+    // 确保子字段存在
+    if (!appData.partner.profile) appData.partner.profile = { name: '', avatar: '', signature: '' };
+    if (!appData.partner.model) appData.partner.model = { providerId: '', defaultModel: '', temperature: 0.7, maxTokens: 0 };
+    if (!appData.partner.voice) appData.partner.voice = { ttsEngine: 'edge', voiceId: '', edgeVoiceId: '', emotionMapping: true };
+    if (!appData.partner.memory) appData.partner.memory = { vectorMemoryEnabled: false, longTermMemoryEnabled: false, memoryEntries: [] };
 }
 
 // 确保 ttsSettings 有新字段（旧数据兼容）

@@ -299,7 +299,8 @@ async function addInspirationItem(content, tag, url, source, msgId, assistantId)
         source: source || 'external',
         sourceMsgId: msgId || null,
         sourceAssistantId: assistantId || null,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        replies: []
     };
     inspirationData.items.unshift(item); // 新的在前
     saveInspirationData();

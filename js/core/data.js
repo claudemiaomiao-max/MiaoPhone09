@@ -13,6 +13,47 @@ let appData = {
     messages: {},
     currentConversationId: null,
     currentAssistantId: null,
+    partner: {
+        id: 'partner_default',
+        version: 1,
+        profile: {
+            name: '',
+            avatar: '',
+            signature: ''
+        },
+        soul: '',
+        user: '',
+        bond: '',
+        rules: '',
+        model: {
+            providerId: '',
+            defaultModel: '',
+            temperature: 0.7,
+            maxTokens: 0
+        },
+        voice: {
+            ttsEngine: 'edge',
+            voiceId: '',
+            edgeVoiceId: '',
+            emotionMapping: true
+        },
+        memory: {
+            vectorMemoryEnabled: false,
+            longTermMemoryEnabled: false,
+            memoryEntries: []
+        },
+        consciousness: {
+            enabled: false,
+            heartbeatInterval: 300,
+            explorationEnabled: false,
+            activeHours: { start: 8, end: 23 }
+        },
+        tools: {
+            searchEnabled: false,
+            browseEnabled: false,
+            summaryEnabled: false
+        }
+    },
     settings: {
         thinkingLevel: 'medium' // off, auto, low, medium, high
     },

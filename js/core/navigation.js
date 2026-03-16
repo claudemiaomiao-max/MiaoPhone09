@@ -34,6 +34,7 @@ function openSettings() {
     const supabaseKeyInput = document.getElementById('supabaseKeyInput');
     if (supabaseUrlInput) supabaseUrlInput.value = appData.settings.supabaseUrl || '';
     if (supabaseKeyInput) supabaseKeyInput.value = appData.settings.supabaseKey || '';
+    updateCloudSyncPausedUI();
     updateCloudSyncStatusDisplay();
     openPage('settingsPage');
 }
