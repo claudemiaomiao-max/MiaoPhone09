@@ -2,7 +2,7 @@
 
 /* 主屏图标 */
 .app-soft-spot .app-icon-img {
-    background: linear-gradient(135deg, #e8a0c0 0%, #c0a8d8 100%);
+    background: linear-gradient(135deg, #a0c4e8 0%, #8ab0d8 100%);
 }
 
 /* ==================== Soft Spot 页面 ==================== */
@@ -11,19 +11,19 @@
     flex-direction: column;
     height: 100%;
     background:
-        repeating-linear-gradient(0deg, transparent, transparent 7px, #ddd0e8 7px, #ddd0e8 8px),
-        repeating-linear-gradient(90deg, transparent, transparent 7px, #ddd0e8 7px, #ddd0e8 8px),
-        #faf8fd;
-    --pe-bg: #faf8fd;
-    --pe-cream: #fdf8f0;
-    --pe-pink: #f8e2ea;
-    --pe-purple: #c0a8d8;
-    --pe-purple-lt: #ddd0e8;
-    --pe-purple-dk: #a888c0;
-    --pe-txt: #b098c8;
-    --pe-txt-dk: #6a5880;
-    --pe-txt-body: #7a6890;
-    --pe-txt-lt: #c8b8d8;
+        repeating-linear-gradient(0deg, transparent, transparent 7px, #c8d8e8 7px, #c8d8e8 8px),
+        repeating-linear-gradient(90deg, transparent, transparent 7px, #c8d8e8 7px, #c8d8e8 8px),
+        #f5f8fd;
+    --pe-bg: #f5f8fd;
+    --pe-cream: #f0f5fa;
+    --pe-pink: #dce8f4;
+    --pe-purple: #8ab0d8;
+    --pe-purple-lt: #c8d8e8;
+    --pe-purple-dk: #6a98c8;
+    --pe-txt: #90a8c8;
+    --pe-txt-dk: #4a6888;
+    --pe-txt-body: #5a7898;
+    --pe-txt-lt: #a8c0d8;
 }
 
 /* Header */
@@ -31,12 +31,13 @@
     display: flex;
     align-items: center;
     padding: 8px 12px;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
     background: var(--pe-pink);
     border-bottom: 2px dashed var(--pe-purple);
     gap: 12px;
     flex-shrink: 0;
 }
-.pe-header .page-back { color: var(--pe-purple); }
+.pe-header .page-back { color: var(--pe-purple-dk); }
 .pe-header-title {
     flex: 1;
     font-size: 18px;
@@ -476,7 +477,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
     padding: 10px 24px;
-    background: rgba(106, 88, 128, 0.85);
+    background: rgba(74, 104, 136, 0.85);
     color: #fff;
     border-radius: 8px;
     font-size: 13px;
