@@ -805,10 +805,6 @@
   {"type":"voice_message","content":"...","emotion":"..."}
 ]`;
 
-            // 时间感知
-            const now = new Date();
-            const timeStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-            systemPrompt += `\n\n【当前时间】${timeStr}`;
 
             // 长期记忆
             const conv = wechatData.conversations?.[vcState.assistantId];
@@ -931,6 +927,11 @@
                 const speaker = m.role === 'user' ? '用户' : assistantName;
                 fullContent += `${speaker}: ${m.content}\n`;
             });
+
+            // 把当前时间加到末尾（避免污染前面大段稳定内容导致缓存不命中）
+            const now = new Date();
+            const vcTimeStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+            fullContent += `\n【当前时间】${vcTimeStr}`;
 
             return [{ role: 'user', content: fullContent }];
         }

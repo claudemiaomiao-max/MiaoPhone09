@@ -187,10 +187,6 @@
             // 系统提示词
             let systemContent = assistant.systemPrompt || '';
             // 注入当前时间
-            const now = new Date();
-            const timeStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-            const weekDays = ['日','一','二','三','四','五','六'];
-            systemContent += `\n\n【当前时间】${timeStr} 星期${weekDays[now.getDay()]}`;
             if (assistant.memoryEnabled && assistant.memories && assistant.memories.length > 0) {
                 systemContent += '\n\n【记忆】\n' + assistant.memories.join('\n');
             }
@@ -314,6 +310,24 @@
                     messages.push({ role: m.role || 'user', content: '[消息解析失败]' });
                 }
             });
+
+            // 把当前时间加到最后一条 user 消息里（避免污染 system prompt 导致缓存不命中）
+            const now = new Date();
+            const timeStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+            const weekDays = ['日','一','二','三','四','五','六'];
+            const timeLine = `【当前时间】${timeStr} 星期${weekDays[now.getDay()]}`;
+            for (let i = messages.length - 1; i >= 0; i--) {
+                if (messages[i].role === 'user') {
+                    if (typeof messages[i].content === 'string') {
+                        messages[i].content = timeLine + '\n' + messages[i].content;
+                    } else if (Array.isArray(messages[i].content)) {
+                        const textPart = messages[i].content.find(p => p.type === 'text');
+                        if (textPart) textPart.text = timeLine + '\n' + textPart.text;
+                        else messages[i].content.unshift({ type: 'text', text: timeLine });
+                    }
+                    break;
+                }
+            }
 
             return messages;
         }

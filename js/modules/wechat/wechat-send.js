@@ -430,15 +430,6 @@ JSON数组的【第一个元素】必须是思维链对象：
             // 时间感知（单一开关）
             const timeAwareEnabled = settings.timeAware !== false; // 默认开启
 
-            if (timeAwareEnabled) {
-                const now = new Date();
-                const timeStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
-                const timeOfDay = getTimeOfDayGreeting(now);
-                systemPart += `\n\n【时间感知】
-当前时间: ${timeStr} (${timeOfDay})
-你能看到每条消息的时间戳。像一个真正生活在用户身边的人一样，自然地感知时间流逝。`;
-            }
-
             // 添加长期记忆（如果开关开启且有记忆）
             const longTermMemory = settings.longTermMemory || [];
             if (settings.longTermMemoryEnabled !== false && longTermMemory.length > 0) {
@@ -744,6 +735,14 @@ ${memoryText}`;
                 const skippedCount = totalImageCount - images.length;
                 fullContent = fullContent.replace('=====对话记录=====\n',
                     `=====对话记录=====\n[注：历史中共有${totalImageCount}张图片，为节省空间只保留最近${images.length}张，其余${skippedCount}张用文字标记]\n`);
+            }
+
+            // 把当前时间加到末尾（避免污染前面大段稳定内容导致缓存不命中）
+            if (timeAwareEnabled) {
+                const now = new Date();
+                const nowStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+                const timeOfDay = getTimeOfDayGreeting(now);
+                fullContent += `[当前时间: ${nowStr} (${timeOfDay})]\n`;
             }
 
             fullContent += '=====\n';
