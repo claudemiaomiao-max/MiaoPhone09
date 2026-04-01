@@ -801,8 +801,9 @@ ${memoryText}`;
 
         // 修复JSON中的中文标点（模型有时会输出中文引号/逗号/冒号）
         function fixChinesePunctuation(text) {
-            // 第一步：把中文引号统一替换为英文引号
-            let fixed = text.replace(/[\u201c\u201d\u2018\u2019]/g, '"');
+            // 第一步：把中文引号替换为对应的英文引号
+            // 双引号（""）→ " ，单引号（''）→ '
+            let fixed = text.replace(/[\u201c\u201d]/g, '"').replace(/[\u2018\u2019]/g, "'");
             // 第二步：在JSON结构上下文中，把中文冒号替换为英文冒号
             // 只替换看起来是JSON键值对分隔符的中文冒号（前面是引号）
             fixed = fixed.replace(/"：/g, '":');
