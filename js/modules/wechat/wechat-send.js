@@ -801,14 +801,19 @@ ${memoryText}`;
 
         // 修复JSON中的中文标点（模型有时会输出中文引号/逗号/冒号）
         function fixChinesePunctuation(text) {
-            // 第一步：把中文引号替换为对应的英文引号
-            // 双引号（""）→ " ，单引号（''）→ '
-            let fixed = text.replace(/[\u201c\u201d]/g, '"').replace(/[\u2018\u2019]/g, "'");
-            // 第二步：在JSON结构上下文中，把中文冒号替换为英文冒号
-            // 只替换看起来是JSON键值对分隔符的中文冒号（前面是引号）
+            let fixed = text;
+            // 第一步：单引号''→普通单引号（在JSON字符串内安全）
+            fixed = fixed.replace(/[\u2018\u2019]/g, "'");
+            // 第二步：智能处理双引号""
+            // 紧跟JSON结构字符（{ [ , : 或空白）后的左引号"→ 结构性双引号
+            fixed = fixed.replace(/([\{\[,:\s])\s*\u201c/g, '$1"');
+            // 紧接JSON结构字符（} ] , : 或空白）前的右引号"→ 结构性双引号
+            fixed = fixed.replace(/\u201d\s*([\}\],:\s])/g, '"$1');
+            // 剩余的智能双引号在内容里→转义，防止截断JSON字符串
+            fixed = fixed.replace(/[\u201c\u201d]/g, '\\"');
+            // 第三步：在JSON结构上下文中，把中文冒号替换为英文冒号
             fixed = fixed.replace(/"：/g, '":');
-            // 第三步：在JSON结构上下文中，把中文逗号替换为英文逗号
-            // 只替换看起来是JSON元素分隔符的中文逗号（前面是引号或}）
+            // 第四步：在JSON结构上下文中，把中文逗号替换为英文逗号
             fixed = fixed.replace(/(["\}])，/g, '$1,');
             return fixed;
         }
