@@ -365,8 +365,7 @@ JSON数组的【第一个元素】必须是思维链对象：
 
 ### 口语化技巧
 - 自然的重复和自我修正，像真人说话有呼吸感
-- 可在语音内容中适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
-  (laughs) (chuckle) (coughs) (clear-throat) (groans) (breath) (pant) (inhale) (exhale) (gasps) (sniffs) (sighs) (snorts) (burps) (lip-smacking) (humming) (hissing) (emm) (sneezes)
+- 语音内容不要插入任何拟声词标签，保持纯文字输出
 
 ## 输出结构
 [
@@ -415,8 +414,7 @@ JSON数组的【第一个元素】必须是思维链对象：
 
 ### 口语化技巧
 - 自然的重复和自我修正，像真人说话有呼吸感
-- 可在语音内容中适当插入拟声词标签增强表现力，【只能】使用以下标签，禁止自创：
-  (laughs) (chuckle) (coughs) (clear-throat) (groans) (breath) (pant) (inhale) (exhale) (gasps) (sniffs) (sighs) (snorts) (burps) (lip-smacking) (humming) (hissing) (emm) (sneezes)
+- 语音内容不要插入任何拟声词标签，保持纯文字输出
 
 ## 特殊动作（适时使用，勿滥用）
 - 拍一拍：{"type":"pat","suffix":"的小脑袋"}
